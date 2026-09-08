@@ -14,7 +14,9 @@
     "electron": "electron .",
     "dev:desktop": "concurrently -k -n next,electron -c cyan,magenta \"pnpm dev\" \"wait-on -t 60000 http://localhost:3000/panel && electron .\"",
     "ingest": "tsx scripts/ingest.ts",
-    "chunks": "tsx scripts/preview-chunks.ts"
+    "chunks": "tsx scripts/preview-chunks.ts",
+    "verify": "tsx scripts/verify-search.ts",
+    "vocab": "tsx scripts/extract-vocab.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
