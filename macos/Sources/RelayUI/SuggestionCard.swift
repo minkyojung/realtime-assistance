@@ -8,10 +8,10 @@ import RelayCore
 /// 다만 강조색 단색(내가 실제로 한 말)이 아니라 **중립 유리**다. 대화 위에 떠 있는
 /// 다른 층이라는 것이 재질로만 구분되고, 꼬리는 달지 않는다 — 아무도 하지 않은 말이다.
 ///
-/// **색을 쓰지 않는다.** Apple 은 색을 상태(경고·오류·진행)에만 쓰고, "이 내용이 어떤
-/// 종류인가"를 색으로 칠하지 않는다 — Mail 의 요약도 Writing Tools 의 제안도 무채색
-/// 평문이다. 판정 3색을 배경에 깔아 봤더니 카드가 화면을 지배하고 대화가 밀렸다(실측).
-/// 판정은 headline 과 조건 문구가 글로 말한다.
+/// **색은 모서리 한 점에서만 번진다.** 판정 3색을 면 전체에 깔아 봤더니 카드가 화면을
+/// 지배하고 대화가 밀렸다 — 진한 틴트도, 위에서 아래로 흘리는 그라데이션도 마찬가지였다
+/// (실측). 왼쪽 위 모서리에서 조금 번지다 사라지게 두면 카드는 조용한 채로 판정만
+/// 인지된다. Apple 이 색을 면이 아니라 점·선에만 쓰는 것과 같은 절제다.
 ///
 /// 지연 시간(`latencyMs`)도 보여주지 않는다. 미팅 중에 쓸 일이 없는 개발 정보다.
 ///
@@ -55,6 +55,9 @@ public struct SuggestionCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .frame(maxWidth: 340, alignment: .leading)
+        // 레이어 순서가 전부다. `.background` 는 콘텐츠 뒤·유리 앞에 놓인다 —
+        // 유리보다 앞이어야 번지는 게 보이고, 글자보다 뒤여야 본문 대비가 안 깎인다.
+        .background { verdictGlow }
         .glassEffect(.regular, in: bubbleShape)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(verdictLabel)
@@ -71,7 +74,37 @@ public struct SuggestionCard: View {
     /// 말풍선과 같은 반경. 다만 꼬리는 없다 — 발화가 아니기 때문이다.
     private var bubbleShape: RoundedRectangle { RoundedRectangle(cornerRadius: 14) }
 
-    /// 화면에서는 판정을 색이나 라벨로 말하지 않으므로, 이름은 접근성 쪽에 남긴다.
+    /// 판정 색이 왼쪽 위 모서리에서 시작하는 진하기. 0 이면 완전히 무채색이 된다.
+    ///
+    /// 색을 면 전체에 깔면 카드가 화면을 지배한다 — 진한 틴트도, 위에서 아래로
+    /// 흘리는 그라데이션도 그래서 물렸다(실측). 모서리 한 점에서만 조금 번지게 두면
+    /// 카드는 조용한데 판정은 인지된다.
+    private static let glowStrength = 0.20
+
+    /// 판정 색. 왼쪽 위 모서리에서 은은하게 번져 나오다 사라진다.
+    /// 판정 전(`mode == nil`)에는 아무 색도 없다.
+    private var verdictGlow: some View {
+        bubbleShape.fill(
+            RadialGradient(
+                stops: [
+                    .init(color: (verdictColor ?? .clear).opacity(Self.glowStrength), location: 0),
+                    .init(color: (verdictColor ?? .clear).opacity(Self.glowStrength * 0.3),
+                          location: 0.45),
+                    .init(color: .clear, location: 1),
+                ],
+                center: .topLeading, startRadius: 0, endRadius: 150))
+    }
+
+    private var verdictColor: Color? {
+        switch item.mode {
+        case .direct:      .green
+        case .conditional: .orange
+        case .escalate:    .red
+        case nil:          nil
+        }
+    }
+
+    /// 화면에서는 판정을 라벨로 말하지 않으므로(색만 은은히 번진다) 이름은 접근성 쪽에 남긴다.
     private var verdictLabel: String {
         switch item.mode {
         case .direct:      "Safe to answer suggestion"
