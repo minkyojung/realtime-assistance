@@ -21,20 +21,27 @@ public struct PanelView: View {
     @State private var scrollPosition = ScrollPosition(idType: String.self)
     /// 지금 바닥에 붙어 있는가. 붙어 있을 때만 새 내용을 따라 내려간다.
     @State private var pinnedToBottom = true
+    /// 유리들을 한 좌표계로 묶는다. 카드가 이 안에서 신원을 갖는다.
+    @Namespace private var glass
 
     public init(controller: SessionController) {
         self.controller = controller
     }
 
     public var body: some View {
-        ZStack(alignment: .top) {
-            flow
-            SessionPill(
-                session: controller.session,
-                elapsed: controller.elapsed,
-                running: controller.running
-            )
-            .padding(.top, 12)
+        // 가까이 있는 유리들을 한 패스로 **병합**해 그린다. pill 과 카드가 서로
+        // 다가오면 붙었다 떨어지는 액체 거동이 여기서 나오고, 렌더 패스도 줄어든다.
+        // 개별 유리를 각자 그리면 그 거동이 아예 생기지 않는다.
+        GlassEffectContainer(spacing: 20) {
+            ZStack(alignment: .top) {
+                flow
+                SessionPill(
+                    session: controller.session,
+                    elapsed: controller.elapsed,
+                    running: controller.running
+                )
+                .padding(.top, 12)
+            }
         }
         // VStack 으로 쌓지 않고 safeAreaBar 로 붙인다. 시스템이 이 바를 Tahoe 재질로
         // 직접 그리고, 창 아래 모서리 안쪽으로 알아서 배치한다 — 우리가 그리면 그 둘을
@@ -65,8 +72,10 @@ public struct PanelView: View {
                         UtteranceBubble(item, isLastInRun: last)
                             .padding(.top, first ? 12 : 3)
                     case let .suggestion(item, replyingTo):
-                        SuggestionCard(item, replyingTo: replyingTo)
+                        SuggestionCard(item, replyingTo: replyingTo, in: glass)
                             .padding(.top, 8)
+                            // 새 카드가 유리가 맺히듯 등장한다. 지금은 툭 나타난다.
+                            .glassEffectTransition(.materialize)
                     }
                 }
             }
@@ -78,6 +87,12 @@ public struct PanelView: View {
         .scrollContentBackground(.hidden)
         // 패널이 작아서 스크롤바가 뜨면 말풍선 위를 덮는다. 흐름은 자동 스크롤로 따라간다.
         .scrollIndicators(.hidden)
+        // 위로는 떠 있는 pill, 아래로는 safeAreaBar 가 콘텐츠를 덮는다. 그냥 두면
+        // 글이 그 경계에서 딱딱하게 잘린다 — 화면에서 가장 웹 같아 보이던 지점이다.
+        // Tahoe 가 이 문제 전용으로 준 API 로, 가장자리에서 콘텐츠가 재질 속으로
+        // 흐려지며 사라진다. `.hard` 는 경계를 또렷하게 끊고 `.soft` 는 번지게 둔다 —
+        // 유리 아래로 글이 지나가는 그림이라 번지는 쪽이 맞다.
+        .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
         .scrollPosition($scrollPosition)
         // 대화는 아래가 현재다. 처음 열 때부터 바닥을 본다.
         // (`.initialOffset` 만 지정한다. 전체 역할에 걸면 콘텐츠가 자랄 때마다

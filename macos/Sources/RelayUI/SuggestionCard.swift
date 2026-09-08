@@ -20,15 +20,30 @@ public struct SuggestionCard: View {
     private let item: SuggestionItem
     /// 어떤 말에 대한 제안인지. iMessage 의 답장 인용과 같은 역할이다.
     private let replyingTo: String?
+    /// 카드끼리·pill 과 유리를 병합하고 모핑시킬 좌표계. 없으면 그냥 각자 그려진다.
+    private let glassNamespace: Namespace.ID?
     /// 스트리밍 중 커서 깜빡임. `done` 이면 돌지 않는다.
     @State private var cursorOn = true
 
-    public init(_ item: SuggestionItem, replyingTo: String? = nil) {
+    public init(_ item: SuggestionItem, replyingTo: String? = nil,
+                in glassNamespace: Namespace.ID? = nil) {
         self.item = item
         self.replyingTo = replyingTo
+        self.glassNamespace = glassNamespace
     }
 
+    @ViewBuilder
     public var body: some View {
+        // 신원을 주면 스켈레톤 → 판정 → 완료로 바뀌는 동안 SwiftUI 가 "같은 유리가
+        // 변형된 것"으로 알고 이어서 그린다. 없으면 매번 새로 그려져 툭툭 끊긴다.
+        if let glassNamespace {
+            card.glassEffectID(item.id, in: glassNamespace)
+        } else {
+            card
+        }
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: 5) {
             if let replyingTo, !replyingTo.isEmpty { quoted(replyingTo) }
             headline
