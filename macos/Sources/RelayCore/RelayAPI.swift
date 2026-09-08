@@ -27,6 +27,18 @@ public struct RelayAPI: Sendable {
     public func streamURL(sessionID: String) -> URL {
         baseURL.appendingPathComponent("api/sessions/\(sessionID)/stream")
     }
+
+    /// `POST /api/questions/{id}/answer` — 버튼을 눌렀을 때만 도는 답변 생성.
+    ///
+    /// 응답은 세션 스트림과 같은 `question.delta` · `question.done` 이벤트다.
+    /// 이름을 따로 만들지 않는 이유 — 페이로드가 같은데 타입만 늘리면 리듀서가
+    /// 두 벌이 되고, TS 리듀서와의 대조가 그만큼 헐거워진다.
+    public func answerRequest(questionID: String) -> URLRequest {
+        var request = URLRequest(
+            url: baseURL.appendingPathComponent("api/questions/\(questionID)/answer"))
+        request.httpMethod = "POST"
+        return request
+    }
 }
 
 /// 웹 패널이 보내는 것과 같은 본문. 도메인별 컨텍스트도 그대로 따른다.

@@ -73,7 +73,8 @@ final class ReplayProtocol: URLProtocol, @unchecked Sendable {
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
-        if request.httpMethod == "POST" { createSession() } else { streamEvents() }
+        guard request.httpMethod == "POST" else { return streamEvents() }
+        if request.url?.lastPathComponent == "answer" { answerEvents() } else { createSession() }
     }
 
     override func stopLoading() {
@@ -127,8 +128,63 @@ final class ReplayProtocol: URLProtocol, @unchecked Sendable {
         }
         send(status: 200, contentType: "text/event-stream")
 
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: true).map(String.init)
+        // 답변 이벤트는 세션 스트림에서 빼고 `POST .../answer` 로만 내보낸다.
+        // 서버도 같은 형태로 갈 예정이라, 여기서 빼 두어야 재생본이 실제와 어긋나지 않는다.
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: true)
+            .map(String.init)
+            .filter { Self.answerQuestionID($0) == nil }
         queue.async { self.emit(lines, from: 0) }
+    }
+
+    // MARK: - POST /api/questions/{id}/answer
+
+    /// 서버가 검색·생성에 쓰는 시간. 버튼을 누른 뒤 곧장 글자가 쏟아지면
+    /// 기다리는 동안의 화면(스피너·시간 벌기 문구)을 눈으로 확인할 수 없다.
+    private static let thinkDelay = 1.2
+
+    /// 녹화본에서 그 질문의 답변 이벤트만 뽑아 다시 흘려보낸다.
+    /// 실제 서버는 여기서 HyDE·재검색·생성을 돌지만, 나가는 이벤트는 같다.
+    private func answerEvents() {
+        let questionID = request.url?.pathComponents.dropLast().last ?? ""
+        let lines = Self.answerLines(for: questionID)
+        guard !lines.isEmpty else {
+            send(status: 404, contentType: "text/event-stream")
+            client?.urlProtocolDidFinishLoading(self)
+            return
+        }
+        send(status: 200, contentType: "text/event-stream")
+        queue.asyncAfter(deadline: .now() + Self.thinkDelay / speed) {
+            self.emit(lines, from: 0)
+        }
+    }
+
+    /// 어느 녹화본에 있는지 모르므로 전부 훑는다. 픽스처는 두어 개뿐이다.
+    private static func answerLines(for questionID: String) -> [String] {
+        guard !questionID.isEmpty,
+              let names = try? FileManager.default.contentsOfDirectory(
+                  atPath: FixtureReplay.directory.path)
+        else { return [] }
+
+        for name in names.sorted() where name.hasSuffix(".sse") {
+            guard let text = try? String(
+                contentsOf: FixtureReplay.directory.appendingPathComponent(name), encoding: .utf8)
+            else { continue }
+
+            let lines = text.split(separator: "\n", omittingEmptySubsequences: true)
+                .map(String.init)
+                .filter { answerQuestionID($0) == questionID }
+            if !lines.isEmpty { return lines }
+        }
+        return []
+    }
+
+    /// 답변 이벤트(`question.delta` · `question.done`)면 그 questionId, 아니면 nil.
+    private static func answerQuestionID(_ line: String) -> String? {
+        switch decode(line) {
+        case let .questionDelta(questionId, _): questionId
+        case let .questionDone(questionId, _, _): questionId
+        default: nil
+        }
     }
 
     /// 한 줄 보내고, 간격만큼 쉬었다가 다음 줄로.
@@ -147,15 +203,15 @@ final class ReplayProtocol: URLProtocol, @unchecked Sendable {
         }
     }
 
-    /// 줄 자체는 원본 그대로 보낸다. 디코딩은 **간격을 고르는 데만** 쓴다 —
+    /// 줄 자체는 원본 그대로 보낸다. 디코딩은 **간격과 분류에만** 쓴다 —
     /// 깨진 줄이 섞여 있어도 재생이 멈추지 않아야 한다.
     private static func gap(after line: String) -> Double {
-        guard line.hasPrefix("data: "),
-              let event = try? JSONDecoder().decode(
-                  Event.self, from: Data(line.dropFirst(6).utf8)),
-              case .questionDelta = event
-        else { return eventGap }
-        return deltaGap
+        if case .questionDelta = decode(line) { deltaGap } else { eventGap }
+    }
+
+    private static func decode(_ line: String) -> Event? {
+        guard line.hasPrefix("data: ") else { return nil }
+        return try? JSONDecoder().decode(Event.self, from: Data(line.dropFirst(6).utf8))
     }
 
     /// 세션 id 에 도메인을 실어 뒀다(`createSession`). 스트림 요청에는 그것만 오기 때문이다.

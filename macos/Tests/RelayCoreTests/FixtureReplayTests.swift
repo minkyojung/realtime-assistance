@@ -25,9 +25,11 @@ struct FixtureReplayTests {
         }
     }
 
-    @Test("생성 → 스트림 재생 결과가 TS 기대값 피드와 같다",
+    /// 세션 스트림은 **답을 싣지 않는다.** 답은 버튼을 눌러야 도는 별도 요청이라,
+    /// 여기서 답변 이벤트가 새어 나오면 카드가 저절로 채워져 버튼이 무의미해진다.
+    @Test("스트림 재생에는 답이 없다 — 카드가 판정까지만 찬다",
           arguments: [(Domain.sales, "sales-demo"), (.recruiting, "recruiting-demo")])
-    func replayMatchesExpectedFeed(domain: Domain, fixture: String) async throws {
+    func replayStopsAtVerdict(domain: Domain, fixture: String) async throws {
         let urlSession = Self.session()
         let api = RelayAPI(session: urlSession)
         let client = SSEClient(session: urlSession)
@@ -39,8 +41,50 @@ struct FixtureReplayTests {
             await store.apply(event)
         }
 
-        #expect(await store.feed == (try Fixture.expectedFeed(fixture)))
+        let feed = await store.feed
+        let expected = try Fixture.expectedFeed(fixture)
+        #expect(feed.count == expected.count, "발화·카드의 개수와 순서는 그대로여야 한다")
         #expect(await !store.running)
+
+        let suggestions = feed.compactMap { if case let .suggestion(s) = $0 { s } else { nil } }
+        #expect(!suggestions.isEmpty)
+        #expect(suggestions.allSatisfy { $0.mode != nil }, "판정은 자동으로 와야 한다")
+        #expect(suggestions.allSatisfy { !$0.headline.isEmpty })
+        #expect(suggestions.allSatisfy { $0.script.isEmpty && !$0.done }, "답이 새어 나왔다")
+    }
+
+    /// 그리고 버튼을 누르면(= 답변 요청) 녹화본과 똑같은 결과에 도달한다.
+    @Test("답변 요청까지 마치면 TS 기대값 피드와 같다",
+          arguments: [(Domain.sales, "sales-demo"), (.recruiting, "recruiting-demo")])
+    func askingCompletesTheFeed(domain: Domain, fixture: String) async throws {
+        let urlSession = Self.session()
+        let api = RelayAPI(session: urlSession)
+        let client = SSEClient(session: urlSession)
+
+        let session = try await api.createSession(domain: domain)
+        let store = await FeedStore()
+        await store.start()
+        for try await event in client.events(from: api.streamURL(sessionID: session.id)) {
+            await store.apply(event)
+        }
+
+        for id in await store.feed.compactMap({ $0.suggestionID }) {
+            for try await event in client.events(for: api.answerRequest(questionID: id)) {
+                await store.apply(event)
+            }
+        }
+
+        #expect(await store.feed == (try Fixture.expectedFeed(fixture)))
+    }
+
+    @Test("녹화본에 없는 질문의 답변 요청은 오류가 된다")
+    func unknownQuestionFails() async throws {
+        let api = RelayAPI(session: Self.session())
+        let client = SSEClient(session: Self.session())
+
+        await #expect(throws: (any Error).self) {
+            for try await _ in client.events(for: api.answerRequest(questionID: "nope")) {}
+        }
     }
 
     @Test("이벤트가 한꺼번에 오지 않고 시간에 따라 흐른다")

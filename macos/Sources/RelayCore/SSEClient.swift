@@ -19,10 +19,16 @@ public struct SSEClient: Sendable {
     /// 스트림이 끝나거나(`script.done`) 소비자가 중단하면 종료한다.
     /// 소비자가 루프를 벗어나면 `onTermination` 이 URLSession 태스크를 취소한다.
     public func events(from url: URL) -> AsyncThrowingStream<Event, any Error> {
+        events(for: URLRequest(url: url))
+    }
+
+    /// 요청을 직접 만들어 구독한다. 답변 요청(`POST .../answer`)이 이 경로를 쓴다 —
+    /// 세션 스트림과 이벤트 형식이 같으므로 파싱은 하나로 둔다.
+    public func events(for request: URLRequest) -> AsyncThrowingStream<Event, any Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
-                    var request = URLRequest(url: url)
+                    var request = request
                     request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
                     request.timeoutInterval = 3600
 

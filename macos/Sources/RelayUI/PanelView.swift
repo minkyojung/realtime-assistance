@@ -66,14 +66,13 @@ public struct PanelView: View {
                             .padding(.top, 96)
                     }
                     ForEach(rows) { row in
-                        switch row {
-                        case let .utterance(item, first, last):
-                            UtteranceBubble(item, isLastInRun: last)
-                                .padding(.top, first ? 12 : 3)
-                        case let .suggestion(item, replyingTo):
-                            SuggestionCard(item, replyingTo: replyingTo)
-                                .padding(.top, 8)
-                        }
+                        UtteranceBubble(
+                            row.item, isLastInRun: row.last,
+                            answer: row.answer,
+                            askState: row.answer.map { controller.askState(for: $0.id) } ?? .idle,
+                            onAsk: row.askID.map { id in { controller.ask(questionID: id) } },
+                            onRetry: { if let answer = row.answer { controller.ask(questionID: answer.id) } })
+                            .padding(.top, row.first ? 12 : 3)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -141,45 +140,53 @@ public struct PanelView: View {
         .padding(.vertical, 10)
     }
 
-    private enum Row: Identifiable {
+    /// 화면의 한 줄 = 말풍선 하나. 제안은 줄이 아니라 **질문 말풍선의 일부**다.
+    private struct Row: Identifiable {
+        let item: UtteranceItem
         /// `first`/`last` 는 같은 화자의 연속 발화 묶음에서의 위치다.
         /// 첫 줄은 위 간격을 벌리고, 마지막 줄만 꼬리를 단다.
-        case utterance(UtteranceItem, first: Bool, last: Bool)
-        /// `replyingTo` 는 이 제안이 답하는 말 — 바로 앞 발화다.
-        case suggestion(SuggestionItem, replyingTo: String?)
+        let first: Bool
+        let last: Bool
+        /// 이 말이 질문일 때 붙는 답.
+        let answer: SuggestionItem?
+        /// 아직 답을 요청하지 않았다면 그 질문 id — 말풍선 옆에 버튼이 붙는다.
+        let askID: String?
 
-        /// 발화 id 와 질문 id 는 다른 공간의 값이라 접두사로 갈라 둔다.
-        var id: String {
-            switch self {
-            case let .utterance(item, _, _): "u-\(item.id)"
-            case let .suggestion(item, _):   "s-\(item.id)"
-            }
-        }
+        var id: String { item.id }
     }
 
-    /// 피드를 그릴 순서 그대로 훑는다.
+    /// 아직 아무것도 요청하지 않은 답은 **화면에 없다.**
     ///
-    /// 연속 발화 판정에서 **제안 카드는 묶음을 끊는다.** 사이에 카드가 끼면 화면상
-    /// 이어진 말이 아니므로, 꼬리와 간격도 거기서 끊겨야 한다.
+    /// 답을 요청하는 대상은 카드가 아니라 방금 들은 질문이라, 버튼은 질문 말풍선에
+    /// 붙는다. 답도 누른 뒤에야 같은 말풍선 안에서 이어진다 — 답이 없는데 자리부터
+    /// 잡아 두면 대화가 그 상자에 밀린다.
+    private func isVisible(_ suggestion: SuggestionItem) -> Bool {
+        !suggestion.script.isEmpty || controller.askState(for: suggestion.id) != .idle
+    }
+
+    /// 피드를 화면 줄로 옮긴다. 제안은 자기 줄을 갖지 않고 바로 앞 발화에 실린다 —
+    /// 서버가 `question.detected` 를 질문 발화 직후에 보내므로 피드 순서가 곧 답장 관계다.
     private var rows: [Row] {
         let feed = controller.feed
         func utterance(at index: Int) -> UtteranceItem? {
             guard feed.indices.contains(index), case let .utterance(u) = feed[index] else { return nil }
             return u
         }
+        func suggestion(at index: Int) -> SuggestionItem? {
+            guard feed.indices.contains(index), case let .suggestion(s) = feed[index] else { return nil }
+            return s
+        }
 
-        return feed.indices.map { i in
-            switch feed[i] {
-            case let .suggestion(item):
-                // 답하는 대상은 바로 앞 발화다 — 서버가 `question.detected` 를 질문
-                // 발화 직후에 보내므로 피드 순서가 곧 답장 관계다.
-                .suggestion(item, replyingTo: utterance(at: i - 1)?.text)
-            case let .utterance(item):
-                .utterance(
-                    item,
-                    first: utterance(at: i - 1)?.role != item.role,
-                    last: utterance(at: i + 1)?.role != item.role)
-            }
+        return feed.indices.compactMap { i in
+            guard case let .utterance(item) = feed[i] else { return nil }
+            let answer = suggestion(at: i + 1)
+            return Row(
+                item: item,
+                first: utterance(at: i - 1)?.role != item.role,
+                last: utterance(at: i + 1)?.role != item.role,
+                answer: answer.flatMap { isVisible($0) ? $0 : nil },
+                // 판정(`mode`)이 와야 무엇을 찾을지가 정해진다. 그 전에는 버튼도 없다.
+                askID: answer.flatMap { $0.mode != nil && !isVisible($0) ? $0.id : nil })
         }
     }
 }
