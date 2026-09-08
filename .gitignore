@@ -1,0 +1,22 @@
+# 환경 변수 / 시크릿
+.env
+.env.*
+!.env.example
+
+# Conductor 작업 디렉토리
+.context/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# 스파이크 결과물
+spikes/out/
+
+# OS
+.DS_Store
