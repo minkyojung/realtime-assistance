@@ -128,3 +128,15 @@
     @apply font-sans;
   }
 }
+/* ---------------------------------------------------------------
+   Electron 창 드래그 영역
+   titleBarStyle: 'hiddenInset' 을 쓰면 기본 타이틀바가 없으므로
+   드래그 가능한 영역을 직접 지정해야 한다.
+   버튼·입력 요소에는 반드시 .no-drag 를 붙인다.
+   --------------------------------------------------------------- */
+.drag-region { -webkit-app-region: drag; }
+.no-drag,
+.drag-region button,
+.drag-region a,
+.drag-region input,
+.drag-region select { -webkit-app-region: no-drag; }
