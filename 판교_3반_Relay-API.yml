@@ -4,8 +4,13 @@ info:
   title: Relay API
   version: 1.0.0
   description: |
-    개발팀의 GitHub 정보를 세일즈·PM이 고객 앞에서 바로 말할 수 있는 문장으로
-    바꿔 실시간 제공하는 어시스턴트의 REST API.
+    미팅 전·중·후를 하나로 잇는 어시스턴트의 REST API.
+
+    | 단계 | 하는 일 | 주요 리소스 |
+    |---|---|---|
+    | **Before** | 참석자·목표를 정하고 준비된 답변으로 무장 | `sessions`, `session-goals`, `answers` |
+    | **In Progress** | 상대 질문에 즉답, 내 목표가 다뤄졌는지 체크 | `utterances`, `questions`, `stream` |
+    | **After** | 요약·할 일·개선점을 남김 | `summary`, `action-items` |
 
     **설계 근거 문서**
     - 화면·필드 명세: `docs/05-화면-필드.md`
@@ -28,19 +33,23 @@ servers:
 
 tags:
   - name: sessions
-    description: 대화 세션. 화면 1-① 세션 헤더
+    description: '[Before] 미팅 단위. 참석자와 상황(context)을 정한다'
+  - name: session-goals
+    description: '[Before/In Progress] 내가 물어야 하는 것. 대화 중 다뤄졌는지 체크된다'
   - name: utterances
-    description: 발화 기록. 화면 1-④ 전사 스트림
+    description: '[In Progress] 발화 기록. 전사 스트림'
   - name: questions
-    description: 감지된 질문과 판정. 화면 1-② 판정 카드, 1-③ 히스토리
-  - name: deferrals
-    description: 지식 공백. 화면 2 지식 공백 큐
-  - name: policy-rules
-    description: 답변 규칙. 화면 3-② 만료 알림, 3-③ 규칙 리스트
+    description: '[In Progress] 상대가 묻는 것 + 판정 결과'
+  - name: action-items
+    description: '[After] 회의 후 할 일. 답하지 못한 질문도 여기 포함된다'
+  - name: summary
+    description: '[After] 회의 요약·개선점·목표 달성률'
+  - name: answers
+    description: 미리 준비된 답변 (response_rule). 사람이 작성한다
   - name: knowledge
-    description: 지식 소스. 화면 3-④ 소스 관리
+    description: GitHub 지식 소스 관리
   - name: metrics
-    description: 커버리지 지표. 화면 3-① 대시보드
+    description: 즉답률·목표 달성률 지표
 
 # =========================================================
 paths:
@@ -149,7 +158,7 @@ paths:
       summary: 세션 종료
       description: |
         화면 1-① [종료] 버튼.
-        세션 내 미해소 `knowledge_gap`이 검토 큐로 확정된다.
+        종료 시 요약 생성(`POST /sessions/{id}/summary`)을 이어서 호출하는 것이 일반적이다.
       operationId: endSession
       responses:
         '200':
@@ -161,9 +170,9 @@ paths:
                   - $ref: '#/components/schemas/Session'
                   - type: object
                     properties:
-                      confirmed_gap_count:
+                      unanswered_question_count:
                         type: integer
-                        description: 큐로 확정된 공백 수
+                        description: 답하지 못한 질문 수. 요약 생성 시 할 일이 된다
                         example: 3
         '404': { $ref: '#/components/responses/NotFound' }
         '409':
@@ -246,7 +255,7 @@ paths:
         | `question.detected` | Question (headline=null) | 1-② 스켈레톤 |
         | `question.headline` | `{question_id, delta}` | 1-② 스트리밍 |
         | `question.completed` | QuestionVerdict | 1-②③ |
-        | `gap.created` | KnowledgeGap | 1-② 🔴 표시 |
+        | `goal.covered` | `{goal_id, utterance_id}` | 목표가 다뤄졌음 — 체크 표시 |
 
         지연 목표: 턴 종료 후 `question.headline` 첫 델타까지 1,500ms 이내.
       operationId: streamSession
@@ -344,9 +353,8 @@ paths:
       tags: [questions]
       summary: 답변 오류 신고
       description: |
-        화면 1-② [답변이 틀렸어요].
-        `reason = user_rejected` 인 `knowledge_gap`을 생성한다.
-        틀린 답변조차 학습 루프의 입력이 된다.
+        판정이 틀렸을 때 사용자가 신고한다.
+        `type = answer_needed` 인 `action_item` 을 생성해 회의 후 할 일로 넘긴다.
       operationId: rejectQuestionVerdict
       requestBody:
         required: false
@@ -362,10 +370,10 @@ paths:
                   example: 이 고객은 이미 NDA를 체결했습니다
       responses:
         '201':
-          description: 공백 생성됨
+          description: 할 일 생성됨
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/KnowledgeGap' }
+              schema: { $ref: '#/components/schemas/ActionItem' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409':
           description: 이미 신고된 질문
@@ -373,42 +381,186 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
-  # ---------- deferrals ----------
-  /deferrals:
+  # ---------- session-goals [Before / In Progress] ----------
+  /sessions/{sessionId}/goals:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
     get:
-      tags: [deferrals]
-      summary: 지식 공백 목록
+      tags: [session-goals]
+      summary: 미팅 목표 목록
       description: |
-        화면 2-② 큐 리스트. **기본 정렬은 발생 빈도순.**
+        내가 물어야 하는 것들. 대화가 진행되면 `status`가 자동으로 갱신된다.
 
-        전통적 사내 위키는 "무엇을 써야 할지 모른다"는 이유로 비어 있지만,
-        Relay는 대화가 우선순위를 정해 준다.
-      operationId: listDeferrals
+        **`questions` 와 방향이 반대다.**
+        `questions` 는 상대가 나에게 묻는 것이고, 여기는 내가 상대에게 물을 것이다.
+      operationId: listSessionGoals
       parameters:
         - name: status
           in: query
-          schema: { $ref: '#/components/schemas/GapStatus' }
-        - name: reason
+          schema: { $ref: '#/components/schemas/GoalStatus' }
+      responses:
+        '200':
+          description: 조회됨
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, coverage]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/SessionGoal' }
+                  coverage:
+                    type: number
+                    format: float
+                    description: 달성률. covered / 전체 (계산 필드)
+                    example: 0.66
+        '404': { $ref: '#/components/responses/NotFound' }
+
+    post:
+      tags: [session-goals]
+      summary: 목표 추가
+      description: 미팅 시작 전 또는 진행 중에 추가한다.
+      operationId: createSessionGoal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  example: 예산 규모와 집행 시점 확인
+                sort_order: { type: integer, default: 0 }
+      responses:
+        '201':
+          description: 생성됨
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionGoal' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /session-goals/{goalId}:
+    parameters:
+      - $ref: '#/components/parameters/GoalId'
+    patch:
+      tags: [session-goals]
+      summary: 목표 수정
+      description: |
+        `status`를 수동으로 바꿀 수 있다.
+        자동 감지가 놓쳤을 때 사용자가 직접 체크하는 경로다.
+      operationId: updateSessionGoal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+                status: { $ref: '#/components/schemas/GoalStatus' }
+                sort_order: { type: integer }
+      responses:
+        '200':
+          description: 수정됨
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionGoal' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+    delete:
+      tags: [session-goals]
+      summary: 목표 삭제
+      operationId: deleteSessionGoal
+      responses:
+        '204': { description: 삭제됨 }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------- summary [After] ----------
+  /sessions/{sessionId}/summary:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      tags: [summary]
+      summary: 회의 요약 조회
+      operationId: getSessionSummary
+      responses:
+        '200':
+          description: 조회됨
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionSummary' }
+        '404':
+          description: 아직 생성되지 않음
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+    post:
+      tags: [summary]
+      summary: 회의 요약 생성
+      description: |
+        세션의 전체 발화를 근거로 요약·개선점·할 일을 생성한다.
+        **실시간 경로가 아니므로 지연 제약이 없다.** 보통 세션 종료 시 자동 호출된다.
+
+        생성 시 아래가 함께 만들어진다.
+        - `action_item(type=answer_needed)` — 답하지 못한 질문마다
+        - `action_item(type=follow_up)` — 다루지 못한 목표마다
+        - `action_item(type=improvement)` — 개선점마다
+      operationId: generateSessionSummary
+      responses:
+        '201':
+          description: 생성됨
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SessionSummary'
+                  - type: object
+                    properties:
+                      created_action_items:
+                        type: integer
+                        description: 함께 생성된 할 일 수
+                        example: 5
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: 진행 중인 세션은 요약할 수 없음
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ---------- action-items [After] ----------
+  /action-items:
+    get:
+      tags: [action-items]
+      summary: 할 일 목록
+      description: |
+        회의 후 할 일. 세 종류가 한 목록에 섞인다.
+
+        | type | 의미 |
+        |---|---|
+        | `follow_up` | 자료 발송, 재미팅 등 내가 할 일 |
+        | `answer_needed` | 답하지 못한 질문 — 확인 후 회신 필요 |
+        | `improvement` | 다음 미팅에서 다르게 할 것 |
+
+        사용자 입장에서 이 셋을 구분할 이유가 없으므로 하나의 리소스로 둔다.
+      operationId: listActionItems
+      parameters:
+        - name: session_id
           in: query
-          schema: { $ref: '#/components/schemas/GapReason' }
-        - $ref: '#/components/parameters/DomainFilter'
-        - name: intent
+          schema: { type: string, format: uuid }
+        - name: type
           in: query
-          schema: { $ref: '#/components/schemas/QuestionIntent' }
-        - name: created_from
+          schema: { $ref: '#/components/schemas/ActionItemType' }
+        - name: status
           in: query
-          description: 이 날짜 이후 생성된 것
-          schema: { type: string, format: date }
-        - name: created_to
-          in: query
-          schema: { type: string, format: date }
-        - name: sort
-          in: query
-          description: 정렬 기준
-          schema:
-            type: string
-            enum: [frequency, recent, oldest]
-            default: frequency
+          schema: { $ref: '#/components/schemas/ActionItemStatus' }
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
       responses:
@@ -424,111 +576,72 @@ paths:
                     properties:
                       items:
                         type: array
-                        items: { $ref: '#/components/schemas/KnowledgeGapSummary' }
-        '400': { $ref: '#/components/responses/BadRequest' }
+                        items: { $ref: '#/components/schemas/ActionItem' }
 
-  /deferrals/{deferralId}:
-    parameters:
-      - $ref: '#/components/parameters/DeferralId'
-    get:
-      tags: [deferrals]
-      summary: 공백 상세
-      description: |
-        화면 2-③ 상세 패널.
-        원문 발화, 발생 세션 이력, **시스템이 미리 찾아둔 GitHub 근거 후보**를 함께 반환한다.
-        승인자가 직접 검색하지 않아도 되게 하는 것이 2막의 마찰을 줄이는 핵심이다.
-      operationId: getDeferral
-      responses:
-        '200':
-          description: 조회됨
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/KnowledgeGapDetail' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /deferrals/{deferralId}/resolve:
-    parameters:
-      - $ref: '#/components/parameters/DeferralId'
     post:
-      tags: [deferrals]
-      summary: 공백을 답변 규칙으로 해소
-      description: |
-        화면 2-④ [저장하고 해소]. **이 제품의 핵심 트랜잭션.**
-
-        한 번의 호출로 아래가 원자적으로 수행된다.
-        1. `response_rule` 생성
-        2. `response_rule.created_from = deferralId`
-        3. `knowledge_gap.resolved_by = 생성된 규칙 id`
-        4. `knowledge_gap.status = resolved`
-
-        3·4의 양방향 연결이 "쓸수록 좋아진다"의 데이터 증거다.
-      operationId: resolveDeferral
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/PolicyRuleCreate' }
-      responses:
-        '201':
-          description: 해소됨
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [deferral, policy_rule]
-                properties:
-                  deferral: { $ref: '#/components/schemas/KnowledgeGap' }
-                  policy_rule: { $ref: '#/components/schemas/PolicyRule' }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409':
-          description: 이미 해소되었거나 기각된 공백 (동시 편집)
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
-
-  /deferrals/{deferralId}/reject:
-    parameters:
-      - $ref: '#/components/parameters/DeferralId'
-    post:
-      tags: [deferrals]
-      summary: 공백 기각
-      description: 화면 2-④ [기각]. 답변할 수 없는 질문으로 표시한다.
-      operationId: rejectDeferral
+      tags: [action-items]
+      summary: 할 일 직접 추가
+      operationId: createActionItem
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [rejection_reason]
+              required: [session_id, type, text]
               properties:
-                rejection_reason:
-                  type: string
-                  minLength: 1
-                  maxLength: 1000
-                  example: 경쟁사 관련 정보는 대외 답변 대상이 아님
+                session_id: { type: string, format: uuid }
+                type: { $ref: '#/components/schemas/ActionItemType' }
+                text: { type: string, minLength: 1 }
+                due_date: { type: string, format: date }
+                assignee: { type: string }
+      responses:
+        '201':
+          description: 생성됨
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionItem' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /action-items/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/ItemId'
+    patch:
+      tags: [action-items]
+      summary: 할 일 수정
+      description: |
+        완료 처리는 `status = done`.
+
+        `type = answer_needed` 항목을 완료하려면 보통 `POST /answers` 로
+        준비된 답변을 먼저 만든 뒤 이 항목을 닫는다.
+      operationId: updateActionItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { $ref: '#/components/schemas/ActionItemStatus' }
+                text: { type: string }
+                due_date: { type: string, format: date, nullable: true }
+                assignee: { type: string, nullable: true }
       responses:
         '200':
-          description: 기각됨
+          description: 수정됨
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/KnowledgeGap' }
+              schema: { $ref: '#/components/schemas/ActionItem' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '409':
-          description: 이미 처리된 공백
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
 
-  # ---------- policy-rules ----------
-  /policy-rules:
+  # ---------- answers (준비된 답변) ----------
+  /answers:
     get:
-      tags: [policy-rules]
-      summary: 답변 규칙 목록
+      tags: [answers]
+      summary: 준비된 답변 목록
       description: 화면 3-③ 규칙 리스트.
-      operationId: listPolicyRules
+      operationId: listAnswers
       parameters:
         - name: q
           in: query
@@ -562,34 +675,34 @@ paths:
                     properties:
                       items:
                         type: array
-                        items: { $ref: '#/components/schemas/PolicyRule' }
+                        items: { $ref: '#/components/schemas/Answer' }
 
     post:
-      tags: [policy-rules]
-      summary: 답변 규칙 직접 생성
+      tags: [answers]
+      summary: 준비된 답변 작성
       description: |
         공백 없이 선제적으로 규칙을 만드는 경로.
         이 경우 `created_from`은 null이 된다.
-      operationId: createPolicyRule
+      operationId: createAnswer
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/PolicyRuleCreate' }
+            schema: { $ref: '#/components/schemas/AnswerCreate' }
       responses:
         '201':
           description: 생성됨
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PolicyRule' }
+              schema: { $ref: '#/components/schemas/Answer' }
         '400': { $ref: '#/components/responses/BadRequest' }
 
-  /policy-rules/expiring:
+  /answers/expiring:
     get:
-      tags: [policy-rules]
-      summary: 만료 임박 규칙
+      tags: [answers]
+      summary: 만료 임박 답변
       description: 화면 3-② 만료 임박 알림.
-      operationId: listExpiringPolicyRules
+      operationId: listExpiringAnswers
       parameters:
         - name: within_days
           in: query
@@ -608,7 +721,7 @@ paths:
                     type: array
                     items:
                       allOf:
-                        - $ref: '#/components/schemas/PolicyRule'
+                        - $ref: '#/components/schemas/Answer'
                         - type: object
                           properties:
                             days_left:
@@ -616,50 +729,50 @@ paths:
                               description: 만료까지 남은 일수 (계산 필드)
                               example: 3
 
-  /policy-rules/{ruleId}:
+  /answers/{answerId}:
     parameters:
-      - $ref: '#/components/parameters/RuleId'
+      - $ref: '#/components/parameters/AnswerId'
     get:
-      tags: [policy-rules]
-      summary: 규칙 상세
+      tags: [answers]
+      summary: 답변 상세
       description: |
         화면 3-③ 상세. `created_from`으로 **어떤 공백에서 태어났는지 역추적**할 수 있고,
         `hit_count`로 실제 사용 횟수를 확인한다.
-      operationId: getPolicyRule
+      operationId: getAnswer
       responses:
         '200':
           description: 조회됨
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PolicyRuleDetail' }
+              schema: { $ref: '#/components/schemas/AnswerDetail' }
         '404': { $ref: '#/components/responses/NotFound' }
 
     patch:
-      tags: [policy-rules]
-      summary: 규칙 수정
+      tags: [answers]
+      summary: 답변 수정
       description: 화면 3-③ 수정·비활성화.
-      operationId: updatePolicyRule
+      operationId: updateAnswer
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/PolicyRuleUpdate' }
+            schema: { $ref: '#/components/schemas/AnswerUpdate' }
       responses:
         '200':
           description: 수정됨
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/PolicyRule' }
+              schema: { $ref: '#/components/schemas/Answer' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
 
     delete:
-      tags: [policy-rules]
-      summary: 규칙 비활성화
+      tags: [answers]
+      summary: 답변 비활성화
       description: |
         물리 삭제하지 않는다. `is_active = false`로 전환한다.
         과거 판정의 근거를 보존해야 하기 때문이다.
-      operationId: deactivatePolicyRule
+      operationId: deactivateAnswer
       responses:
         '204':
           description: 비활성화됨
@@ -822,8 +935,9 @@ paths:
       description: |
         화면 3-① 대시보드. **이 제품의 성공 지표.**
 
-        검색 정확도나 응답 속도가 아니라 **"모름"이 줄어드는 속도**를 측정한다.
-        모든 값은 `question`과 `knowledge_gap` 집계로 계산되며 별도 집계 테이블이 없다.
+        두 축을 본다. **상대 질문에 얼마나 즉답했나(즉답률)** 와
+        **내가 물으려던 걸 얼마나 물었나(목표 달성률)**.
+        모든 값은 `question`·`session_goal`·`action_item` 집계로 계산되며 별도 집계 테이블이 없다.
       operationId: getCoverageMetrics
       parameters:
         - $ref: '#/components/parameters/DomainFilter'
@@ -856,13 +970,18 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
-    DeferralId:
-      name: deferralId
+    AnswerId:
+      name: answerId
       in: path
       required: true
       schema: { type: string, format: uuid }
-    RuleId:
-      name: ruleId
+    GoalId:
+      name: goalId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ItemId:
+      name: itemId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -937,12 +1056,19 @@ components:
     DetectionMethod:
       type: string
       enum: [rule, model]
-    GapReason:
+    GoalStatus:
       type: string
-      enum: [no_rule, no_knowledge, condition_unmet, unconfirmed_timeline, user_rejected]
-    GapStatus:
+      enum: [pending, covered, missed]
+      description: |
+        `covered` 는 대화에서 다뤄졌다는 뜻이다.
+        발화가 들어올 때마다 목표와 임베딩 매칭해 자동 갱신되며,
+        놓친 경우 사용자가 직접 바꿀 수 있다.
+    ActionItemType:
       type: string
-      enum: [open, resolved, rejected]
+      enum: [follow_up, answer_needed, improvement]
+    ActionItemStatus:
+      type: string
+      enum: [open, done, dropped]
     SourceType:
       type: string
       enum: [release, changelog, merged_pr, open_issue, milestone]
@@ -1024,10 +1150,17 @@ components:
     # ----- participant -----
     ParticipantCreate:
       type: object
+      description: Before 단계에서 입력하는 참석자 정보
       required: [role]
       properties:
         role: { $ref: '#/components/schemas/ParticipantRole' }
-        display_name: { type: string, maxLength: 100, nullable: true }
+        display_name: { type: string, maxLength: 100, nullable: true, example: 김OO }
+        org: { type: string, maxLength: 200, nullable: true, example: Acme Corp }
+        title: { type: string, maxLength: 100, nullable: true, example: 정보보안팀장 }
+        note:
+          type: string
+          nullable: true
+          description: 사전 메모 — 관심사, 이전 미팅 맥락
         voice_profile_id:
           type: string
           nullable: true
@@ -1041,6 +1174,9 @@ components:
         session_id: { type: string, format: uuid }
         role: { $ref: '#/components/schemas/ParticipantRole' }
         display_name: { type: string, nullable: true }
+        org: { type: string, nullable: true, example: Acme Corp }
+        title: { type: string, nullable: true, example: 정보보안팀장 }
+        note: { type: string, nullable: true, description: 사전 메모 }
         speaker_label:
           type: string
           nullable: true
@@ -1146,65 +1282,82 @@ components:
         valid_from: { type: string, format: date }
         valid_until: { type: string, format: date, nullable: true }
 
-    # ----- deferral (knowledge_gap) -----
-    KnowledgeGap:
+    # ----- session-goal -----
+    SessionGoal:
       type: object
-      required: [id, question_id, session_id, domain, question_normalized, intent, reason, status, created_at]
+      description: |
+        내가 미팅에서 물어야 하는 것.
+        `questions`(상대가 묻는 것)와 방향이 반대인 축이다.
+      required: [id, session_id, text, status, sort_order]
       properties:
         id: { type: string, format: uuid }
-        question_id: { type: string, format: uuid }
         session_id: { type: string, format: uuid }
-        domain: { $ref: '#/components/schemas/Domain' }
-        question_normalized: { type: string, example: Edge Functions 셀프호스팅 지원 시점 }
-        intent: { $ref: '#/components/schemas/QuestionIntent' }
-        reason: { $ref: '#/components/schemas/GapReason' }
-        status: { $ref: '#/components/schemas/GapStatus' }
-        resolved_by:
+        text: { type: string, example: 예산 규모와 집행 시점 확인 }
+        status: { $ref: '#/components/schemas/GoalStatus' }
+        covered_by:
           type: string
           format: uuid
           nullable: true
-          description: 이 공백을 해소한 규칙. policy_rule.created_from과 양방향
+          description: 이 목표를 충족시킨 발화 (utterance.id)
+        covered_at: { type: string, format: date-time, nullable: true }
+        covered_text:
+          type: string
+          nullable: true
+          description: 충족 근거가 된 발화 내용 (조인 필드)
+        sort_order: { type: integer }
+
+    # ----- action-item -----
+    ActionItem:
+      type: object
+      required: [id, session_id, type, status, text, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        session_id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/ActionItemType' }
+        status: { $ref: '#/components/schemas/ActionItemStatus' }
+        text: { type: string, example: 온프레미스 지원 시점 확인 후 회신 }
+        due_date: { type: string, format: date, nullable: true }
+        assignee: { type: string, nullable: true }
+        from_question_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 답하지 못한 질문에서 생성된 경우
+        from_goal_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 다루지 못한 목표에서 이월된 경우
         resolved_at: { type: string, format: date-time, nullable: true }
-        rejection_reason: { type: string, nullable: true }
         created_at: { type: string, format: date-time }
 
-    KnowledgeGapSummary:
-      allOf:
-        - $ref: '#/components/schemas/KnowledgeGap'
-        - type: object
-          properties:
-            occurrence_count:
-              type: integer
-              description: |
-                동일 정규화 질문의 발생 횟수. **계산 필드이며 기본 정렬 기준.**
-                "이 12개에 답해 주세요. 각각 3회, 5회 물어봤습니다."
-              example: 5
-            first_seen_at: { type: string, format: date-time, description: 계산 필드 }
+    # ----- summary -----
+    SessionSummary:
+      type: object
+      required: [session_id, summary, generated_at]
+      properties:
+        session_id: { type: string, format: uuid }
+        summary:
+          type: string
+          description: 회의 요약
+        improvements:
+          type: string
+          nullable: true
+          description: 개선점 — 다음에 다르게 할 것
+        goal_coverage:
+          type: number
+          format: float
+          nullable: true
+          description: 목표 달성률. covered / 전체 goal
+          example: 0.66
+        generated_at: { type: string, format: date-time }
+        action_items:
+          type: array
+          description: 이 요약과 함께 생성된 할 일 (조인 필드)
+          items: { $ref: '#/components/schemas/ActionItem' }
 
-    KnowledgeGapDetail:
-      allOf:
-        - $ref: '#/components/schemas/KnowledgeGapSummary'
-        - type: object
-          properties:
-            raw_utterance: { type: string, example: '그거 언제 되나요?' }
-            occurrences:
-              type: array
-              description: 이 질문이 나온 세션 이력
-              items:
-                type: object
-                properties:
-                  session_id: { type: string, format: uuid }
-                  counterpart_org: { type: string }
-                  detected_at: { type: string, format: date-time }
-            evidence_candidates:
-              type: array
-              description: |
-                시스템이 미리 찾아둔 GitHub 근거 후보.
-                승인자가 직접 검색하지 않아도 되게 한다.
-              items: { $ref: '#/components/schemas/Evidence' }
-
-    # ----- policy-rule (response_rule) -----
-    PolicyRuleCreate:
+    # ----- answer (준비된 답변) -----
+    AnswerCreate:
       type: object
       required:
         [domain, question_pattern, intent, response_mode, audience_level,
@@ -1233,7 +1386,7 @@ components:
         valid_from: { type: string, format: date }
         valid_until: { type: string, format: date, nullable: true }
 
-    PolicyRuleUpdate:
+    AnswerUpdate:
       type: object
       description: 부분 수정. 전달된 필드만 반영된다
       properties:
@@ -1249,7 +1402,7 @@ components:
         is_active: { type: boolean }
         valid_until: { type: string, format: date, nullable: true }
 
-    PolicyRule:
+    Answer:
       type: object
       required:
         [id, domain, question_pattern, intent, response_mode, audience_level,
@@ -1266,32 +1419,21 @@ components:
         condition: { type: string, nullable: true }
         fallback_script: { type: string, nullable: true }
         authority_role: { type: string, nullable: true }
-        created_from:
-          type: string
-          format: uuid
-          nullable: true
-          description: |
-            이 규칙이 태어난 공백. knowledge_gap.resolved_by와 양방향을 이룬다.
-            **"쓸수록 좋아진다"는 주장의 데이터 증거.**
         is_active: { type: boolean }
         valid_from: { type: string, format: date }
         valid_until: { type: string, format: date, nullable: true }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
-    PolicyRuleDetail:
+    AnswerDetail:
       allOf:
-        - $ref: '#/components/schemas/PolicyRule'
+        - $ref: '#/components/schemas/Answer'
         - type: object
           properties:
             hit_count:
               type: integer
               description: 이 규칙이 매칭된 횟수. 계산 필드
               example: 12
-            source_gap:
-              allOf: [{ $ref: '#/components/schemas/KnowledgeGap' }]
-              nullable: true
-              description: created_from 역추적 결과
             evidence:
               type: array
               items: { $ref: '#/components/schemas/Evidence' }
@@ -1321,24 +1463,23 @@ components:
     # ----- metrics -----
     CoverageMetrics:
       type: object
-      required: [coverage_rate, open_gap_count, question_count]
+      required: [instant_answer_rate, question_count]
       properties:
-        coverage_rate:
+        instant_answer_rate:
           type: number
           format: float
           minimum: 0
           maximum: 1
-          description: '1 - (공백 생성수 / 질문 총수)'
+          description: '즉답률. escalate 가 아닌 질문 / 전체 질문'
           example: 0.72
-        coverage_delta:
+        goal_coverage_rate:
           type: number
           format: float
-          description: 전 기간 대비 변화량
-          example: 0.08
+          description: '목표 달성률. covered 목표 / 전체 목표'
+          example: 0.66
         question_count: { type: integer, example: 143 }
-        open_gap_count: { type: integer, example: 12 }
-        resolved_gap_count: { type: integer, example: 31 }
-        avg_resolution_days: { type: number, format: float, example: 1.4 }
+        open_action_count: { type: integer, example: 12, description: 미처리 할 일 }
+        answer_needed_count: { type: integer, example: 5, description: 그중 답변이 필요한 것 }
         p50_latency_ms: { type: integer, example: 420 }
         p95_latency_ms: { type: integer, example: 1480 }
         weekly_series:
