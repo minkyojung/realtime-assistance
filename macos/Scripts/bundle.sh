@@ -41,6 +41,10 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BUILT" "$APP/Contents/MacOS/$EXECUTABLE"
 
+# 픽스처 재생 모드(RELAY_LIVE=1 이 아닐 때의 기본)가 읽는다.
+# 번들에 넣어 두면 앱이 소스 트리 없이도 혼자 돈다.
+cp -R Fixtures "$APP/Contents/Resources/"
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

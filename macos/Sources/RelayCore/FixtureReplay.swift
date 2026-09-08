@@ -1,0 +1,169 @@
+import Foundation
+
+/// 녹화해 둔 스트림(`Fixtures/*.sse`)을 서버인 척 되돌려주는 재생 모드.
+///
+/// UI 를 그리는 일은 "고치고 → 보고 → 다시 고치고"의 반복인데, 그 한 사이클마다
+/// docker(Postgres) + `pnpm dev` + OpenAI 호출 대기가 필요하면 작업이 성립하지 않는다.
+/// 여기서는 실제 포트를 열지 않고 `URLProtocol` 로 요청을 가로채 파일을 흘려보낸다.
+/// 테스트의 `FixtureProtocol` 과 같은 기법이고(VCR · MSW · WireMock 계열),
+/// 다르게 쓰는 점 하나는 **시간에 따라 흐르게** 한다는 것이다 — 스켈레톤 → 판정 →
+/// script 차오름 같은 움직이는 상태를 눈으로 봐야 하기 때문이다.
+///
+/// 가로채는 요청은 실서버와 같은 2개다. 응답도 실서버 형태를 그대로 따르므로
+/// `RelayAPI` · `SSEClient` · `SessionController` 는 한 줄도 달라지지 않는다.
+///
+///     let session = FixtureReplay.urlSession()
+///     SessionController(api: RelayAPI(session: session), client: SSEClient(session: session))
+///
+/// 재생본은 **녹화 시점의 판정 결과**다. 파이프라인을 고쳐도 여기 결과는 안 변한다 —
+/// 파이프라인을 검증하려면 실서버로 봐야 한다.
+public enum FixtureReplay {
+    /// `speed` 배속. 2 면 두 배 빠르게 재생한다.
+    public static func urlSession(speed: Double = 1) -> URLSession {
+        ReplayProtocol.speed = max(speed, 0.01)
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [ReplayProtocol.self]
+        return URLSession(configuration: config)
+    }
+
+    /// `Fixtures/` 위치. 번들 안(`Relay.app/Contents/Resources`)을 먼저 보고,
+    /// 없으면 소스 트리로 떨어진다 — `swift run` 처럼 번들이 아닐 때의 경로다.
+    static var directory: URL {
+        if let bundled = Bundle.main.resourceURL?.appendingPathComponent("Fixtures"),
+           FileManager.default.fileExists(atPath: bundled.path) {
+            return bundled
+        }
+        return URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()  // RelayCore
+            .deletingLastPathComponent()  // Sources
+            .deletingLastPathComponent()  // macos
+            .appendingPathComponent("Fixtures")
+    }
+}
+
+/// 재생 전용 세션(`FixtureReplay.urlSession()`)에만 설치되므로 다른 통신에 영향이 없다.
+///
+/// 재생 루프에 `Task` 대신 `DispatchQueue` 를 쓴다. `URLProtocol` 은 시스템이
+/// `startLoading`/`stopLoading` 을 불러 주는 콜백 객체이지 Sendable 값이 아니라서,
+/// `Task` 로 넘기려면 region 격리 검사를 우회해야 한다. 직렬 큐를 쓰면 그 우회 자체가
+/// 필요 없어지고 이벤트 순서도 큐가 보장한다.
+final class ReplayProtocol: URLProtocol, @unchecked Sendable {
+    /// 미리보기는 한 번에 한 세션만 재생한다. 세션 생성 시점에 한 번 정해진다.
+    nonisolated(unsafe) static var speed: Double = 1
+
+    /// 이벤트 사이 간격(초). 픽스처에는 타임스탬프가 없어서 **합성한 값**이다.
+    /// script 가 흐르는 느낌만 재현하면 되므로 delta 만 촘촘하게 둔다.
+    private static let deltaGap = 0.02
+    private static let eventGap = 0.15
+
+    /// 재생을 태우는 직렬 큐. `cancelled` 도 이 큐 위에서만 읽고 쓴다.
+    private let queue = DispatchQueue(label: "relay.fixture-replay")
+    private var cancelled = false
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        if request.httpMethod == "POST" { createSession() } else { streamEvents() }
+    }
+
+    override func stopLoading() {
+        queue.async { self.cancelled = true }
+    }
+
+    // MARK: - POST /api/sessions
+
+    /// 보낸 본문을 그대로 되돌려준다. 상대·컨텍스트를 여기서 또 적으면
+    /// `RelayAPI` 의 것과 갈라지므로, 받은 값에 id 만 붙여 echo 한다.
+    private func createSession() {
+        let sent = (try? JSONSerialization.jsonObject(with: requestBody)) as? [String: Any] ?? [:]
+        let domain = sent["domain"] as? String ?? Domain.sales.rawValue
+
+        var session: [String: Any] = ["id": "\(Self.idPrefix)\(domain)", "domain": domain]
+        session["counterpart_org"] = sent["counterpartOrg"] ?? ""
+        session["context"] = sent["context"] ?? [:]
+
+        guard let body = try? JSONSerialization.data(withJSONObject: ["session": session]) else {
+            client?.urlProtocol(self, didFailWithError: RelayError.badResponse)
+            return
+        }
+        send(status: 201, contentType: "application/json")
+        client?.urlProtocol(self, didLoad: body)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    /// `URLSession` 이 본문을 스트림으로 바꿔 두는 경우가 있어 양쪽을 다 본다.
+    private var requestBody: Data {
+        if let body = request.httpBody { return body }
+        guard let stream = request.httpBodyStream else { return Data() }
+        stream.open()
+        defer { stream.close() }
+
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            guard read > 0 else { break }
+            data.append(buffer, count: read)
+        }
+        return data
+    }
+
+    // MARK: - GET /api/sessions/{id}/stream
+
+    private func streamEvents() {
+        guard let text = try? String(contentsOf: fixtureURL, encoding: .utf8) else {
+            client?.urlProtocol(self, didFailWithError: RelayError.badStatus(404))
+            return
+        }
+        send(status: 200, contentType: "text/event-stream")
+
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: true).map(String.init)
+        queue.async { self.emit(lines, from: 0) }
+    }
+
+    /// 한 줄 보내고, 간격만큼 쉬었다가 다음 줄로.
+    private func emit(_ lines: [String], from index: Int) {
+        guard !cancelled else { return }
+        guard index < lines.count else {
+            client?.urlProtocolDidFinishLoading(self)
+            return
+        }
+
+        let line = lines[index]
+        client?.urlProtocol(self, didLoad: Data("\(line)\n\n".utf8))
+
+        queue.asyncAfter(deadline: .now() + Self.gap(after: line) / Self.speed) {
+            self.emit(lines, from: index + 1)
+        }
+    }
+
+    /// 줄 자체는 원본 그대로 보낸다. 디코딩은 **간격을 고르는 데만** 쓴다 —
+    /// 깨진 줄이 섞여 있어도 재생이 멈추지 않아야 한다.
+    private static func gap(after line: String) -> Double {
+        guard line.hasPrefix("data: "),
+              let event = try? JSONDecoder().decode(
+                  Event.self, from: Data(line.dropFirst(6).utf8)),
+              case .questionDelta = event
+        else { return eventGap }
+        return deltaGap
+    }
+
+    /// 세션 id 에 도메인을 실어 뒀다(`createSession`). 스트림 요청에는 그것만 오기 때문이다.
+    private static let idPrefix = "fixture-"
+
+    private var fixtureURL: URL {
+        let id = request.url?.pathComponents.dropLast().last ?? ""
+        let domain = id.hasPrefix(Self.idPrefix) ? String(id.dropFirst(Self.idPrefix.count)) : id
+        return FixtureReplay.directory.appendingPathComponent("\(domain)-demo.sse")
+    }
+
+    // MARK: -
+
+    private func send(status: Int, contentType: String) {
+        let response = HTTPURLResponse(
+            url: request.url!, statusCode: status, httpVersion: "HTTP/1.1",
+            headerFields: ["Content-Type": contentType])!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+    }
+}

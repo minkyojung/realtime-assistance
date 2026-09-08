@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import RelayCore
 import RelayUI
 
 /// 화면 1 패널 창.
@@ -24,9 +25,22 @@ import RelayUI
 final class PanelWindow {
     let panel: NSPanel
     /// 세션 상태. 창과 수명이 같다.
-    let controller = SessionController()
+    let controller: SessionController
+
+    /// 기본은 **픽스처 재생**이다. 미리보기 실행기의 일은 화면을 보는 것이고,
+    /// 그러자고 매번 docker + `pnpm dev` + OpenAI 를 띄우게 하면 그 일이 안 된다.
+    /// 실서버를 봐야 할 때만 `RELAY_LIVE=1` 로 켠다 (테스트의 실서버 스위트와 같은 이름).
+    static var isLive: Bool { ProcessInfo.processInfo.environment["RELAY_LIVE"] == "1" }
 
     init(size: NSSize = NSSize(width: 440, height: 700)) {
+        if Self.isLive {
+            controller = SessionController()
+        } else {
+            let session = FixtureReplay.urlSession()
+            controller = SessionController(
+                api: RelayAPI(session: session), client: SSEClient(session: session))
+        }
+
         panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: size),
             // .nonactivatingPanel — 패널을 눌러도 뒤 앱(브라우저)이 활성 상태를 유지한다.
