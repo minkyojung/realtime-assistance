@@ -61,16 +61,23 @@ public struct UtteranceBubble: View {
                 .font(.system(size: 14))
                 .foregroundStyle(textColor)
                 .animation(.easeOut(duration: 0.15), value: item.text)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
             if let shownAnswer {
                 SuggestionAnswer(item: shownAnswer, state: askState, onRetry: onRetry)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    // 말 안에 있되 **자기 구역을 갖는다.** 여백은 말풍선 폭을 다 쓰고
+                    // 아래 모서리는 말풍선을 그대로 따라가서, 덧댄 상자가 아니라
+                    // 말풍선의 아랫단으로 읽힌다.
+                    .background(answerShape.fill(answerTint))
             }
         }
         // 답이 붙으면 문단이 들어오므로 말풍선이 폭을 다 쓴다. 짧은 말 하나일 때는
         // 제한을 걸지 않아야 글자만큼만 차지한다(nil = 제한 없음).
         .frame(maxWidth: shownAnswer == nil ? nil : .infinity, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
         .background(background)
     }
 
@@ -93,6 +100,12 @@ public struct UtteranceBubble: View {
             isCounterpart ? Color.primary.opacity(0.07) : Color(nsColor: .controlAccentColor))
     }
 
+    /// 답 구역의 색. 말풍선 색 **위에 얇게 한 겹** 더 얹는 방식이라, 어느 배경에서도
+    /// 말풍선보다 딱 한 단계만 진해진다. 색상을 따로 주면 말풍선이 둘로 보인다.
+    private var answerTint: Color {
+        isCounterpart ? Color.primary.opacity(0.05) : Color.black.opacity(0.12)
+    }
+
     /// 강조색 위에서는 흰 글자. macOS 의 강조색 버튼과 같은 처리다.
     private var textColor: Color {
         if isCounterpart {
@@ -105,14 +118,19 @@ public struct UtteranceBubble: View {
     /// 확정 전에는 꼬리를 달지 않는다 — 아직 그 화자의 마지막 말이 아닐 수 있다.
     private var hasTail: Bool { isLastInRun && item.isFinal }
 
-    private var bubbleShape: UnevenRoundedRectangle {
+    private var bubbleShape: UnevenRoundedRectangle { shape(topRadius: 14) }
+
+    /// 답 구역은 말풍선 아래쪽에 딱 맞게 앉는다 — 위는 각지고 아래만 말풍선을 따른다.
+    private var answerShape: UnevenRoundedRectangle { shape(topRadius: 0) }
+
+    private func shape(topRadius: CGFloat) -> UnevenRoundedRectangle {
         let round: CGFloat = 14
         let tail: CGFloat = 4
         return UnevenRoundedRectangle(
-            topLeadingRadius: round,
+            topLeadingRadius: topRadius,
             bottomLeadingRadius: hasTail && isCounterpart ? tail : round,
             bottomTrailingRadius: hasTail && !isCounterpart ? tail : round,
-            topTrailingRadius: round
+            topTrailingRadius: topRadius
         )
     }
 }

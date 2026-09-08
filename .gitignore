@@ -26,3 +26,6 @@ app/.next/
 app/out/
 app/node_modules/
 app/next-env.d.ts
+
+# Swift 빌드 산출물
+macos/.build/

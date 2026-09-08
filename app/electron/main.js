@@ -37,12 +37,25 @@ async function createWindow() {
       ? {
           transparent: true,
           backgroundColor: '#00000000',
-          vibrancy: 'under-window',
+          vibrancy: 'hud',
           visualEffectState: 'active',
+          // NSPanel(nonactivating). 통화 중에 패널을 클릭해도 Zoom·브라우저의
+          // 포커스를 뺏지 않는다. 이게 HUD 패널의 핵심이고 재질은 부수적이다.
+          type: 'panel',
+          alwaysOnTop: true,
         }
       : { backgroundColor: '#ffffff' }),
     webPreferences: { contextIsolation: true, nodeIntegration: false },
   })
+
+  if (process.platform === 'darwin') {
+    // 'floating': 일반 창보다는 위, 시스템 UI보다는 아래.
+    win.setAlwaysOnTop(true, 'floating')
+    // 다른 Space로 넘어가거나 상대가 풀스크린이어도 계속 따라온다.
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreenScreen: true })
+    // Mission Control 썸네일에는 안 잡히게 한다.
+    win.setHiddenInMissionControl(true)
+  }
 
   const ready = await waitForServer(URL)
   if (!ready) console.warn(`[relay] dev 서버 응답 없음: ${URL}`)

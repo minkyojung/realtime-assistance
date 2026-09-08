@@ -7,8 +7,9 @@ import RelayCore
 /// 생기고, 그 상자가 어느 말에 대한 것인지 화살표와 인용으로 다시 가리켜야 했다.
 /// 같은 말풍선 안에 있으면 그 설명이 전부 필요 없어진다 — 위치가 곧 관계다.
 ///
-/// 그래서 여기에는 배경도, 모서리도, 재질도 없다. 그건 말풍선의 몫이다.
-/// 답이라는 것은 구분선이 아니라 **↳ 표식 하나**로만 말한다.
+/// 다만 안에 있다고 해서 질문과 섞여서는 안 된다. 말풍선 아랫단에 옅은 색 한 겹을
+/// 깔아 **자기 구역**을 준다. 색과 모서리는 말풍선(`UtteranceBubble`)이 그린다 —
+/// 여기는 그 구역 안의 내용만 맡는다.
 ///
 /// 지연 시간(`latencyMs`)은 보여주지 않는다. 미팅 중에 쓸 일이 없는 개발 정보다.
 struct SuggestionAnswer: View {
@@ -31,7 +32,6 @@ struct SuggestionAnswer: View {
                     .padding(.top, 1)
             }
         }
-        .padding(.top, 7)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(verdictLabel)
         .task(id: item.done) {

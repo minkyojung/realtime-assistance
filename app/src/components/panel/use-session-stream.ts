@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import type { FeedItem, SuggestionItem, UtteranceItem } from './types'
+import { reduceFeed, type StreamEvent } from './reduce-feed'
+import type { FeedItem } from './types'
 
 /**
  * SSE 구독 → 대화 피드 상태.
@@ -42,75 +43,12 @@ export function useSessionStream() {
     esRef.current = es
 
     es.onmessage = (msg) => {
-      const e = JSON.parse(msg.data)
-      setFeed((prev) => {
-        const next = [...prev]
-
-        switch (e.type) {
-          // ① 말하는 동안 자막이 채워진다
-          case 'utterance.partial': {
-            const i = next.findIndex((x) => x.kind === 'utterance' && x.id === e.id)
-            const item: UtteranceItem = { kind: 'utterance', id: e.id, role: e.role, text: e.text, isFinal: false }
-            if (i >= 0) next[i] = item
-            else next.push(item)
-            return next
-          }
-          case 'utterance.final': {
-            const i = next.findIndex((x) => x.kind === 'utterance' && x.id === e.tempId)
-            const item: UtteranceItem = {
-              kind: 'utterance', id: e.utterance.id, role: e.utterance.role,
-              text: e.utterance.text, isFinal: true,
-            }
-            if (i >= 0) next[i] = item
-            else next.push(item)
-            return next
-          }
-
-          // ② 질문 감지 → 스켈레톤 카드
-          case 'question.detected':
-            next.push({
-              kind: 'suggestion', id: e.questionId, intent: e.intent, mode: null,
-              headline: '', script: '', condition: null, evidence: [],
-              latencyMs: null, done: false,
-            } satisfies SuggestionItem)
-            return next
-
-          // ③ 판정 도착 → 색과 headline 즉시 표시
-          case 'question.verdict': {
-            const i = next.findIndex((x) => x.kind === 'suggestion' && x.id === e.questionId)
-            if (i < 0) return next
-            const cur = next[i] as SuggestionItem
-            next[i] = {
-              ...cur, mode: e.responseMode, headline: e.headline,
-              condition: e.condition, evidence: e.evidence, latencyMs: e.latencyMs,
-            }
-            return next
-          }
-
-          // ④ 제안 문구가 채워진다
-          case 'question.delta': {
-            const i = next.findIndex((x) => x.kind === 'suggestion' && x.id === e.questionId)
-            if (i < 0) return next
-            const cur = next[i] as SuggestionItem
-            next[i] = { ...cur, script: cur.script + e.delta }
-            return next
-          }
-          case 'question.done': {
-            const i = next.findIndex((x) => x.kind === 'suggestion' && x.id === e.questionId)
-            if (i < 0) return next
-            next[i] = { ...(next[i] as SuggestionItem), script: e.script, done: true }
-            return next
-          }
-
-          case 'script.done':
-            es.close()
-            setRunning(false)
-            return next
-
-          default:
-            return next
-        }
-      })
+      const e = JSON.parse(msg.data) as StreamEvent
+      setFeed((prev) => reduceFeed(prev, e))
+      if (e.type === 'script.done') {
+        es.close()
+        setRunning(false)
+      }
     }
 
     es.onerror = () => { es.close(); setRunning(false) }
