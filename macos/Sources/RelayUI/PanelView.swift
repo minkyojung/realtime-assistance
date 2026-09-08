@@ -17,8 +17,6 @@ import RelayCore
 public struct PanelView: View {
     private let controller: SessionController
 
-    /// 스크롤 위치를 코드에서 옮기기 위한 손잡이.
-    @State private var scrollPosition = ScrollPosition(idType: String.self)
     /// 지금 바닥에 붙어 있는가. 붙어 있을 때만 새 내용을 따라 내려간다.
     @State private var pinnedToBottom = true
     /// 유리들을 한 좌표계로 묶는다. 카드가 이 안에서 신원을 갖는다.
@@ -51,66 +49,77 @@ public struct PanelView: View {
     }
 
     private var flow: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                if let message = controller.errorMessage {
-                    Text(message)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.red)
-                        .padding(.top, 12)
-                }
-                if controller.feed.isEmpty && controller.errorMessage == nil {
-                    Text(controller.running ? "Opening session…" : "No conversation yet.\nStart a meeting below.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 96)
-                }
-                ForEach(rows) { row in
-                    switch row {
-                    case let .utterance(item, first, last):
-                        UtteranceBubble(item, isLastInRun: last)
-                            .padding(.top, first ? 12 : 3)
-                    case let .suggestion(item, replyingTo):
-                        SuggestionCard(item, replyingTo: replyingTo, in: glass)
-                            .padding(.top, 8)
-                            // 새 카드가 유리가 맺히듯 등장한다. 지금은 툭 나타난다.
-                            .glassEffectTransition(.materialize)
+        ScrollViewReader { proxy in
+            ScrollView {
+                // Lazy — 화면에 보이는 행만 만든다. 행 하나하나가 유리라서 눈에 안 보이는
+                // 것까지 전부 살려 두면 스크롤 한 프레임의 비용이 대화 길이에 비례해 커진다.
+                LazyVStack(spacing: 0) {
+                    if let message = controller.errorMessage {
+                        Text(message)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.red)
+                            .padding(.top, 12)
+                    }
+                    if controller.feed.isEmpty && controller.errorMessage == nil {
+                        Text(controller.running ? "Opening session…" : "No conversation yet.\nStart a meeting below.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 96)
+                    }
+                    ForEach(rows) { row in
+                        switch row {
+                        case let .utterance(item, first, last):
+                            UtteranceBubble(item, isLastInRun: last)
+                                .padding(.top, first ? 12 : 3)
+                        case let .suggestion(item, replyingTo):
+                            SuggestionCard(item, replyingTo: replyingTo, in: glass)
+                                .padding(.top, 8)
+                                // 새 카드가 유리가 맺히듯 등장한다. 지금은 툭 나타난다.
+                                .glassEffectTransition(.materialize)
+                        }
                     }
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 14)
+                .padding(.top, 56)    // pill 자리
+                .padding(.bottom, 16)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 14)
-            .padding(.top, 56)    // pill 자리
-            .padding(.bottom, 16)
-        }
-        .scrollContentBackground(.hidden)
-        // 패널이 작아서 스크롤바가 뜨면 말풍선 위를 덮는다. 흐름은 자동 스크롤로 따라간다.
-        .scrollIndicators(.hidden)
-        // 위로는 떠 있는 pill, 아래로는 safeAreaBar 가 콘텐츠를 덮는다. 그냥 두면
-        // 글이 그 경계에서 딱딱하게 잘린다 — 화면에서 가장 웹 같아 보이던 지점이다.
-        // Tahoe 가 이 문제 전용으로 준 API 로, 가장자리에서 콘텐츠가 재질 속으로
-        // 흐려지며 사라진다. `.hard` 는 경계를 또렷하게 끊고 `.soft` 는 번지게 둔다 —
-        // 유리 아래로 글이 지나가는 그림이라 번지는 쪽이 맞다.
-        .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
-        .scrollPosition($scrollPosition)
-        // 대화는 아래가 현재다. 처음 열 때부터 바닥을 본다.
-        // (`.initialOffset` 만 지정한다. 전체 역할에 걸면 콘텐츠가 자랄 때마다
-        //  시스템이 바닥으로 끌어당겨, 사용자가 위로 올려둔 것을 무시한다.)
-        .defaultScrollAnchor(.bottom, for: .initialOffset)
-        // 바닥 근처인지 계속 지켜본다. 32pt 는 손으로 살짝 민 정도는 이탈로 보지 않는 여유다.
-        .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y
-                >= geometry.contentSize.height - geometry.containerSize.height - 32
-        } action: { _, isNearBottom in
-            pinnedToBottom = isNearBottom
-        }
-        // 새 항목이 오거나 문구가 차오르면 따라 내려간다.
-        // **사용자가 위로 올려 뒀으면 따라가지 않는다** — 근거를 확인하려고 올려놨는데
-        // 새 발화가 왔다고 도로 내려가면 그 순간 이 패널은 쓸 수 없는 물건이 된다.
-        .onChange(of: contentSignature) {
-            guard pinnedToBottom else { return }
-            scrollPosition.scrollTo(edge: .bottom)
+            .scrollContentBackground(.hidden)
+            // 패널이 작아서 스크롤바가 뜨면 말풍선 위를 덮는다. 흐름은 자동 스크롤로 따라간다.
+            .scrollIndicators(.hidden)
+            // 위로는 떠 있는 pill, 아래로는 safeAreaBar 가 콘텐츠를 덮는다. 그냥 두면
+            // 글이 그 경계에서 딱딱하게 잘린다 — 화면에서 가장 웹 같아 보이던 지점이다.
+            // Tahoe 가 이 문제 전용으로 준 API 로, 가장자리에서 콘텐츠가 재질 속으로
+            // 흐려지며 사라진다. `.hard` 는 경계를 또렷하게 끊고 `.soft` 는 번지게 둔다 —
+            // 유리 아래로 글이 지나가는 그림이라 번지는 쪽이 맞다.
+            .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
+            // 대화는 아래가 현재다. 처음 열 때부터 바닥을 본다.
+            // (`.initialOffset` 만 지정한다. 전체 역할에 걸면 콘텐츠가 자랄 때마다
+            //  시스템이 바닥으로 끌어당겨, 사용자가 위로 올려둔 것을 무시한다.)
+            .defaultScrollAnchor(.bottom, for: .initialOffset)
+            // 문구가 차오를 때 따라가는 일은 **시스템에 맡긴다.**
+            // 직접 scrollTo 를 부르면 delta 가 20ms 마다 오므로 초당 50번 스크롤을
+            // 명령하게 되고, 그때마다 레이아웃이 다시 돈다. 앵커는 콘텐츠가 자랄 때
+            // 시스템이 알아서 붙잡아 주므로 명령이 0번이 된다.
+            // 사용자가 위로 올려 두면 앵커 자체를 뗀다 — 그래야 끌려가지 않는다.
+            .defaultScrollAnchor(pinnedToBottom ? .bottom : nil, for: .sizeChanges)
+            // 바닥 근처인지 계속 지켜본다. 32pt 는 손으로 살짝 민 정도는 이탈로 보지 않는 여유다.
+            .onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.y
+                    >= geometry.contentSize.height - geometry.containerSize.height - 32
+            } action: { _, isNearBottom in
+                pinnedToBottom = isNearBottom
+            }
+            // 새 **항목**이 붙을 때만 직접 내린다. 글자가 차오르는 건 위 앵커가 맡는다.
+            // **사용자가 위로 올려 뒀으면 따라가지 않는다** — 근거를 확인하려고 올려놨는데
+            // 새 발화가 왔다고 도로 내려가면 그 순간 이 패널은 쓸 수 없는 물건이 된다.
+            .onChange(of: controller.feed.count) {
+                guard pinnedToBottom, let last = rows.last else { return }
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo(last.id, anchor: .bottom)
+                }
+            }
         }
     }
 
@@ -134,17 +143,6 @@ public struct PanelView: View {
         .disabled(controller.running)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-    }
-
-    /// 스크롤을 따라가야 할 변화를 한 값으로 모은다.
-    /// 항목이 늘어날 때뿐 아니라 **마지막 항목의 글자가 차오를 때도** 바뀌어야 한다 —
-    /// partial 자막과 스트리밍 script 가 그 경우다.
-    private var contentSignature: String {
-        switch controller.feed.last {
-        case let .utterance(item):  "\(controller.feed.count):\(item.text.count)"
-        case let .suggestion(item): "\(controller.feed.count):\(item.script.count)"
-        case nil:                   "0"
-        }
     }
 
     private enum Row: Identifiable {
