@@ -50,7 +50,7 @@ async function run(text: string) {
 
 async function main() {
   console.log('판정 + 생성 실측 (NDA 미체결)')
-  const rs = []
+  const rs: Awaited<ReturnType<typeof run>>[] = []
   for (const q of QUESTIONS) rs.push(await run(q))
 
   console.log('\n' + '='.repeat(66))
