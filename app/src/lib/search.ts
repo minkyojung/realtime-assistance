@@ -25,9 +25,11 @@ export async function searchChunks(
   question: string,
   ctx: Record<string, unknown>,
   limit = 5,
+  /** 이미 계산된 임베딩. 규칙 검색과 공유해 호출 1회로 줄인다. */
+  vector?: number[],
 ): Promise<ChunkHit[]> {
   const levels = allowedLevels(ctx)
-  const vec = toVector(await embedOne(question))
+  const vec = toVector(vector ?? (await embedOne(question)))
 
   // halfvec 캐스팅은 인덱스 정의와 동일해야 인덱스를 탄다.
   return query<ChunkHit>(
