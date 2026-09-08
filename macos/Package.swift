@@ -15,6 +15,8 @@ let package = Package(
     ],
     targets: [
         .target(name: "RelayCore", swiftSettings: [.swiftLanguageMode(.v6)]),
+        // 뷰만 있다. 세션 수명·API·리듀서는 전부 RelayCore 다 —
+        // 여기를 통째로 다시 써도 배선은 흔들리지 않는다.
         .target(
             name: "RelayUI",
             dependencies: ["RelayCore"],
@@ -29,11 +31,6 @@ let package = Package(
         .testTarget(
             name: "RelayCoreTests",
             dependencies: ["RelayCore"],
-            swiftSettings: [.swiftLanguageMode(.v6)],
-        ),
-        .testTarget(
-            name: "RelayUITests",
-            dependencies: ["RelayUI", "RelayCore"],
             swiftSettings: [.swiftLanguageMode(.v6)],
         ),
     ]

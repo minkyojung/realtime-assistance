@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import RelayCore
 
 /// 세션 하나의 수명. 코어 세 조각(`RelayAPI` · `SSEClient` · `FeedStore`)을 묶어
 /// 화면이 볼 상태 하나로 만든다. 원본: `app/src/components/panel/use-session-stream.ts`

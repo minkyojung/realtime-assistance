@@ -19,10 +19,15 @@ import Foundation
 /// 파이프라인을 검증하려면 실서버로 봐야 한다.
 public enum FixtureReplay {
     /// `speed` 배속. 2 면 두 배 빠르게 재생한다.
+    ///
+    /// 배속을 전역에 두지 않고 **세션 헤더로 실어 보낸다.** 전역이면 재생 세션이
+    /// 둘 이상일 때(예: 병렬로 도는 테스트 스위트) 서로의 배속을 덮어쓴다.
+    /// `httpAdditionalHeaders` 는 그 세션의 모든 요청에 붙으므로 `RelayAPI` ·
+    /// `SSEClient` 는 이 사실을 몰라도 된다.
     public static func urlSession(speed: Double = 1) -> URLSession {
-        ReplayProtocol.speed = max(speed, 0.01)
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [ReplayProtocol.self]
+        config.httpAdditionalHeaders = [ReplayProtocol.speedHeader: String(max(speed, 0.01))]
         return URLSession(configuration: config)
     }
 
@@ -48,8 +53,12 @@ public enum FixtureReplay {
 /// `Task` 로 넘기려면 region 격리 검사를 우회해야 한다. 직렬 큐를 쓰면 그 우회 자체가
 /// 필요 없어지고 이벤트 순서도 큐가 보장한다.
 final class ReplayProtocol: URLProtocol, @unchecked Sendable {
-    /// 미리보기는 한 번에 한 세션만 재생한다. 세션 생성 시점에 한 번 정해진다.
-    nonisolated(unsafe) static var speed: Double = 1
+    /// 배속을 싣고 오는 헤더. `FixtureReplay.urlSession(speed:)` 가 붙인다.
+    static let speedHeader = "X-Relay-Replay-Speed"
+
+    private var speed: Double {
+        Double(request.value(forHTTPHeaderField: Self.speedHeader) ?? "") ?? 1
+    }
 
     /// 이벤트 사이 간격(초). 픽스처에는 타임스탬프가 없어서 **합성한 값**이다.
     /// script 가 흐르는 느낌만 재현하면 되므로 delta 만 촘촘하게 둔다.
@@ -133,7 +142,7 @@ final class ReplayProtocol: URLProtocol, @unchecked Sendable {
         let line = lines[index]
         client?.urlProtocol(self, didLoad: Data("\(line)\n\n".utf8))
 
-        queue.asyncAfter(deadline: .now() + Self.gap(after: line) / Self.speed) {
+        queue.asyncAfter(deadline: .now() + Self.gap(after: line) / speed) {
             self.emit(lines, from: index + 1)
         }
     }

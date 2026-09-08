@@ -1,14 +1,17 @@
 import Foundation
 import Testing
-import RelayCore
-@testable import RelayUI
+@testable import RelayCore
 
-/// `POST /api/sessions` 와 `GET …/stream` 두 요청을 가로채는 스텁.
-/// 실제 포트를 열지 않고 `URLProtocol` 로 답한다. 전역 상태라 테스트는 직렬로 돈다.
-final class RelayStub: URLProtocol, @unchecked Sendable {
+/// **실패를 주입하는** 스텁. 정상 재생은 `FixtureReplay` 가 맡으므로
+/// 여기서는 그걸로 만들 수 없는 상황만 만든다 — 세션 생성 실패, 서버 `error` 이벤트.
+///
+/// `FixtureProtocol`(본문 하나를 그대로 흘림)로도 안 된다. POST 와 GET 에
+/// **다르게** 답해야 하기 때문이다 (생성은 201 JSON, 스트림은 주입한 본문).
+final class FailureStub: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var createStatus = 201
     nonisolated(unsafe) static var streamBody = Data()
 
+    /// 실패 경로만 보므로 세션 본문은 고정이다. 값이 중요한 검증은 `FixtureReplay` 쪽에 있다.
     static let sessionJSON = Data("""
         {"session":{"id":"s1","counterpart_org":"Acme Corp","domain":"sales",
                     "context":{"nda_signed":false,"stage":"discovery"}}}
@@ -16,7 +19,7 @@ final class RelayStub: URLProtocol, @unchecked Sendable {
 
     static func makeSession() -> URLSession {
         let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [RelayStub.self]
+        config.protocolClasses = [FailureStub.self]
         return URLSession(configuration: config)
     }
 
@@ -38,22 +41,9 @@ final class RelayStub: URLProtocol, @unchecked Sendable {
     override func stopLoading() {}
 }
 
-enum UIFixture {
-    static let directory = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent()  // RelayUITests
-        .deletingLastPathComponent()  // Tests
-        .deletingLastPathComponent()  // macos
-        .appendingPathComponent("Fixtures")
-
-    static func data(_ file: String) throws -> Data {
-        try Data(contentsOf: directory.appendingPathComponent(file))
-    }
-}
-
 @MainActor
-func makeController() -> SessionController {
-    let session = RelayStub.makeSession()
-    return SessionController(api: RelayAPI(session: session), client: SSEClient(session: session))
+func makeController(_ urlSession: URLSession) -> SessionController {
+    SessionController(api: RelayAPI(session: urlSession), client: SSEClient(session: urlSession))
 }
 
 /// `running` 이 내려갈 때까지 기다린다. 스트림이 끝나면 컨트롤러가 스스로 내린다.
@@ -65,33 +55,32 @@ func waitUntilStopped(_ c: SessionController, timeout: Duration = .seconds(10)) 
     }
 }
 
+/// `FailureStub` 이 전역 상태를 쓰므로 직렬로 돈다.
 @Suite("SessionController — 코어를 화면 상태로 묶는다", .serialized)
 struct SessionControllerTests {
 
-    @Test("세션 생성 → 스트림 수신 → 피드가 TS 기대값과 같다")
+    @Test("재생본을 끝까지 돌리면 화면 상태가 기대값과 같다",
+          arguments: [(Domain.sales, "sales-demo", "Acme Corp"),
+                      (.recruiting, "recruiting-demo", "지원자 김OO")])
     @MainActor
-    func fixtureRoundTrip() async throws {
-        RelayStub.createStatus = 201
-        RelayStub.streamBody = try UIFixture.data("sales-demo.sse")
-        let c = makeController()
+    func replayRoundTrip(domain: Domain, fixture: String, org: String) async throws {
+        let c = makeController(FixtureReplay.urlSession(speed: 500))
 
-        c.start(domain: .sales)
+        c.start(domain: domain)
         #expect(c.running)
         await waitUntilStopped(c)
 
         #expect(!c.running)
         #expect(c.errorMessage == nil)
-        #expect(c.session?.counterpartOrg == "Acme Corp")
-        #expect(c.session?.context.ndaSigned == false)
-        let expected = try JSONDecoder().decode([FeedItem].self, from: UIFixture.data("sales-demo.feed.json"))
-        #expect(c.feed == expected)
+        #expect(c.session?.counterpartOrg == org)
+        #expect(c.feed == (try Fixture.expectedFeed(fixture)))
     }
 
     @Test("세션 생성이 실패하면 오류를 남기고 running 을 내린다")
     @MainActor
     func createFails() async throws {
-        RelayStub.createStatus = 500
-        let c = makeController()
+        FailureStub.createStatus = 500
+        let c = makeController(FailureStub.makeSession())
 
         c.start(domain: .sales)
         await waitUntilStopped(c)
@@ -105,9 +94,9 @@ struct SessionControllerTests {
     @Test("서버 error 이벤트는 화면 오류가 된다")
     @MainActor
     func serverErrorEvent() async throws {
-        RelayStub.createStatus = 201
-        RelayStub.streamBody = Data("data: {\"type\":\"error\",\"message\":\"boom\"}\n\n".utf8)
-        let c = makeController()
+        FailureStub.createStatus = 201
+        FailureStub.streamBody = Data("data: {\"type\":\"error\",\"message\":\"boom\"}\n\n".utf8)
+        let c = makeController(FailureStub.makeSession())
 
         c.start(domain: .sales)
         await waitUntilStopped(c)
@@ -119,27 +108,27 @@ struct SessionControllerTests {
     @Test("다시 시작하면 이전 상태가 지워진다")
     @MainActor
     func restartClears() async throws {
-        RelayStub.createStatus = 201
-        RelayStub.streamBody = Data("data: {\"type\":\"error\",\"message\":\"boom\"}\n\n".utf8)
-        let c = makeController()
+        FailureStub.createStatus = 201
+        FailureStub.streamBody = Data("data: {\"type\":\"error\",\"message\":\"boom\"}\n\n".utf8)
+        let c = makeController(FailureStub.makeSession())
         c.start(domain: .sales)
         await waitUntilStopped(c)
         #expect(c.errorMessage == "boom")
 
-        RelayStub.streamBody = try UIFixture.data("recruiting-demo.sse")
+        FailureStub.streamBody = try Fixture.sse("recruiting-demo")
         c.start(domain: .recruiting)
         #expect(c.errorMessage == nil)
         #expect(c.feed.isEmpty)
         await waitUntilStopped(c)
 
         #expect(c.errorMessage == nil)
-        let expected = try JSONDecoder().decode([FeedItem].self, from: UIFixture.data("recruiting-demo.feed.json"))
-        #expect(c.feed == expected)
+        #expect(c.feed == (try Fixture.expectedFeed("recruiting-demo")))
     }
 }
 
 /// 실서버가 필요하다. `pnpm dev` 를 띄운 뒤 `RELAY_LIVE=1 swift test` 로 켠다.
 /// 화면이 보는 상태 그대로 — 세션·타이머·피드·종료 — 를 한 번에 확인한다.
+/// 재생 모드가 검증하지 못하는 것, 즉 **파이프라인 자체**가 여기서만 걸린다.
 @Suite("SessionController 실서버 (RELAY_LIVE=1)",
        .enabled(if: ProcessInfo.processInfo.environment["RELAY_LIVE"] == "1"))
 struct SessionControllerLiveTests {
