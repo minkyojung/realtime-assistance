@@ -31,8 +31,8 @@ func TestViewShowsReason(t *testing.T) {
 
 	for _, want := range []string{
 		"한 번도 재생하지 않았습니다", // F2 선정 근거
-		"미재생 7",              // 상태줄 요약
-		"● 재생중",              // 헤더 상태
+		"7 never played",       // 상태줄 요약
+		"● Playing",            // 헤더 상태
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("화면에 %q 가 없다", want)

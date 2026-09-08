@@ -67,7 +67,7 @@ func progress(width int, ratio float64) string {
 		ratio = 1
 	}
 	filled := int(float64(width-1) * ratio)
-	return stAccent.Render(strings.Repeat("━", filled)+"●") +
+	return stBrand.Render(strings.Repeat("━", filled)+"●") +
 		stFaint.Render(strings.Repeat("─", width-1-filled))
 }
 
@@ -77,7 +77,7 @@ func mmss(ms int) string {
 }
 
 func humanMinutes(ms int) string {
-	return fmt.Sprintf("%d분", ms/60000)
+	return fmt.Sprintf("%d min", ms/60000)
 }
 
 // tokens 는 1240 을 1.2k 로 줄인다. 상태줄이 좁기 때문이다.

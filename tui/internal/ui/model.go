@@ -27,7 +27,7 @@ type Model struct {
 
 func New() Model {
 	ta := textarea.New()
-	ta.Placeholder = "무엇을 들을까요?   / 명령   ? 도움말"
+	ta.Placeholder = "What do you want to hear?    /  commands     ?  help"
 	ta.SetHeight(1)
 	ta.CharLimit = 500
 	ta.ShowLineNumbers = false
@@ -109,16 +109,16 @@ func styleInput(ta *textarea.Model) {
 		st.CursorLine = lipgloss.NewStyle()
 		st.EndOfBuffer = lipgloss.NewStyle()
 		st.Text = lipgloss.NewStyle().Foreground(colFg)
-		st.Prompt = lipgloss.NewStyle().Foreground(colAccent)
+		st.Prompt = lipgloss.NewStyle().Foreground(colBrand)
 		st.Placeholder = lipgloss.NewStyle().Foreground(colFaint)
 	}
 	ta.SetStyles(styles)
 }
 
 func header(s api.Session, w int) string {
-	state := stPlaying.Render("● 재생중")
+	state := stBrand.Render("● Playing")
 	if s.Status == api.Ended {
-		state = stDim.Render("○ 종료됨")
+		state = stFaint.Render("○ Ended")
 	}
 	return row(stTitle.Render(truncate(s.Title, w-12)), state, w)
 }
@@ -126,10 +126,10 @@ func header(s api.Session, w int) string {
 // 상태줄 — 왼쪽은 큐 요약, 오른쪽은 누적 사용량.
 // 사용량을 상시 노출하는 것은 agentic CLI 의 관례다. docs/03 참조.
 func statusBar(s api.Session, w int) string {
-	left := stDim.Render("큐가 비어 있음")
+	left := stDim.Render("Queue is empty")
 	if q := s.Summary; q != nil {
-		left = stDim.Render(fmt.Sprintf("%d곡 · %s · ", q.TrackCount, humanMinutes(q.TotalDurationMs))) +
-			stNever.Render(fmt.Sprintf("미재생 %d", q.NeverPlayedCount))
+		left = stDim.Render(fmt.Sprintf("%d tracks · %s · ", q.TrackCount, humanMinutes(q.TotalDurationMs))) +
+			stFaint.Render(fmt.Sprintf("%d never played", q.NeverPlayedCount))
 	}
 	u := s.Usage
 	right := stFaint.Render(fmt.Sprintf("↑%s ↓%s  $%.4f",

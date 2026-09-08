@@ -12,9 +12,7 @@ import (
 // S1 재생 뷰의 본문.
 //
 // 이 화면이 주장하는 것은 하나다 — 고른 이유를 말한다(F2).
-// 곡 제목보다 근거 한 줄이 더 눈에 띄어야 한다.
-
-var artShades = []string{"#5B6078", "#6E738D", "#8087A2", "#6E738D", "#5B6078"}
+// 곡 제목보다 근거 한 줄이 더 오래 읽혀야 한다.
 
 func viewPlaying(s api.Session, w int) string {
 	var b strings.Builder
@@ -24,7 +22,7 @@ func viewPlaying(s api.Session, w int) string {
 		items = *s.QueueItems
 	}
 	if len(items) == 0 {
-		return stDim.Render("큐가 비어 있습니다.")
+		return stDim.Render("Queue is empty")
 	}
 
 	cur := items[0]
@@ -65,14 +63,14 @@ func nowPlaying(it api.QueueItem, w int) string {
 
 	// 선정 근거. 이 한 줄이 이 제품의 핵심 주장이다.
 	if it.Reason != nil {
-		lines = append(lines, stNever.Render("▸ ")+stFaint.Render(truncate(*it.Reason, infoW-2)))
+		lines = append(lines, stBrand.Render("▸ ")+stDim.Render(truncate(*it.Reason, infoW-2)))
 	} else {
 		// L4 실패 시 근거 없이 곡만 표시한다. 재생은 막지 않는다.
-		lines = append(lines, stFaint.Render("▸ (근거를 만들지 못했습니다)"))
+		lines = append(lines, stFaint.Render("▸ (no reason generated)"))
 	}
 
 	pos := data.PlaybackPositionMs
-	timeLabel := fmt.Sprintf(" %s / %s", mmss(pos), mmss(t.DurationMs))
+	timeLabel := fmt.Sprintf("  %s / %s", mmss(pos), mmss(t.DurationMs))
 	barW := infoW - lipgloss.Width(timeLabel)
 	if barW < 4 {
 		barW = 4
@@ -89,12 +87,13 @@ func nowPlaying(it api.QueueItem, w int) string {
 // upNext — 다음 곡들. 각 줄 오른쪽에 근거를 흐리게 붙인다.
 func upNext(rest []api.QueueItem, w int) string {
 	var b strings.Builder
-	b.WriteString(stDim.Render("다음"))
+	b.WriteString(stFaint.Render("Up next"))
 	b.WriteString("\n")
 
 	for _, it := range rest {
-		num := stFaint.Render(fmt.Sprintf("%d. ", it.Position))
-		left := num + stFg(it.Track.Title) + stMeta.Render(" — "+it.Track.Artist.Name)
+		left := stFaint.Render(fmt.Sprintf("%d. ", it.Position)) +
+			stBody.Render(it.Track.Title) +
+			stMeta.Render(" — "+it.Track.Artist.Name)
 
 		reason := ""
 		if it.Reason != nil {
@@ -109,13 +108,8 @@ func upNext(rest []api.QueueItem, w int) string {
 		b.WriteString("\n")
 	}
 
-	if data.HiddenQueueCount > 0 {
-		b.WriteString(stFaint.Render(
-			fmt.Sprintf("… %d곡 더, ctrl+o 로 펼침", data.HiddenQueueCount)))
+	if n := data.HiddenQueueCount; n > 0 {
+		b.WriteString(stFaint.Render(fmt.Sprintf("… %d more · ctrl+o to expand", n)))
 	}
 	return b.String()
-}
-
-func stFg(sTxt string) string {
-	return lipgloss.NewStyle().Foreground(colFg).Render(sTxt)
 }
