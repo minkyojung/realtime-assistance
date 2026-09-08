@@ -63,13 +63,9 @@ func (m Model) viewSidebar(height int) string {
 		}
 
 		label := truncate(s.label, sidebarWidth-2)
-		switch {
-		case i == m.sectionIdx && m.focus == focusSidebar:
-			// 선택 + 포커스 — 브랜드 레일
+		if i == m.sectionIdx {
 			write(stBrand.Render("▌") + stBrandBold.Render(" "+label))
-		case i == m.sectionIdx:
-			write(stBrand.Render("▌") + stBody.Render(" "+label))
-		default:
+		} else {
 			write("  " + stDim.Render(label))
 		}
 	}

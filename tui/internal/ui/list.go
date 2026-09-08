@@ -104,11 +104,7 @@ func (m Model) renderRow(r listRow, selected bool, w int) string {
 	// 선택 표시는 왼쪽 레일이다. 배경을 채우면 채워진 빨강 = 오류 규칙과 부딪힌다.
 	rail := "  "
 	if selected {
-		if m.focus == focusList {
-			rail = stBrand.Render("▌ ")
-		} else {
-			rail = stTrackHead.Render("▌ ")
-		}
+		rail = stBrand.Render("▌ ")
 	}
 	inner := w - 2
 

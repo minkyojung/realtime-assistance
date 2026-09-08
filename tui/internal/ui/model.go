@@ -22,14 +22,6 @@ import (
 //
 // 사이드바가 무엇을 고르든 목록 패널 하나가 다 그린다. 그래서 화면이 늘지 않는다.
 
-type focusArea int
-
-const (
-	focusList focusArea = iota
-	focusSidebar
-	focusInput
-)
-
 type Model struct {
 	sections   []section
 	sectionIdx int
@@ -37,7 +29,6 @@ type Model struct {
 	listIdx int
 	listTop int
 
-	focus focusArea
 	input textarea.Model
 
 	// 재생 상태. 서버 연동 전까지는 로컬 상태다.
@@ -61,10 +52,11 @@ func New() Model {
 	ta.Prompt = "› "
 	styleInput(&ta)
 
+	ta.Focus() // 입력창은 늘 활성이다. 타이핑이 언제나 먼저 온다.
+
 	m := Model{
 		sections: buildSections(l),
 		input:    ta,
-		focus:    focusList,
 		queue:    data.Queue(),
 		playing:  true,
 		usage:    api.Usage{PromptTokens: 1240, CompletionTokens: 380, CostUsd: 0.0031},
@@ -82,7 +74,7 @@ func (m Model) Init() tea.Cmd { return textarea.Blink }
 // 입력창에 있으면 목록을 즉시 걸러 보여준다. 별도 검색 화면을 두지 않는 이유다.
 func (m Model) searching() bool {
 	v := strings.TrimSpace(m.input.Value())
-	return m.focus == focusInput && v != "" && !strings.HasPrefix(v, "/")
+	return v != "" && !strings.HasPrefix(v, "/")
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -93,78 +85,79 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyPressMsg:
+		// 입력창은 늘 활성이므로, 여기서 가로채는 키만 목록·섹션 조작이다.
+		// 글자는 전부 입력창으로 흘려보낸다.
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc":
-			if m.focus == focusInput {
+			if m.input.Value() != "" {
 				m.input.Reset()
-				m.focus = focusList
+				m.clampList()
 				return m, nil
 			}
 			return m, tea.Quit
+
+		case "up", "ctrl+p":
+			m.listIdx = clamp(m.listIdx-1, 0, maxInt(m.rowCount()-1, 0))
+			m.clampList()
+			return m, nil
+		case "down", "ctrl+n":
+			m.listIdx = clamp(m.listIdx+1, 0, maxInt(m.rowCount()-1, 0))
+			m.clampList()
+			return m, nil
+
 		case "tab":
-			m.focus = (m.focus + 1) % 3
+			m.sectionIdx = (m.sectionIdx + 1) % len(m.sections)
+			m.listIdx, m.listTop = 0, 0
 			return m, nil
+		case "shift+tab":
+			m.sectionIdx = (m.sectionIdx - 1 + len(m.sections)) % len(m.sections)
+			m.listIdx, m.listTop = 0, 0
+			return m, nil
+
 		case "enter":
-			if m.focus == focusInput {
+			// 입력이 있으면 요청, 없으면 선택한 곡을 튼다.
+			if strings.TrimSpace(m.input.Value()) != "" {
 				m.input.Reset()
-				m.focus = focusList
+				m.clampList()
+				return m, nil
 			}
-			return m, nil
-		}
-
-		if m.focus != focusInput {
-			if handled, mm := m.handleNav(msg.String()); handled {
-				return mm, nil
-			}
-			// 글자를 치면 곧바로 입력창으로 넘어간다.
-			if len(msg.String()) == 1 || msg.String() == "/" {
-				m.focus = focusInput
-			}
+			return m.playSelected(), nil
 		}
 	}
 
-	if m.focus == focusInput {
-		var cmd tea.Cmd
-		m.input, cmd = m.input.Update(msg)
-		m.clampList()
-		return m, cmd
-	}
-	return m, nil
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	m.clampList()
+	return m, cmd
 }
 
-func (m Model) handleNav(key string) (bool, Model) {
-	switch key {
-	case "up", "k":
-		if m.focus == focusSidebar {
-			m.sectionIdx = clamp(m.sectionIdx-1, 0, len(m.sections)-1)
-			m.listIdx, m.listTop = 0, 0
-		} else {
-			m.listIdx = clamp(m.listIdx-1, 0, maxInt(m.rowCount()-1, 0))
-		}
-		m.clampList()
-		return true, m
-	case "down", "j":
-		if m.focus == focusSidebar {
-			m.sectionIdx = clamp(m.sectionIdx+1, 0, len(m.sections)-1)
-			m.listIdx, m.listTop = 0, 0
-		} else {
-			m.listIdx = clamp(m.listIdx+1, 0, maxInt(m.rowCount()-1, 0))
-		}
-		m.clampList()
-		return true, m
-	case "left", "h":
-		m.focus = focusSidebar
-		return true, m
-	case "right", "l":
-		m.focus = focusList
-		return true, m
-	case " ":
-		m.playing = !m.playing
-		return true, m
+// 목록에서 고른 곡을 재생 중으로 만든다. 서버 연동 전까지는 로컬 상태만 바꾼다.
+func (m Model) playSelected() Model {
+	rows := m.rows()
+	if m.listIdx < 0 || m.listIdx >= len(rows) || rows[m.listIdx].track == nil {
+		return m
 	}
-	return false, m
+	t := *rows[m.listIdx].track
+	m.nowPlayingID = t.Id
+	m.positionMs = 0
+	m.playing = true
+	// 큐에 없는 곡이면 근거 없이 들어간다 — 사람이 직접 고른 것이다.
+	found := false
+	for _, it := range m.queue {
+		if it.Track.Id == t.Id {
+			found = true
+			break
+		}
+	}
+	if !found {
+		m.queue = append([]api.QueueItem{{
+			Id: t.Id, SessionId: 1, Position: 0, Track: t,
+			State: api.Playing, Origin: api.QueueItemOriginManual,
+		}}, m.queue...)
+	}
+	return m
 }
 
 // clampList — 선택 행이 늘 보이도록 스크롤 위치를 맞춘다.
@@ -181,13 +174,18 @@ func (m *Model) clampList() {
 	m.listTop = clamp(m.listTop, 0, maxInt(n-h, 0))
 }
 
-// 세로 예산: 헤더1 + 룰1 + 목록 + 룰1 + 근거(0|1) + 입력1 + 룰1 + 재생바1 + 여백2
+// 한 번에 보여줄 목록 줄 수의 상한.
+// 화면을 꽉 채우면 읽을 게 아니라 스캔할 것이 되어버린다.
+const maxListRows = 14
+
+// 세로 예산: 재생바1 + 룰1 + 목록 + 룰1 + 근거(0|1) + 입력1 + 여백2
 func (m Model) listHeight() int {
-	reserved := 8
+	reserved := 6
 	if _, ok := m.viewReason(10); ok {
 		reserved++
 	}
-	return maxInt(m.h-reserved, 3)
+	h := maxInt(m.h-reserved, 3)
+	return minInt(h, maxListRows)
 }
 
 func (m Model) View() tea.View {
@@ -199,8 +197,9 @@ func (m Model) View() tea.View {
 	listH := m.listHeight()
 
 	var b strings.Builder
-	// 제목줄은 목록 쪽에만 둔다. 사이드바의 LIBRARY 와 겹치지 않게.
-	b.WriteString(strings.Repeat(" ", sidebarWidth+1) + m.listHeader(listW))
+	// 지금 재생 중인 곡이 화면의 첫 줄이다.
+	// 섹션 제목과 곡 수는 뺐다 — 사이드바의 레일이 이미 어디인지 말해준다.
+	b.WriteString(m.viewPlayer(w))
 	b.WriteString("\n")
 	b.WriteString(ruleBrand(w))
 	b.WriteString("\n")
@@ -219,10 +218,6 @@ func (m Model) View() tea.View {
 		b.WriteString("\n")
 	}
 	b.WriteString(m.input.View())
-	b.WriteString("\n")
-	b.WriteString(rule(w))
-	b.WriteString("\n")
-	b.WriteString(m.viewPlayer(w))
 
 	v := tea.NewView(lipgloss.NewStyle().Padding(1, 1).Render(b.String()))
 	v.AltScreen = true
@@ -244,6 +239,13 @@ func styleInput(ta *textarea.Model) {
 	}
 	styles.Cursor.Color = colBrand
 	ta.SetStyles(styles)
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func clamp(v, lo, hi int) int {

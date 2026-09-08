@@ -42,17 +42,32 @@ func TestViewShowsLibraryAndPlayer(t *testing.T) {
 	}
 }
 
-// 사이드바를 옮기면 목록이 실제로 바뀌는지.
-func TestSidebarSwitchesList(t *testing.T) {
+// tab 으로 섹션을 옮기면 목록이 실제로 바뀌는지.
+func TestTabSwitchesSection(t *testing.T) {
 	var m tea.Model = New()
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	first := m.View().Content
 
-	m, _ = m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"}) // 사이드바로 포커스
-	for i := 0; i < 2; i++ {
-		m, _ = m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
-	}
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	if m.View().Content == first {
-		t.Error("사이드바를 옮겼는데 목록이 그대로다")
+		t.Error("tab 을 눌렀는데 목록이 그대로다")
+	}
+}
+
+// 글자를 치면 입력창에 들어가고 목록이 걸러지는지.
+// 입력창이 늘 활성이어야 한다 — 이게 깨지면 아무것도 칠 수 없다.
+func TestTypingFiltersList(t *testing.T) {
+	var m tea.Model = New()
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+
+	for _, r := range "oasis" {
+		m, _ = m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	out := m.View().Content
+	if !strings.Contains(out, "oasis") {
+		t.Fatal("친 글자가 입력창에 없다 — 입력창이 활성이 아니다")
+	}
+	if strings.Contains(out, "Please Wait for Me") {
+		t.Error("검색어를 쳤는데 목록이 걸러지지 않았다")
 	}
 }
