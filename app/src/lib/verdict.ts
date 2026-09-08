@@ -46,6 +46,19 @@ export type Verdict = {
  *  단독 판정 근거가 아니다. */
 const RULE_MAX_DISTANCE = 0.45
 
+/** 근거 채택 임계값.
+ *
+ *  `searchChunks` 는 상위 k건을 무조건 돌려준다 — 코퍼스에 답이 없어도
+ *  "제일 덜 먼" 청크가 나온다. 그걸 그대로 근거로 붙이면 온프레미스 질문에
+ *  MCP 클라이언트 문서가 출처로 달린다(실측 0.747). 근거를 눌러본 사람이
+ *  엉뚱한 문서를 보는 순간 답 자체의 신뢰가 깨지므로, 먼 청크는 버리고
+ *  근거 없음으로 간다.
+ *
+ *  값의 근거 — 실측에서 관련 근거는 0.51~0.61, 무관한 근거는 0.75 이상에
+ *  몰렸다. `scripts/verify-search.ts` 도 0.75 초과를 "근거 부족"으로 센다.
+ *  그 사이에서 관련 쪽에 여유를 두고 잡았다. */
+export const EVIDENCE_MAX_DISTANCE = 0.65
+
 export async function searchRules(
   question: string,
   intent: Intent,
@@ -72,7 +85,7 @@ export async function searchRules(
 
 /** 조건 문자열이 세션 컨텍스트에서 충족되는지 본다.
  *  MVP에서는 nda_signed 만 다룬다. */
-function conditionMet(condition: string | null, ctx: Record<string, unknown>): boolean {
+export function conditionMet(condition: string | null, ctx: Record<string, unknown>): boolean {
   if (!condition) return true
   if (/NDA/i.test(condition)) return ctx.nda_signed === true
   return true
@@ -92,12 +105,14 @@ export async function decide(
   const vector = await embedOne(normalized)
 
   // 1. 규칙 검색 + 근거 검색을 병렬로. 1.5초 예산에서 순차는 불가능하다.
-  const [rules, evidence] = await Promise.all([
+  const [rules, allEvidence] = await Promise.all([
     searchRules(normalized, intent, ctx, 3, vector),
     searchChunks(normalized, ctx, 3, vector),
   ])
 
   const rule = rules[0] && rules[0].distance <= RULE_MAX_DISTANCE ? rules[0] : null
+  // 규칙에 임계값이 있는 것과 같은 이유로 근거에도 하한을 둔다.
+  const evidence = allEvidence.filter((e) => e.distance <= EVIDENCE_MAX_DISTANCE)
 
   // 2. 규칙이 없을 때만 의도 정책이 작동한다.
   //

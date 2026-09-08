@@ -8,17 +8,22 @@
  *     -> 의도 추출              (규칙, 0ms)
  *     -> 판정                   (규칙·근거 병렬 검색, 임베딩 1회)
  *     -> headline 즉시 확정      (모델 없음)
- *     -> script 스트리밍         (모델 1회)
  *     -> 매칭 실패 시 공백 기록
  *
- * 무거운 모델 호출은 script 생성 1회뿐이다.
+ * **여기에는 모델 호출이 없다.** 답변 문구는 사용자가 카드의 버튼을 눌렀을 때
+ * `POST /api/questions/{id}/answer` 에서 만든다 (`lib/answer.ts`).
+ *
+ * 왜 옮겼는가 — 질문마다 자동으로 답을 만들면 대화를 끊지 않으려고 1.5초 안에
+ * 검색까지 끝내야 한다. 그 예산으로는 어휘 불일치를 못 고쳐서 실제로 온프레미스
+ * 질문에 MCP 클라이언트 문서가 근거로 붙었다(거리 0.747). 게다가 상대의 모든
+ * 질문에 답이 필요한 것도 아니다. 눌렀을 때만 돌면 몇 초를 써도 되므로
+ * HyDE·재검색이 들어간다 — `hyde.ts` 가 못 쓴다고 적어 둔 그 1초가 여기서 열린다.
  */
 import { query, queryOne } from '@/lib/db'
 import { detectQuestion } from '@/lib/detect'
 import { extractIntent, type Intent } from '@/lib/intent'
 import { decide, type ResponseMode } from '@/lib/verdict'
 import { buildHeadline } from '@/lib/headline'
-import { streamAnswer } from '@/lib/generate'
 import type { ChunkHit } from '@/lib/search'
 import type { Session } from '@/lib/session'
 
@@ -33,7 +38,11 @@ export type UtteranceRow = {
   ended_at: string
 }
 
-/** 파이프라인이 화면으로 밀어 보내는 이벤트. */
+/** 화면으로 나가는 이벤트.
+ *
+ *  `question.delta` · `question.done` 은 이 파이프라인이 아니라 답변 경로
+ *  (`lib/answer.ts`)가 보낸다. 채널은 다르지만 형식이 같아야 화면 리듀서가
+ *  하나로 남는다 — 그래서 타입은 여기 함께 둔다. */
 export type PipelineEvent =
   | { type: 'utterance'; utterance: UtteranceRow }
   | { type: 'question.detected'; questionId: string; normalized: string; intent: Intent }
@@ -145,14 +154,5 @@ export async function* processUtterance(
     yield { type: 'gap.created', questionId, gapId: gap!.id, reason: d.gapReason }
   }
 
-  // 문구 생성 — 무거운 모델 호출은 여기 한 번뿐이다.
-  let script = ''
-  for await (const delta of streamAnswer({
-    question: normalized, intent, mode: d.responseMode,
-    ctx: session.context, evidence: d.evidence, rule: d.rule,
-  })) {
-    script += delta
-    yield { type: 'question.delta', questionId, delta }
-  }
-  yield { type: 'question.done', questionId, script: script.trim(), totalMs: Date.now() - t0 }
+  // 여기서 끝난다. 답변 문구는 버튼을 눌렀을 때 `lib/answer.ts` 가 만든다.
 }

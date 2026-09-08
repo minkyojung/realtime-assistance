@@ -11,6 +11,7 @@
 import './_env'
 import { createSession, participantByRole } from '@/lib/session'
 import { saveUtterance, processUtterance } from '@/lib/pipeline'
+import { answerQuestion } from '@/lib/answer'
 import { resolveGap, listGaps } from '@/lib/gaps'
 import { pool, query, queryOne } from '@/lib/db'
 
@@ -26,9 +27,18 @@ async function ask(org: string) {
     sessionId: session.id, participantId: p!.id, text: Q, hasQuestionMark: true,
   })
   let out: { mode: string; headline: string; ms: number; script: string } | null = null
+  let questionId = ''
   for await (const ev of processUtterance(session, utt)) {
-    if (ev.type === 'question.verdict') out = { mode: ev.responseMode, headline: ev.headline, ms: ev.latencyMs, script: '' }
-    if (ev.type === 'question.done' && out) out.script = ev.script
+    if (ev.type === 'question.verdict') {
+      out = { mode: ev.responseMode, headline: ev.headline, ms: ev.latencyMs, script: '' }
+      questionId = ev.questionId
+    }
+  }
+  // 문구는 버튼을 눌러야 나온다. 검증 스크립트가 그 버튼을 대신 누른다.
+  if (out && questionId) {
+    for await (const ev of answerQuestion(questionId)) {
+      if (ev.type === 'question.done') out.script = ev.script
+    }
   }
   return out!
 }

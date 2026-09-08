@@ -10,9 +10,11 @@ export const runtime = 'nodejs'
  * 설계 문서에서는 WebSocket이지만 단방향 푸시만 필요하므로 SSE로 구현한다.
  * 이벤트 종류와 순서는 동일하다.
  *
- * 두 종류의 스트리밍이 이 채널로 함께 나간다.
- *   1. utterance.partial  말하는 동안 자막이 채워짐 (STT 중간 결과 대응)
- *   2. question.delta     말이 끝난 뒤 제안 문구가 채워짐 (LLM)
+ * 이 채널로 나가는 스트리밍은 하나뿐이다 — `utterance.partial`(말하는 동안
+ * 자막이 채워짐, STT 중간 결과 대응).
+ *
+ * 제안 문구(`question.delta`)는 여기로 오지 않는다. 사용자가 카드의 버튼을 눌렀을 때
+ * `POST /api/questions/{id}/answer` 가 같은 형식으로 흘려보낸다.
  */
 
 /** ScriptedSource: 한 줄을 글자 단위로 흘려보내 실제 발화처럼 보이게 한다. */

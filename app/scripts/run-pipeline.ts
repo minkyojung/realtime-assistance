@@ -2,6 +2,7 @@
 import './_env'
 import { createSession, participantByRole } from '@/lib/session'
 import { saveUtterance, processUtterance } from '@/lib/pipeline'
+import { answerQuestion } from '@/lib/answer'
 import { DEMO_SCRIPT } from '@/lib/scripted-source'
 import { pool, query } from '@/lib/db'
 
@@ -27,6 +28,7 @@ async function main() {
 
     let printed = false
     let script = ''
+    let questionId = ''
     for await (const ev of processUtterance(session, utt)) {
       if (ev.type === 'utterance') {
         const who = line.role === 'host' ? '나  ' : '고객'
@@ -34,12 +36,20 @@ async function main() {
       }
       if (ev.type === 'question.verdict') {
         latencies.push(ev.latencyMs)
+        questionId = ev.questionId
         console.log(`       ${ICON[ev.responseMode]} ${ev.headline}   (${ev.latencyMs}ms · 근거 ${ev.evidence.length}건)`)
         if (ev.condition) console.log(`          ⚠ ${ev.condition}`)
         printed = true
       }
       if (ev.type === 'gap.created') console.log(`          ↳ 공백 기록 (${ev.reason})`)
-      if (ev.type === 'question.done') script = ev.script
+    }
+
+    // 문구는 파이프라인이 만들지 않는다 — 화면에서 버튼을 눌러야 도는 경로다.
+    // 여기서는 그 버튼을 대신 눌러 전체 흐름을 한 번에 본다.
+    if (questionId) {
+      for await (const ev of answerQuestion(questionId)) {
+        if (ev.type === 'question.done') script = ev.script
+      }
     }
     if (printed && script) {
       console.log(`          "${script.replace(/\n+/g, ' ').slice(0, 150)}"`)
