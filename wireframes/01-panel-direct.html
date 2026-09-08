@@ -1,0 +1,132 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<title>WF-01 실시간 어시스트 패널 — 즉답</title>
+<link rel="stylesheet" href="_style.css"></head><body>
+
+<div class="doc-head">
+  <h1>WF-01 · 실시간 어시스트 패널 — 즉답 상태 (response_mode = direct)</h1>
+  <div class="meta">Relay / 액터: 발화자 / 기능 A1–A10 / 근거: docs/05-화면-필드.md 화면 1</div>
+</div>
+
+<div class="layout">
+
+  <!-- ============ 화면 ============ -->
+  <div class="frame">
+    <div class="frame-title">실시간 어시스트 패널 — 데스크톱 클라이언트 (본인 전용)</div>
+
+    <!-- ① 세션 헤더 -->
+    <div class="region">
+      <div class="region-tag">1</div>
+      <div class="region-name">세션 헤더</div>
+      <div class="row">
+        <span class="chip">Acme Corp ▾</span>
+        <span class="chip">sales</span>
+        <span class="muted">discovery · NDA 미체결</span>
+      </div>
+      <div class="row">
+        <span class="muted">● 녹음 중 02:14</span>
+        <span class="spacer"></span>
+        <span class="btn">컨텍스트</span>
+        <span class="btn">종료</span>
+      </div>
+    </div>
+
+    <!-- ② 판정 카드 -->
+    <div class="region">
+      <div class="region-tag">2</div>
+      <div class="region-name">판정 카드 — 최신 질문</div>
+
+      <div class="verdict direct">
+        <div class="verdict-label">● 바로 답변 가능</div>
+        <div class="headline">Enterprise 플랜에서 온프레미스 지원</div>
+
+        <div class="script-box">
+          <div class="script-cap">이렇게 말하세요</div>
+          <div class="script">"Enterprise 플랜에서 온프레미스를 지원합니다.
+            구체적인 구성은 NDA 체결 후 상세히 안내드릴 수 있습니다."</div>
+        </div>
+
+        <div class="warn">⚠ NDA 미체결 — 노드 수·아키텍처 언급은 보류하세요</div>
+
+        <div class="row" style="margin-top:10px">
+          <span class="btn">▸ 근거 3건</span>
+          <span class="spacer"></span>
+          <span class="muted">1,180ms</span>
+          <span class="btn">답변이 틀렸어요</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 질문 히스토리 -->
+    <div class="region">
+      <div class="region-tag">3</div>
+      <div class="region-name">질문 히스토리 — 세션 내 누적</div>
+      <div class="item"><span class="dot direct"></span><span>온프레미스 배포 가능 여부</span><span class="spacer"></span><span class="muted">14:02</span></div>
+      <div class="item"><span class="dot escalate"></span><span>Edge Functions 셀프호스팅 지원 시점</span><span class="spacer"></span><span class="muted">13:58</span></div>
+      <div class="item"><span class="dot conditional"></span><span>SOC 2 인증 보유 여부</span><span class="spacer"></span><span class="muted">13:51</span></div>
+    </div>
+
+    <!-- ④ 전사 스트림 -->
+    <div class="region">
+      <div class="region-tag">4</div>
+      <div class="region-name">전사 스트림 — 화자 구분</div>
+      <div class="utt"><span class="who">고객</span><span>저희는 금융권이라 클라우드가 어려운데, 온프레미스 배포 되나요?</span><span class="t">14:02</span></div>
+      <div class="utt"><span class="who host">나</span><span>네, 보안 요건 말씀이시죠.</span><span class="t">14:01</span></div>
+      <div class="utt"><span class="who">고객</span><span>내부 감사 때문에 데이터 반출이 안 됩니다.</span><span class="t">14:01</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 주석 ============ -->
+  <div class="notes">
+    <h2>① 세션 헤더</h2>
+    <table>
+      <tr><th style="width:38%">필드</th><th style="width:34%">출처</th><th>시점</th></tr>
+      <tr><td class="f">counterpart_org</td><td class="s">session</td><td class="s">초기</td></tr>
+      <tr><td class="f">domain</td><td class="s">session</td><td class="s">초기</td></tr>
+      <tr><td class="f">context</td><td class="s">session (jsonb)</td><td class="s">초기</td></tr>
+      <tr><td class="f">started_at</td><td class="s">session</td><td class="s">초기</td></tr>
+      <tr><td class="f">is_capturing</td><td class="s">클라이언트</td><td class="s">—</td></tr>
+      <tr><td class="s" colspan="3">[컨텍스트] → <span class="badge">PATCH /sessions/{id}/context</span></td></tr>
+      <tr><td class="s" colspan="3">[종료] → <span class="badge">POST /sessions/{id}/end</span></td></tr>
+    </table>
+
+    <h2>② 판정 카드</h2>
+    <table>
+      <tr><th style="width:38%">필드</th><th style="width:34%">출처</th><th>시점</th></tr>
+      <tr><td class="f">response_mode</td><td class="s">question</td><td class="s">푸시</td></tr>
+      <tr><td class="f">headline</td><td class="s">생성 (스트리밍)</td><td class="s">푸시</td></tr>
+      <tr><td class="f">suggested_script</td><td class="s">response_rule ⟵조인</td><td class="s">푸시</td></tr>
+      <tr><td class="f">condition</td><td class="s">response_rule ⟵조인</td><td class="s">푸시</td></tr>
+      <tr><td class="f">evidence_count</td><td class="s">계산</td><td class="s">푸시</td></tr>
+      <tr><td class="f">latency_ms</td><td class="s">question</td><td class="s">푸시</td></tr>
+      <tr><td class="s" colspan="3">[근거 N건] → <span class="badge">GET /questions/{id}/evidence</span> (지연 로딩)</td></tr>
+      <tr><td class="s" colspan="3">[답변이 틀렸어요] → <span class="badge">POST /questions/{id}/reject</span></td></tr>
+    </table>
+
+    <h2>③ 질문 히스토리</h2>
+    <table>
+      <tr><th style="width:38%">필드</th><th style="width:34%">출처</th><th>시점</th></tr>
+      <tr><td class="f">response_mode</td><td class="s">question</td><td class="s">푸시</td></tr>
+      <tr><td class="f">normalized_text</td><td class="s">question</td><td class="s">푸시</td></tr>
+      <tr><td class="f">detected_at</td><td class="s">question</td><td class="s">푸시</td></tr>
+    </table>
+
+    <h2>④ 전사 스트림</h2>
+    <table>
+      <tr><th style="width:38%">필드</th><th style="width:34%">출처</th><th>시점</th></tr>
+      <tr><td class="f">role</td><td class="s">participant</td><td class="s">푸시</td></tr>
+      <tr><td class="f">speaker_label</td><td class="s">participant (MVP=null)</td><td class="s">푸시</td></tr>
+      <tr><td class="f">text</td><td class="s">utterance</td><td class="s">푸시</td></tr>
+      <tr><td class="f">ended_at</td><td class="s">utterance</td><td class="s">푸시</td></tr>
+      <tr><td class="s" colspan="3">실시간 수신 → <span class="badge">WS /sessions/{id}/stream</span></td></tr>
+    </table>
+
+    <h2>설계 메모</h2>
+    <table>
+      <tr><td class="s">· 사용자는 아무것도 입력하지 않는다. 상대가 말을 끝내면 ②가 자동으로 뜬다</td></tr>
+      <tr><td class="s">· ②의 headline이 먼저 스트리밍되고 근거는 클릭 시 별도 조회 (1.5초 예산)</td></tr>
+      <tr><td class="s">· 상대방 화면에 노출되는 요소 없음 — 본인 전용 도구</td></tr>
+      <tr><td class="s">· ④는 host 발화도 저장한다 (대명사 해소용 문맥)</td></tr>
+    </table>
+  </div>
+</div>
+</body></html>
