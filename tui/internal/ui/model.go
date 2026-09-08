@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"amcli/tui/internal/api"
@@ -57,6 +58,10 @@ type Model struct {
 	// Music.app 이 말해주는 것 그대로. 라이브러리에 없는 곡도 여기 담긴다.
 	live music.PlayerState
 
+	// 명령·도움말은 목록 패널을 잠시 빌려 쓴다. 화면을 새로 만들지 않는다.
+	showHelp bool
+	notice   string
+
 	// 의도 층 — 자연어 한 줄이 큐가 되는 경로.
 	thinking   bool
 	spinner    spinner.Model
@@ -105,6 +110,11 @@ func (m Model) Init() tea.Cmd {
 
 // searching — 입력창이 `/` 로 시작하지 않는 글자로 채워져 있고 포커스가
 // 입력창에 있으면 목록을 즉시 걸러 보여준다. 별도 검색 화면을 두지 않는 이유다.
+// overlaying — 목록 패널이 섹션이 아닌 다른 것을 보여주는 중인가.
+func (m Model) overlaying() bool {
+	return m.showHelp || m.commanding() || m.mode == modeSearch
+}
+
 func (m Model) searching() bool {
 	return m.mode == modeSearch && strings.TrimSpace(m.input.Value()) != ""
 }
@@ -126,6 +136,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+
+	case savedMsg:
+		if msg.err != nil {
+			m.intentErr = msg.err
+		} else {
+			m.notice = fmt.Sprintf("Saved %q to Apple Music", msg.name)
+		}
+		return m, nil
 
 	case queueMsg:
 		m.thinking = false
@@ -175,7 +193,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
+		case "?":
+			if m.input.Value() == "" {
+				m.showHelp = true
+				m.listIdx, m.listTop = 0, 0
+				return m, nil
+			}
+
 		case "ctrl+f":
+			m.showHelp = false
 			m.mode = modeSearch
 			m.input.Reset()
 			m.applyMode()
@@ -183,6 +209,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "esc":
+			if m.showHelp {
+				m.showHelp = false
+				m.listIdx, m.listTop = 0, 0
+				return m, nil
+			}
+			m.notice = ""
 			// 검색 중이면 검색만 빠져나온다. 그다음 한 번 더 누르면 종료.
 			if m.mode == modeSearch {
 				m.mode = modePrompt
@@ -222,6 +254,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmdPrevious()
 
 		case "enter":
+			if m.showHelp {
+				m.showHelp = false
+				return m, nil
+			}
+			// 명령은 모델을 거치지 않는다. 목록에서 고른 것이 있으면 그것을 쓴다.
+			if m.commanding() {
+				line := m.input.Value()
+				if rows := m.rows(); len(rows) > 0 && m.listIdx < len(rows) && rows[m.listIdx].cmd != nil {
+					if picked := rows[m.listIdx].cmd; !strings.HasPrefix(line, picked.name+" ") {
+						line = picked.name
+					}
+				}
+				mm, cmd := m.runCommand(line)
+				mm.clampList()
+				return mm, cmd
+			}
 			// 검색 중에는 고른 곡을 튼다. 프롬프트일 때만 요청으로 보낸다.
 			if m.mode == modeSearch {
 				mm, cmd := m.playSelected()
@@ -234,9 +282,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.input.Reset()
 				m.thinking = true
 				m.intentErr = nil
+				m.notice = ""
+				m.showHelp = false
 				m.clampList()
 				return m, tea.Batch(
-					cmdBuildQueue(prompt, data.Lib().Tracks),
+					cmdBuildQueue(prompt, data.Lib().Tracks, intent.Current{
+						Title:   m.queueTitle,
+						Items:   m.queue,
+						Playing: m.nowPlayingID,
+					}),
 					m.spinner.Tick,
 				)
 			}
@@ -286,6 +340,14 @@ func (m Model) applyQueue(res intent.Result) (Model, tea.Cmd) {
 		}
 	}
 
+	// 재편성으로 지금 곡이 살아남았으면 다시 틀지 않는다.
+	// 듣던 곡이 처음으로 되감기는 것만큼 짜증나는 것이 없다.
+	for _, it := range items {
+		if it.Track.Id == m.nowPlayingID {
+			return m, nil
+		}
+	}
+
 	first := items[0].Track
 	m.nowPlayingID = first.Id
 	if first.PersistentId != nil {
@@ -294,7 +356,10 @@ func (m Model) applyQueue(res intent.Result) (Model, tea.Cmd) {
 	return m, nil
 }
 
-var errNoTracks = errors.New("고른 곡이 라이브러리에 없습니다")
+var (
+	errNoTracks = errors.New("고른 곡이 라이브러리에 없습니다")
+	errNoQueue  = errors.New("저장할 큐가 없습니다")
+)
 
 // 목록에서 고른 곡을 튼다. 실제 재생은 Music.app 이 하고, 화면은 폴링으로 따라간다.
 func (m Model) playSelected() (Model, tea.Cmd) {

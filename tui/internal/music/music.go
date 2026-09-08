@@ -7,6 +7,7 @@ package music
 
 import (
 	"errors"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -139,3 +140,45 @@ const SettingsURL = "x-apple.systempreferences:com.apple.preference.security?Pri
 
 // OpenSettings 는 시스템 설정의 자동화 항목을 연다.
 func OpenSettings() error { return exec.Command("open", SettingsURL).Run() }
+
+// CreatePlaylist 는 큐를 Apple Music 플레이리스트로 저장한다 (F9).
+//
+// 라이브러리에 없는 곡도 담을 수 있어야 하므로 플레이리스트까지 뒤진다.
+func CreatePlaylist(name string, persistentIDs []string) error {
+	if !Running() {
+		return ErrNotRunning
+	}
+	if len(persistentIDs) == 0 {
+		return errors.New("담을 곡이 없습니다")
+	}
+
+	var b strings.Builder
+	b.WriteString("tell application \"Music\"\n")
+	fmt.Fprintf(&b, "\tset pl to (make new user playlist with properties {name:%q})\n", name)
+	b.WriteString("\trepeat with pid in {")
+	for i, id := range persistentIDs {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		fmt.Fprintf(&b, "%q", id)
+	}
+	b.WriteString("}\n")
+	b.WriteString(`		set found to false
+		try
+			duplicate (first track of library playlist 1 whose persistent ID is pid) to pl
+			set found to true
+		end try
+		if not found then
+			repeat with p in user playlists
+				try
+					duplicate (first track of p whose persistent ID is pid) to pl
+					exit repeat
+				end try
+			end repeat
+		end if
+	end repeat
+	return name of pl
+end tell`)
+	_, err := run(b.String())
+	return err
+}

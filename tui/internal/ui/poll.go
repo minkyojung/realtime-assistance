@@ -23,11 +23,11 @@ type queueMsg struct {
 }
 
 // cmdBuildQueue — 자연어 한 줄을 큐로 바꾼다. 입력창을 막지 않도록 Cmd 로 돈다.
-func cmdBuildQueue(prompt string, library []api.Track) tea.Cmd {
+func cmdBuildQueue(prompt string, library []api.Track, cur intent.Current) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 		defer cancel()
-		res, err := intent.Build(ctx, prompt, library, time.Now())
+		res, err := intent.Build(ctx, prompt, library, cur, time.Now())
 		return queueMsg{res: res, err: err}
 	}
 }
@@ -88,4 +88,22 @@ func DrainForQueue(cmd tea.Cmd) tea.Msg {
 		return msg
 	}
 	return nil
+}
+
+// savedMsg — 큐를 Apple Music 플레이리스트로 저장한 결과 (F9).
+type savedMsg struct {
+	name string
+	err  error
+}
+
+func cmdSavePlaylist(name string, tracks []api.Track) tea.Cmd {
+	return func() tea.Msg {
+		ids := make([]string, 0, len(tracks))
+		for _, t := range tracks {
+			if t.PersistentId != nil {
+				ids = append(ids, *t.PersistentId)
+			}
+		}
+		return savedMsg{name: name, err: music.CreatePlaylist(name, ids)}
+	}
 }

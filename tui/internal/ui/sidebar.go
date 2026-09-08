@@ -19,6 +19,7 @@ const (
 	secSongs
 	secPlaylist
 	secQueue
+	secUnplayed
 )
 
 type section struct {
@@ -43,7 +44,9 @@ func buildSections(l *data.Library) []section {
 		}
 		s = append(s, section{kind: secPlaylist, label: strings.TrimSpace(p.Name), playlist: &p})
 	}
-	s = append(s, section{kind: secQueue, label: "Queue"})
+	s = append(s,
+		section{kind: secQueue, label: "Queue"},
+		section{kind: secUnplayed, label: "Never played"})
 	return s
 }
 
@@ -51,9 +54,16 @@ func (m Model) viewSidebar(height int) string {
 	var b strings.Builder
 	write := func(s string) { b.WriteString(s + "\n") }
 
-	// 검색 중에는 사이드바 맨 위에 임시 항목이 뜬다.
-	// 목록이 왜 걸러졌는지가 여기서 설명된다.
-	if m.mode == modeSearch {
+	// 검색·명령·도움말 중에는 사이드바 맨 위에 임시 항목이 뜬다.
+	// 목록에 왜 다른 것이 보이는지가 여기서 설명된다.
+	switch {
+	case m.showHelp:
+		write(stBrand.Render("▌") + stBrandBold.Render(" ? Help"))
+		write("")
+	case m.commanding():
+		write(stBrand.Render("▌") + stBrandBold.Render(" / Commands"))
+		write("")
+	case m.mode == modeSearch:
 		write(stBrand.Render("▌") + stBrandBold.Render(" ⌕ Search"))
 		write("")
 	}
@@ -69,8 +79,8 @@ func (m Model) viewSidebar(height int) string {
 		}
 
 		label := truncate(s.label, sidebarWidth-2)
-		// 검색 중에는 섹션 선택 표시를 죽인다. 보고 있는 건 검색 결과다.
-		if i == m.sectionIdx && m.mode != modeSearch {
+		// 다른 것을 보고 있을 때는 섹션 선택 표시를 죽인다.
+		if i == m.sectionIdx && !m.overlaying() {
 			write(stBrand.Render("▌") + stBrandBold.Render(" "+label))
 		} else {
 			write("  " + stFaint.Render(label))

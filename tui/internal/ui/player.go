@@ -97,6 +97,9 @@ func (m Model) viewReason(w int) (string, bool) {
 		return stErrorBadge.Render("FAILED") + " " +
 			stDim.Render(truncate(m.intentErr.Error(), w-9)), true
 	}
+	if m.notice != "" {
+		return stBrandSoft.Render("· ") + stDim.Render(truncate(m.notice, w-2)), true
+	}
 	it, ok := m.nowPlayingItem()
 	if !ok || it.Reason == nil || *it.Reason == "" {
 		return "", false

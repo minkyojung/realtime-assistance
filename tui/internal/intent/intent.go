@@ -105,8 +105,19 @@ Rules that matter:
   specific about something else.
 - Write title, note and reasons in the same language the person used.`
 
+// Current 는 이미 화면에 있는 큐다. 있으면 새로 만드는 대신 고칠 수 있다.
+type Current struct {
+	Title   string
+	Items   []api.QueueItem
+	Playing int64 // 지금 재생 중인 곡의 id. 0 이면 없음
+}
+
 // Build 는 자연어 한 줄을 큐로 바꾼다.
-func Build(ctx context.Context, prompt string, library []api.Track, now time.Time) (Result, error) {
+//
+// cur 이 비어 있지 않으면 그것을 함께 넘긴다. "좀 더 조용한 걸로" 같은
+// 요청은 새 큐가 아니라 지금 큐를 고치라는 뜻이기 때문이다.
+// 무엇이 요청인지는 모델이 문장을 보고 판단한다.
+func Build(ctx context.Context, prompt string, library []api.Track, cur Current, now time.Time) (Result, error) {
 	if strings.TrimSpace(prompt) == "" {
 		return Result{}, fmt.Errorf("빈 요청")
 	}
@@ -119,11 +130,7 @@ func Build(ctx context.Context, prompt string, library []api.Track, now time.Tim
 		// 고르는 작업이라 추론을 낮추면 지연이 크게 줄어든다.
 		ReasoningEffort: effort,
 		// 시스템 프롬프트와 라이브러리 목록을 먼저 두어야 프롬프트 캐시가 걸린다.
-		Messages: []openai.ChatCompletionMessageParamUnion{
-			openai.SystemMessage(systemPrompt),
-			openai.SystemMessage(renderLibrary(library, now)),
-			openai.UserMessage(prompt),
-		},
+		Messages: messages(prompt, library, cur, now),
 		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
 			OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{
 				JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{
@@ -148,6 +155,40 @@ func Build(ctx context.Context, prompt string, library []api.Track, now time.Tim
 		CostUsd:          cost(resp.Usage),
 	}
 	return out, nil
+}
+
+// 시스템 프롬프트와 라이브러리는 요청마다 같으므로 앞에 둔다. 그래야 캐시가 걸린다.
+// 현재 큐는 매번 달라지므로 뒤에 붙인다.
+func messages(prompt string, library []api.Track, cur Current, now time.Time) []openai.ChatCompletionMessageParamUnion {
+	out := []openai.ChatCompletionMessageParamUnion{
+		openai.SystemMessage(systemPrompt),
+		openai.SystemMessage(renderLibrary(library, now)),
+	}
+	if len(cur.Items) > 0 {
+		out = append(out, openai.SystemMessage(renderCurrent(cur)))
+	}
+	return append(out, openai.UserMessage(prompt))
+}
+
+// renderCurrent 는 지금 큐를 적는다.
+func renderCurrent(cur Current) string {
+	var b strings.Builder
+	b.WriteString("A queue is already on screen")
+	if cur.Title != "" {
+		fmt.Fprintf(&b, " — %q", cur.Title)
+	}
+	b.WriteString(".\nIf the request reads as an adjustment (\"quieter\", \"drop this artist\",\n" +
+		"\"shorter\"), return the adjusted queue rather than an unrelated one, and keep\n" +
+		"the track that is playing in place unless the request rules it out.\n" +
+		"If the request reads as a fresh ask, ignore this queue.\n\n")
+	for _, it := range cur.Items {
+		mark := " "
+		if it.Track.Id == cur.Playing {
+			mark = "▶"
+		}
+		fmt.Fprintf(&b, "%s %d | %s | %s\n", mark, it.Track.Id, it.Track.Title, it.Track.Artist.Name)
+	}
+	return b.String()
 }
 
 // renderLibrary 는 곡을 한 줄씩 적는다.
