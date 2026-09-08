@@ -268,7 +268,11 @@ Table knowledge_chunk {
     audience_level
     source_type
     (valid_from, valid_until) [name: 'idx_chunk_validity']
-    embedding [name: 'idx_chunk_embedding', note: 'pgvector HNSW (vector_cosine_ops)']
+    embedding [name: 'idx_chunk_embedding', note: '''
+      pgvector HNSW. vector 타입은 인덱스 최대 2,000차원이므로
+      3,072차원은 halfvec 로 캐스팅해 인덱싱한다.
+      CREATE INDEX ... USING hnsw ((embedding::halfvec(3072)) halfvec_cosine_ops)
+    ''']
   }
   Note: 'Layer 1 — 출처이지 답이 아니다. 화면 1-②-1 근거 펼침, 2-③ 근거 후보.'
 }
@@ -309,7 +313,9 @@ Table response_rule {
     is_active
     valid_until
     created_from
-    pattern_embedding [name: 'idx_rule_embedding', note: 'pgvector HNSW (vector_cosine_ops)']
+    pattern_embedding [name: 'idx_rule_embedding', note: '''
+      pgvector HNSW. 위와 동일하게 halfvec 캐스팅으로 인덱싱한다.
+    ''']
   }
   Note: '''
     Layer 2 — 사람이 승인한 확정 답변과 말하는 방식.

@@ -2,7 +2,7 @@
 --  Relay 스키마
 --
 --  이 파일은 제출물 ERD(판교_3반_Relay-DB.dbml)에서 생성되었다.
---  수정하지 말 것. DBML을 고치고 `pnpm db:gen`으로 재생성한다.
+--  수정하지 말 것. DBML을 고치고 재생성한다.
 --
 --  재생성:  node scripts/dbml2sql.mjs
 --  적용  :  psql "$DATABASE_URL" -f db/schema.sql
@@ -224,7 +224,6 @@ CREATE INDEX ON "knowledge_chunk" ("source_type");
 
 CREATE INDEX "idx_chunk_validity" ON "knowledge_chunk" ("valid_from", "valid_until");
 
-CREATE INDEX "idx_chunk_embedding" ON "knowledge_chunk" ("embedding");
 
 CREATE INDEX "idx_rule_search" ON "response_rule" ("domain", "intent", "audience_level");
 
@@ -234,7 +233,6 @@ CREATE INDEX ON "response_rule" ("valid_until");
 
 CREATE INDEX ON "response_rule" ("created_from");
 
-CREATE INDEX "idx_rule_embedding" ON "response_rule" ("pattern_embedding");
 
 CREATE INDEX ON "response_rule_chunk" ("chunk_id");
 
@@ -419,3 +417,18 @@ ALTER TABLE "knowledge_gap" ADD FOREIGN KEY ("question_id") REFERENCES "question
 ALTER TABLE "knowledge_gap" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "knowledge_gap" ADD FOREIGN KEY ("resolved_by") REFERENCES "response_rule" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+-- ---------------------------------------------------------------
+--  벡터 인덱스 (DBML로 표현할 수 없어 생성기에서 부착)
+--
+--  vector(3072) 는 HNSW 인덱스 상한(2,000차원)을 넘으므로
+--  halfvec 로 캐스팅해 인덱싱한다. 검색 시에도 동일하게 캐스팅한다.
+-- ---------------------------------------------------------------
+DROP INDEX IF EXISTS "idx_chunk_embedding";
+DROP INDEX IF EXISTS "idx_rule_embedding";
+
+CREATE INDEX IF NOT EXISTS "idx_chunk_embedding"
+  ON "knowledge_chunk" USING hnsw ((embedding::halfvec(3072)) halfvec_cosine_ops);
+
+CREATE INDEX IF NOT EXISTS "idx_rule_embedding"
+  ON "response_rule" USING hnsw ((pattern_embedding::halfvec(3072)) halfvec_cosine_ops);

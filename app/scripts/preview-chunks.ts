@@ -1,7 +1,7 @@
 /** 임베딩 전에 청킹 결과만 확인한다. API 호출 없음. */
 import { buildDocs } from './build-docs'
-import { chunkDoc } from '../app/src/lib/chunk'
-import { AUDIENCE_BY_SOURCE } from '../app/src/lib/audience'
+import { chunkDoc } from '@/lib/chunk'
+import { AUDIENCE_BY_SOURCE } from '@/lib/audience'
 
 const docs = buildDocs()
 const rows = docs.flatMap((d) =>

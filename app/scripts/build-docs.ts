@@ -4,7 +4,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { RawDoc } from '../app/src/lib/chunk'
+import type { RawDoc } from '@/lib/chunk'
 
 const DATA = join(process.cwd(), '..', 'spikes', 'data')
 const read = (f: string) => JSON.parse(readFileSync(join(DATA, f), 'utf8'))
