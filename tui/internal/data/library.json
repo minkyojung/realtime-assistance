@@ -17,6 +17,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-30T15:21:45+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -46,6 +47,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2021-03-01T19:56:17+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -75,6 +77,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:36:10+09:00",
    "lastPlayedAt": "2026-08-09T14:41:57+09:00",
    "album": {
@@ -104,6 +107,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:36:09+09:00",
    "lastPlayedAt": "2026-08-17T16:19:34+09:00",
    "album": {
@@ -133,6 +137,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:36:10+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -162,6 +167,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:36:10+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -191,6 +197,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:36:10+09:00",
    "lastPlayedAt": "2026-08-09T13:40:45+09:00",
    "album": {
@@ -220,6 +227,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:36:10+09:00",
    "lastPlayedAt": "2026-08-09T13:54:34+09:00",
    "album": {
@@ -249,6 +257,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:36:10+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -278,6 +287,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:36:10+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -307,6 +317,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-31T14:35:41+09:00",
    "lastPlayedAt": "2026-08-27T16:36:30+09:00",
    "album": {
@@ -336,6 +347,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -365,6 +377,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -394,6 +407,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": "2026-08-29T09:44:35+09:00",
    "album": {
@@ -423,6 +437,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -452,6 +467,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -481,6 +497,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -510,6 +527,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -539,6 +557,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -568,6 +587,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -597,6 +617,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -626,6 +647,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -655,6 +677,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -684,6 +707,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -713,6 +737,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -742,6 +767,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-08T15:45:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -771,6 +797,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-23T17:25:52+09:00",
    "lastPlayedAt": "2026-06-30T21:36:19+09:00",
    "album": {
@@ -800,6 +827,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-26T18:41:35+09:00",
    "album": {
@@ -829,6 +857,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:03:24+09:00",
    "album": {
@@ -858,6 +887,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-09-02T20:00:01+09:00",
    "lastPlayedAt": "2026-09-04T06:52:29+09:00",
    "album": {
@@ -887,6 +917,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-25T15:25:54+09:00",
    "album": {
@@ -916,6 +947,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-25T12:49:21+09:00",
    "lastPlayedAt": "2026-08-13T06:53:38+09:00",
    "album": {
@@ -945,6 +977,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:11:20+09:00",
    "album": {
@@ -974,6 +1007,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2020-08-20T23:01:43+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1003,6 +1037,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-27T17:40:50+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1032,6 +1067,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-26T18:30:00+09:00",
    "album": {
@@ -1061,6 +1097,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-08-28T11:01:07+09:00",
    "album": {
@@ -1090,6 +1127,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:52:12+09:00",
    "album": {
@@ -1119,6 +1157,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-08-03T08:10:56+09:00",
    "album": {
@@ -1148,6 +1187,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:17:52+09:00",
    "album": {
@@ -1177,6 +1217,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-16T19:21:35+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1206,6 +1247,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-02T16:47:05+09:00",
    "lastPlayedAt": "2026-08-12T19:37:52+09:00",
    "album": {
@@ -1235,6 +1277,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-26T14:44:08+09:00",
    "lastPlayedAt": "2026-07-30T18:18:41+09:00",
    "album": {
@@ -1264,6 +1307,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-29T08:07:11+09:00",
    "lastPlayedAt": "2026-08-08T15:34:50+09:00",
    "album": {
@@ -1293,6 +1337,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-04T08:31:59+09:00",
    "lastPlayedAt": "2026-06-26T15:31:30+09:00",
    "album": {
@@ -1322,6 +1367,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-30T15:21:45+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1351,6 +1397,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-17T14:33:19+09:00",
    "lastPlayedAt": "2026-07-18T15:58:02+09:00",
    "album": {
@@ -1380,6 +1427,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-30T15:21:45+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1409,6 +1457,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-31T21:26:24+09:00",
    "lastPlayedAt": "2026-09-03T15:14:56+09:00",
    "album": {
@@ -1438,6 +1487,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2023-09-11T12:21:20+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1467,6 +1517,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-15T09:53:16+09:00",
    "lastPlayedAt": "2026-07-26T16:31:12+09:00",
    "album": {
@@ -1496,6 +1547,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-22T12:51:22+09:00",
    "album": {
@@ -1525,6 +1577,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-22T13:28:40+09:00",
    "album": {
@@ -1554,6 +1607,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-22T13:34:26+09:00",
    "album": {
@@ -1583,6 +1637,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-22T13:58:38+09:00",
    "album": {
@@ -1612,6 +1667,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-22T14:03:02+09:00",
    "album": {
@@ -1641,6 +1697,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-08-19T07:44:56+09:00",
    "album": {
@@ -1670,6 +1727,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-08-11T18:29:06+09:00",
    "album": {
@@ -1699,6 +1757,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1728,6 +1787,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1757,6 +1817,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1786,6 +1847,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -1815,6 +1877,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-12T13:14:38+09:00",
    "album": {
@@ -1844,6 +1907,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-08-11T18:04:28+09:00",
    "album": {
@@ -1873,6 +1937,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-26T08:59:18+09:00",
    "album": {
@@ -1902,6 +1967,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-09-02T21:57:36+09:00",
    "album": {
@@ -1931,6 +1997,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-12T13:35:13+09:00",
    "album": {
@@ -1960,6 +2027,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-12T13:38:53+09:00",
    "album": {
@@ -1989,6 +2057,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-22T17:06:22+09:00",
    "album": {
@@ -2018,6 +2087,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-22T08:18:48+09:00",
    "album": {
@@ -2047,6 +2117,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-12T16:49:53+09:00",
    "album": {
@@ -2076,6 +2147,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-08-13T08:15:39+09:00",
    "album": {
@@ -2105,6 +2177,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T08:23:08+09:00",
    "lastPlayedAt": "2026-06-12T17:01:35+09:00",
    "album": {
@@ -2134,6 +2207,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-12T15:15:58+09:00",
    "lastPlayedAt": "2026-06-26T14:09:03+09:00",
    "album": {
@@ -2163,6 +2237,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-01T18:48:56+09:00",
    "lastPlayedAt": "2026-08-12T19:54:00+09:00",
    "album": {
@@ -2192,6 +2267,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2018-05-19T15:46:19+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2221,6 +2297,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-30T15:21:45+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2250,6 +2327,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-25T15:33:35+09:00",
    "album": {
@@ -2279,6 +2357,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-05T07:25:26+09:00",
    "lastPlayedAt": "2026-08-08T20:27:07+09:00",
    "album": {
@@ -2308,6 +2387,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:39:34+09:00",
    "album": {
@@ -2333,10 +2413,11 @@
    "durationMs": 311106,
    "source": "shared",
    "playCount": 4,
-   "skipCount": 0,
+   "skipCount": 1,
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-22T08:47:27+09:00",
    "lastPlayedAt": "2026-08-26T06:47:51+09:00",
    "album": {
@@ -2366,6 +2447,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-25T15:00:19+09:00",
    "album": {
@@ -2395,6 +2477,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-09-08T16:36:52+09:00",
    "album": {
@@ -2424,6 +2507,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-13T07:36:29+09:00",
    "album": {
@@ -2453,6 +2537,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-14T15:11:51+09:00",
    "album": {
@@ -2482,6 +2567,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-14T15:14:46+09:00",
    "album": {
@@ -2511,6 +2597,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-14T15:19:51+09:00",
    "album": {
@@ -2540,6 +2627,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-14T15:23:57+09:00",
    "album": {
@@ -2569,6 +2657,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-14T15:29:44+09:00",
    "album": {
@@ -2598,6 +2687,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2627,6 +2717,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2656,6 +2747,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2685,6 +2777,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-09-08T16:27:21+09:00",
    "album": {
@@ -2714,6 +2807,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2743,6 +2837,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-21T18:34:48+09:00",
    "album": {
@@ -2772,6 +2867,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-21T18:39:28+09:00",
    "album": {
@@ -2801,6 +2897,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-09-08T16:17:22+09:00",
    "album": {
@@ -2830,6 +2927,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2859,6 +2957,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2888,6 +2987,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-13T07:23:56+09:00",
    "album": {
@@ -2917,6 +3017,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -2946,6 +3047,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-27T17:25:51+09:00",
    "lastPlayedAt": "2026-08-13T07:32:26+09:00",
    "album": {
@@ -2975,6 +3077,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:31:12+09:00",
    "album": {
@@ -3004,6 +3107,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-22T17:42:43+09:00",
    "lastPlayedAt": "2026-08-12T19:59:09+09:00",
    "album": {
@@ -3033,6 +3137,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:09:51+09:00",
    "album": {
@@ -3062,6 +3167,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-30T15:21:45+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3091,6 +3197,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:28:19+09:00",
    "album": {
@@ -3120,6 +3227,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2021-03-02T18:17:36+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3149,6 +3257,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-30T19:16:27+09:00",
    "lastPlayedAt": "2026-09-06T15:39:22+09:00",
    "album": {
@@ -3178,6 +3287,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-23T09:47:37+09:00",
    "lastPlayedAt": "2026-08-30T10:55:52+09:00",
    "album": {
@@ -3207,6 +3317,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-26T18:47:24+09:00",
    "album": {
@@ -3236,6 +3347,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-26T18:43:57+09:00",
    "album": {
@@ -3265,6 +3377,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-26T18:38:29+09:00",
    "album": {
@@ -3294,6 +3407,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:36:42+09:00",
    "album": {
@@ -3323,6 +3437,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-10T21:10:32+09:00",
    "lastPlayedAt": "2026-08-10T07:46:16+09:00",
    "album": {
@@ -3352,6 +3467,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-30T15:21:45+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3381,6 +3497,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-29T12:03:49+09:00",
    "lastPlayedAt": "2026-09-05T08:14:49+09:00",
    "album": {
@@ -3410,6 +3527,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-26T18:35:30+09:00",
    "album": {
@@ -3439,6 +3557,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:21+09:00",
    "lastPlayedAt": "2026-04-25T15:42:03+09:00",
    "album": {
@@ -3468,6 +3587,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-16T18:31:16+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3497,6 +3617,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-04-25T14:19:20+09:00",
    "lastPlayedAt": "2026-04-25T15:44:35+09:00",
    "album": {
@@ -3526,6 +3647,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-30T15:21:45+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3555,6 +3677,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-07-30T15:21:45+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3584,6 +3707,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-15T20:06:41+09:00",
    "lastPlayedAt": "2026-09-02T10:27:41+09:00",
    "album": {
@@ -3613,6 +3737,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-23T14:40:00+09:00",
    "album": {
@@ -3642,6 +3767,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-25T16:58:06+09:00",
    "album": {
@@ -3671,6 +3797,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-25T17:01:32+09:00",
    "album": {
@@ -3700,6 +3827,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-25T17:06:54+09:00",
    "album": {
@@ -3729,6 +3857,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-23T14:55:40+09:00",
    "album": {
@@ -3758,6 +3887,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-23T14:59:47+09:00",
    "album": {
@@ -3787,6 +3917,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-23T15:04:29+09:00",
    "album": {
@@ -3816,6 +3947,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3845,6 +3977,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-18T08:16:57+09:00",
    "album": {
@@ -3874,6 +4007,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-19T20:22:56+09:00",
    "album": {
@@ -3903,6 +4037,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3932,6 +4067,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -3961,6 +4097,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-07-14T07:28:16+09:00",
    "album": {
@@ -3990,6 +4127,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-24T20:38:36+09:00",
    "album": {
@@ -4019,6 +4157,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-07-15T07:08:32+09:00",
    "album": {
@@ -4048,6 +4187,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -4077,6 +4217,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -4106,6 +4247,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-07-14T07:24:18+09:00",
    "album": {
@@ -4135,6 +4277,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -4164,6 +4307,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-07-15T08:14:39+09:00",
    "album": {
@@ -4193,6 +4337,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-07-15T07:15:28+09:00",
    "album": {
@@ -4222,6 +4367,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -4251,6 +4397,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-25T08:31:25+09:00",
    "album": {
@@ -4280,6 +4427,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-08-25T08:25:35+09:00",
    "album": {
@@ -4309,6 +4457,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": "2026-07-14T07:08:52+09:00",
    "album": {
@@ -4338,6 +4487,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:18+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -4367,6 +4517,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:19+09:00",
    "lastPlayedAt": "2026-07-15T07:01:12+09:00",
    "album": {
@@ -4396,6 +4547,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:19+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -4425,6 +4577,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:19+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -4454,6 +4607,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-06-05T13:20:19+09:00",
    "lastPlayedAt": null,
    "album": {
@@ -4483,6 +4637,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-05-01T14:22:14+09:00",
    "lastPlayedAt": "2026-09-08T07:08:10+09:00"
   },
@@ -4503,6 +4658,7 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-23T16:43:40+09:00",
    "lastPlayedAt": null
   },
@@ -4523,8 +4679,1149 @@
    "favorited": false,
    "disliked": false,
    "excluded": false,
+   "inLibrary": true,
    "addedAt": "2026-08-02T16:20:14+09:00",
    "lastPlayedAt": "2026-08-02T16:20:23+09:00"
+  },
+  {
+   "id": 158,
+   "persistentId": "5F6AC2FD6C2DB9B4",
+   "title": "doom",
+   "artist": {
+    "id": 61,
+    "name": "Steve Lacy"
+   },
+   "genre": "Pop",
+   "year": 2026,
+   "durationMs": 292779,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562267+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 37,
+    "title": "Oh yeah?",
+    "artist": {
+     "id": 61,
+     "name": "Steve Lacy"
+    },
+    "releaseYear": 2026
+   }
+  },
+  {
+   "id": 159,
+   "persistentId": "6F78C075CCC17486",
+   "title": "DELRESTO (ECHOES) [feat. Beyoncé]",
+   "artist": {
+    "id": 62,
+    "name": "Travis Scott"
+   },
+   "genre": "힙합/랩",
+   "year": 2023,
+   "durationMs": 274138,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562273+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 38,
+    "title": "UTOPIA",
+    "artist": {
+     "id": 62,
+     "name": "Travis Scott"
+    },
+    "releaseYear": 2023
+   }
+  },
+  {
+   "id": 160,
+   "persistentId": "59A7936EDFD78742",
+   "title": "Wrong Ones (feat. Tim McGraw)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 195822,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562279+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 161,
+   "persistentId": "E931B40D8933AF59",
+   "title": "Finer Things (feat. Hank Williams, Jr.)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 185533,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562283+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 162,
+   "persistentId": "1C291B0A0F02CCA5",
+   "title": "I Had Some Help (feat. Morgan Wallen)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 178205,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562287+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 163,
+   "persistentId": "22965CD2A45DFCC0",
+   "title": "Pour Me A Drink (feat. Blake Shelton)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 195123,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562291+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 164,
+   "persistentId": "D4AF4F02BDCDF786",
+   "title": "Have The Heart (feat. Dolly Parton)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 183332,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562295+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 165,
+   "persistentId": "9D56FC8665EF2F16",
+   "title": "What Don't Belong To Me",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 207175,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562301+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 166,
+   "persistentId": "E051091A4CAF6E5C",
+   "title": "Goes Without Saying (feat. Brad Paisley)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 212352,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562306+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 167,
+   "persistentId": "F2A48EA79593CE00",
+   "title": "Guy For That (feat. Luke Combs)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 164011,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562311+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 168,
+   "persistentId": "134CE346F34D5BC2",
+   "title": "Nosedive (feat. Lainey Wilson)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 192458,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562315+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 169,
+   "persistentId": "9A59AF895BD2159C",
+   "title": "Losers (feat. Jelly Roll)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 209037,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562319+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 170,
+   "persistentId": "BA9553F5DDF096A6",
+   "title": "Devil I've Been (feat. ERNEST)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 182925,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562323+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 171,
+   "persistentId": "6E66AA0392BA9637",
+   "title": "Never Love You Again (feat. Sierra Ferrell)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 186860,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562327+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 172,
+   "persistentId": "626511FFAAA80117",
+   "title": "Missin’ You Like This (feat. Luke Combs)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 222781,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562332+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 173,
+   "persistentId": "0DFCFE07DCA40C4E",
+   "title": "Hide My Gun (feat. HARDY)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 220479,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562336+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 174,
+   "persistentId": "B36FA8079F215A21",
+   "title": "Right About You",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 183046,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562340+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 175,
+   "persistentId": "202EDEA57A7C9590",
+   "title": "M-E-X-I-C-O (feat. Billy Strings)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 155929,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562344+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 176,
+   "persistentId": "3D10D3FC78636739",
+   "title": "Yours",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 199438,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562348+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 177,
+   "persistentId": "04755D65CA808957",
+   "title": "Fallin’ In Love",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 171184,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562352+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 178,
+   "persistentId": "064D3A49294DABB6",
+   "title": "Dead At The Honky Tonk",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 213225,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562356+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 179,
+   "persistentId": "3328312AF3295C11",
+   "title": "Killed A Man",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 185608,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562360+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 180,
+   "persistentId": "169363129A786C50",
+   "title": "Ain’t How It Ends",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 201962,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562364+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 181,
+   "persistentId": "C0443D60407B7563",
+   "title": "Hey Mercedes",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 202639,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562368+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 182,
+   "persistentId": "C70DD54823C07382",
+   "title": "Go To Hell",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 267330,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562372+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 183,
+   "persistentId": "F5DCC0FB2154D7B2",
+   "title": "Two Hearts",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 206753,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562376+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 184,
+   "persistentId": "F8FD101C209FA195",
+   "title": "Who Needs You",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 169865,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562380+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 185,
+   "persistentId": "F730EBBD5FB971CD",
+   "title": "Back To Texas",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 167833,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562384+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 186,
+   "persistentId": "2CF0EF2DA3076420",
+   "title": "Our House",
+   "artist": {
+    "id": 63,
+    "name": "Crosby, Stills, Nash & Young"
+   },
+   "genre": "Rock",
+   "year": 1970,
+   "durationMs": 179705,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562388+09:00",
+   "lastPlayedAt": "2026-08-27T10:08:48+09:00",
+   "album": {
+    "id": 39,
+    "title": "Déjà Vu",
+    "artist": {
+     "id": 63,
+     "name": "Crosby, Stills, Nash & Young"
+    },
+    "releaseYear": 1970
+   }
+  },
+  {
+   "id": 187,
+   "persistentId": "291DABBF17BEA656",
+   "title": "Southern Cross",
+   "artist": {
+    "id": 64,
+    "name": "Crosby, Stills & Nash"
+   },
+   "genre": "Rock",
+   "year": 1982,
+   "durationMs": 284252,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562399+09:00",
+   "lastPlayedAt": "2026-08-27T10:13:32+09:00",
+   "album": {
+    "id": 40,
+    "title": "Daylight Again",
+    "artist": {
+     "id": 64,
+     "name": "Crosby, Stills & Nash"
+    },
+    "releaseYear": 1982
+   }
+  },
+  {
+   "id": 188,
+   "persistentId": "1C1ED235BA40EC2F",
+   "title": "Suite: Judy Blue Eyes",
+   "artist": {
+    "id": 64,
+    "name": "Crosby, Stills & Nash"
+   },
+   "genre": "Rock",
+   "year": 1969,
+   "durationMs": 443532,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562408+09:00",
+   "lastPlayedAt": "2026-07-04T18:00:52+09:00",
+   "album": {
+    "id": 41,
+    "title": "Crosby, Stills & Nash",
+    "artist": {
+     "id": 64,
+     "name": "Crosby, Stills & Nash"
+    },
+    "releaseYear": 1969
+   }
+  },
+  {
+   "id": 189,
+   "persistentId": "03850F7F4C1B474F",
+   "title": "Love the One You're With",
+   "artist": {
+    "id": 64,
+    "name": "Crosby, Stills & Nash"
+   },
+   "genre": "Rock",
+   "year": 1970,
+   "durationMs": 184652,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562417+09:00",
+   "lastPlayedAt": "2026-07-04T18:03:57+09:00",
+   "album": {
+    "id": 42,
+    "title": "Replay",
+    "artist": {
+     "id": 64,
+     "name": "Crosby, Stills & Nash"
+    },
+    "releaseYear": 1970
+   }
+  },
+  {
+   "id": 190,
+   "persistentId": "E44B07C59265265A",
+   "title": "Wooden Ships",
+   "artist": {
+    "id": 64,
+    "name": "Crosby, Stills & Nash"
+   },
+   "genre": "Rock",
+   "year": 1969,
+   "durationMs": 327653,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562426+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 41,
+    "title": "Crosby, Stills & Nash",
+    "artist": {
+     "id": 64,
+     "name": "Crosby, Stills & Nash"
+    },
+    "releaseYear": 1969
+   }
+  },
+  {
+   "id": 191,
+   "persistentId": "625511DEE21C7244",
+   "title": "Ohio",
+   "artist": {
+    "id": 63,
+    "name": "Crosby, Stills, Nash & Young"
+   },
+   "genre": "Rock",
+   "year": 1970,
+   "durationMs": 183658,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562430+09:00",
+   "lastPlayedAt": "2026-05-17T21:28:52+09:00",
+   "album": {
+    "id": 43,
+    "title": "So Far",
+    "artist": {
+     "id": 63,
+     "name": "Crosby, Stills, Nash & Young"
+    },
+    "releaseYear": 1970
+   }
+  },
+  {
+   "id": 192,
+   "persistentId": "2B20B9FC7A55BA69",
+   "title": "Almost Cut My Hair",
+   "artist": {
+    "id": 63,
+    "name": "Crosby, Stills, Nash & Young"
+   },
+   "genre": "Rock",
+   "year": 1970,
+   "durationMs": 269088,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562440+09:00",
+   "lastPlayedAt": "2026-05-17T21:33:21+09:00",
+   "album": {
+    "id": 39,
+    "title": "Déjà Vu",
+    "artist": {
+     "id": 63,
+     "name": "Crosby, Stills, Nash & Young"
+    },
+    "releaseYear": 1970
+   }
+  },
+  {
+   "id": 193,
+   "persistentId": "E536062DFD436C8D",
+   "title": "Tangled Up In Blue",
+   "artist": {
+    "id": 65,
+    "name": "Bob Dylan"
+   },
+   "genre": "Singer/Songwriter",
+   "year": 1975,
+   "durationMs": 340776,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562449+09:00",
+   "lastPlayedAt": "2026-05-17T21:39:02+09:00",
+   "album": {
+    "id": 44,
+    "title": "Blood On the Tracks",
+    "artist": {
+     "id": 65,
+     "name": "Bob Dylan"
+    },
+    "releaseYear": 1975
+   }
+  },
+  {
+   "id": 194,
+   "persistentId": "FBA3E11F97269731",
+   "title": "One More Cup of Coffee",
+   "artist": {
+    "id": 65,
+    "name": "Bob Dylan"
+   },
+   "genre": "Rock",
+   "year": 1976,
+   "durationMs": 226339,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562457+09:00",
+   "lastPlayedAt": "2026-05-17T21:42:48+09:00",
+   "album": {
+    "id": 45,
+    "title": "Desire",
+    "artist": {
+     "id": 65,
+     "name": "Bob Dylan"
+    },
+    "releaseYear": 1976
+   }
+  },
+  {
+   "id": 195,
+   "persistentId": "0945B321E29FF6B0",
+   "title": "Forever Young",
+   "artist": {
+    "id": 65,
+    "name": "Bob Dylan"
+   },
+   "genre": "Rock",
+   "year": 1974,
+   "durationMs": 295733,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": "2026-09-08T23:24:43.562466+09:00",
+   "lastPlayedAt": "2026-05-17T21:47:44+09:00",
+   "album": {
+    "id": 46,
+    "title": "The Essential Bob Dylan (Revised Edition)",
+    "artist": {
+     "id": 65,
+     "name": "Bob Dylan"
+    },
+    "releaseYear": 1974
+   }
   }
  ],
  "playlists": [
@@ -4558,10 +5855,38 @@
   {
    "id": 2,
    "name": " CH",
-   "trackCount": 2,
+   "trackCount": 30,
    "trackIds": [
+    158,
+    159,
     30,
-    109
+    160,
+    161,
+    162,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    109,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178,
+    179,
+    180,
+    181,
+    182,
+    183,
+    184,
+    185
    ]
   },
   {
@@ -4575,8 +5900,19 @@
   {
    "id": 4,
    "name": "from Steve Jobs",
-   "trackCount": 0,
-   "trackIds": []
+   "trackCount": 10,
+   "trackIds": [
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    192,
+    193,
+    194,
+    195
+   ]
   }
  ]
 }

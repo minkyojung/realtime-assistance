@@ -679,11 +679,16 @@ type Track struct {
 	Disliked    bool    `json:"disliked"`
 	DurationMs  int     `json:"durationMs"`
 
-	// Excluded 묘비에서 정리 표시된 곡. 큐 후보에서 제외된다
+	// Excluded 정리 표시된 곡. 큐 후보에서 제외된다
 	Excluded  bool    `json:"excluded"`
 	Favorited bool    `json:"favorited"`
 	Genre     *string `json:"genre,omitempty"`
 	Id        int64   `json:"id"`
+
+	// InLibrary 사용자 라이브러리에 담긴 곡인지. 플레이리스트에만 담고
+	// 라이브러리에는 추가하지 않은 곡이 실제로 존재하므로 구분한다.
+	// `false` 인 곡은 Songs·Artists·Albums 목록에 나오지 않는다.
+	InLibrary bool    `json:"inLibrary"`
 	Isrc      *string `json:"isrc,omitempty"`
 
 	// LastPlayedAt ★ `null` 이면 **담아두고 한 번도 재생하지 않은 곡**이다. 묘비의 1차 기준

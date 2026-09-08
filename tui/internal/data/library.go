@@ -65,16 +65,30 @@ func (l *Library) Track(id int64) (api.Track, bool) {
 	return t, ok
 }
 
+// inLibrary 는 라이브러리에 담긴 곡만 고른다.
+//
+// 플레이리스트에만 담고 라이브러리에는 추가하지 않은 곡이 실제로 있다
+// (실측: CH 30곡 중 28곡). 그 곡들은 플레이리스트에서만 보여야 한다.
+func (l *Library) inLibrary() []api.Track {
+	out := make([]api.Track, 0, len(l.Tracks))
+	for _, t := range l.Tracks {
+		if t.InLibrary {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
 // Songs 는 제목순 전곡이다.
 func (l *Library) Songs() []api.Track {
-	out := append([]api.Track(nil), l.Tracks...)
+	out := l.inLibrary()
 	sort.Slice(out, func(i, j int) bool { return out[i].Title < out[j].Title })
 	return out
 }
 
 // RecentlyAdded 는 담은 순 역순이다. Apple Music 의 기본 화면.
 func (l *Library) RecentlyAdded() []api.Track {
-	out := append([]api.Track(nil), l.Tracks...)
+	out := l.inLibrary()
 	sort.Slice(out, func(i, j int) bool { return out[i].AddedAt.After(out[j].AddedAt) })
 	return out
 }
@@ -89,7 +103,7 @@ type Group struct {
 // Artists 는 아티스트별 묶음이다. 담은 곡이 많은 순.
 func (l *Library) Artists() []Group {
 	m := map[string][]api.Track{}
-	for _, t := range l.Tracks {
+	for _, t := range l.inLibrary() {
 		m[t.Artist.Name] = append(m[t.Artist.Name], t)
 	}
 	return groups(m, func(ts []api.Track) string { return plays(ts) })
@@ -99,7 +113,7 @@ func (l *Library) Artists() []Group {
 func (l *Library) Albums() []Group {
 	m := map[string][]api.Track{}
 	key := map[string]string{}
-	for _, t := range l.Tracks {
+	for _, t := range l.inLibrary() {
 		if t.Album == nil {
 			continue
 		}
@@ -154,6 +168,7 @@ func (l *Library) Search(q string) []api.Track {
 	if q == "" {
 		return nil
 	}
+	// 검색은 플레이리스트에만 있는 곡도 찾는다. 담아둔 곳이 어디든 내 음악이다.
 	var out []api.Track
 	for _, t := range l.Tracks {
 		hay := strings.ToLower(t.Title + " " + t.Artist.Name)

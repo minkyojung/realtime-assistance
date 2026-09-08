@@ -1099,7 +1099,7 @@ components:
       type: object
       required:
         [id, title, artist, durationMs, source, playCount, skipCount,
-         favorited, disliked, excluded, addedAt]
+         favorited, disliked, excluded, inLibrary, addedAt]
       properties:
         id:
           type: integer
@@ -1161,9 +1161,15 @@ components:
         addedAt:
           type: string
           format: date-time
+        inLibrary:
+          type: boolean
+          description: |
+            사용자 라이브러리에 담긴 곡인지. 플레이리스트에만 담고
+            라이브러리에는 추가하지 않은 곡이 실제로 존재하므로 구분한다.
+            `false` 인 곡은 Songs·Artists·Albums 목록에 나오지 않는다.
         excluded:
           type: boolean
-          description: 묘비에서 정리 표시된 곡. 큐 후보에서 제외된다
+          description: 정리 표시된 곡. 큐 후보에서 제외된다
         tags:
           type: array
           items:

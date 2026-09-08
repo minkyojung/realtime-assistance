@@ -166,6 +166,7 @@ Table track {
   rating           smallint           [null, note: '0-100']
 
   added_at         timestamptz        [not null, note: 'Music.app date added']
+  in_library       boolean            [not null, default: true, note: '플레이리스트에만 담고 라이브러리에는 추가하지 않은 곡이 실제로 있다. 실측 CH 30곡 중 28곡이 그렇다']
   excluded         boolean            [not null, default: false, note: 'F7 묘비 정리. 원본은 삭제하지 않는다']
   synced_at        timestamptz        [not null]
 
@@ -174,6 +175,7 @@ Table track {
     apple_music_id
     last_played_at [note: '묘비·진단 조회']
     (user_id, excluded)
+    (user_id, in_library)
   }
 
   Note: 'bpm 과 loved 는 실측 결과 사용 불가하여 제외했다. docs/05 참조.'
