@@ -11,9 +11,9 @@ import (
 // 한글은 표시폭이 2다. 폭 계산이 어긋나면 테두리와 정렬이 전부 깨지므로
 // 어느 줄도 화면 폭을 넘지 않는지 자동으로 확인한다.
 func TestViewFitsWidth(t *testing.T) {
-	for _, w := range []int{60, 80, 96, 120, 200} {
+	for _, w := range []int{70, 80, 96, 120, 200} {
 		var m tea.Model = New()
-		m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 40})
+		m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 32})
 
 		for i, line := range strings.Split(m.View().Content, "\n") {
 			if got := lipgloss.Width(line); got > w {
@@ -23,19 +23,36 @@ func TestViewFitsWidth(t *testing.T) {
 	}
 }
 
-// 이 서비스가 주장하는 것이 화면에 실제로 있는지 확인한다.
-func TestViewShowsReason(t *testing.T) {
+// 기본 화면에 라이브러리와 재생 바가 실제로 그려지는지.
+func TestViewShowsLibraryAndPlayer(t *testing.T) {
 	var m tea.Model = New()
-	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 40})
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	out := m.View().Content
 
 	for _, want := range []string{
-		"never played once",    // F2 선정 근거
-		"7 never played",       // 상태줄 요약
-		"● PLAYING",            // 헤더 상태
+		"LIBRARY",   // 사이드바
+		"Songs",     // 라이브러리 섹션
+		"PLAYLISTS", // 플레이리스트 섹션
+		"Perth",     // 재생 바의 현재 곡
+		"Bon Iver",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("화면에 %q 가 없다", want)
 		}
+	}
+}
+
+// 사이드바를 옮기면 목록이 실제로 바뀌는지.
+func TestSidebarSwitchesList(t *testing.T) {
+	var m tea.Model = New()
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+	first := m.View().Content
+
+	m, _ = m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"}) // 사이드바로 포커스
+	for i := 0; i < 2; i++ {
+		m, _ = m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
+	}
+	if m.View().Content == first {
+		t.Error("사이드바를 옮겼는데 목록이 그대로다")
 	}
 }

@@ -25,13 +25,13 @@ var (
 )
 
 var (
-	stTitle = lipgloss.NewStyle().Bold(true).Foreground(colFg)
-	stTrack = lipgloss.NewStyle().Bold(true).Foreground(colFg)
-	stBody  = lipgloss.NewStyle().Foreground(colFg)
-	stMeta  = lipgloss.NewStyle().Foreground(colDim)
-	stDim   = lipgloss.NewStyle().Foreground(colDim)
-	stFaint = lipgloss.NewStyle().Foreground(colFaint)
-	stRule  = lipgloss.NewStyle().Foreground(colRule)
+	stTitle     = lipgloss.NewStyle().Bold(true).Foreground(colFg)
+	stTrack     = lipgloss.NewStyle().Bold(true).Foreground(colFg)
+	stBody      = lipgloss.NewStyle().Foreground(colFg)
+	stMeta      = lipgloss.NewStyle().Foreground(colDim)
+	stDim       = lipgloss.NewStyle().Foreground(colDim)
+	stFaint     = lipgloss.NewStyle().Foreground(colFaint)
+	stRule      = lipgloss.NewStyle().Foreground(colRule)
 	stRuleBrand = lipgloss.NewStyle().Foreground(colBrandDeep)
 
 	stBrand     = lipgloss.NewStyle().Foreground(colBrand)

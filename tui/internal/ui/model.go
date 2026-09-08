@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 
 	"amcli/tui/internal/api"
@@ -11,21 +10,49 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// Screen 은 본문에 무엇을 그릴지 정한다. 슬래시 명령이 이 값을 바꾼다.
-type Screen int
+// 화면 구조 — Apple Music 과 같은 모양.
+//
+//	┌──────────┬──────────────────────────┐
+//	│ 사이드바  │  목록                     │
+//	├──────────┴──────────────────────────┤
+//	│ 입력창 (자연어 · / 명령 · 검색)        │
+//	├─────────────────────────────────────┤
+//	│ 재생 바 (항상 보임)                   │
+//	└─────────────────────────────────────┘
+//
+// 사이드바가 무엇을 고르든 목록 패널 하나가 다 그린다. 그래서 화면이 늘지 않는다.
+
+type focusArea int
 
 const (
-	ScreenPlaying Screen = iota // S1
+	focusList focusArea = iota
+	focusSidebar
+	focusInput
 )
 
 type Model struct {
-	screen  Screen
-	session api.Session
-	input   textarea.Model
-	w, h    int
+	sections   []section
+	sectionIdx int
+
+	listIdx int
+	listTop int
+
+	focus focusArea
+	input textarea.Model
+
+	// 재생 상태. 서버 연동 전까지는 로컬 상태다.
+	queue        []api.QueueItem
+	nowPlayingID int64
+	positionMs   int
+	playing      bool
+
+	usage api.Usage
+	w, h  int
 }
 
 func New() Model {
+	l := data.Lib()
+
 	ta := textarea.New()
 	ta.Placeholder = "What do you want to hear?    /  commands     ?  help"
 	ta.SetHeight(1)
@@ -33,18 +60,30 @@ func New() Model {
 	ta.ShowLineNumbers = false
 	ta.Prompt = "› "
 	styleInput(&ta)
-	// 스크린샷용으로 재편성 요청을 미리 채워 둔다. 지우고 쓰면 된다.
-	ta.SetValue("something even quieter")
-	ta.Focus()
 
-	return Model{
-		screen:  ScreenPlaying,
-		session: data.Session(),
-		input:   ta,
+	m := Model{
+		sections: buildSections(l),
+		input:    ta,
+		focus:    focusList,
+		queue:    data.Queue(),
+		playing:  true,
+		usage:    api.Usage{PromptTokens: 1240, CompletionTokens: 380, CostUsd: 0.0031},
 	}
+	if len(m.queue) > 0 {
+		m.nowPlayingID = m.queue[0].Track.Id
+		m.positionMs = data.PlaybackPositionMs
+	}
+	return m
 }
 
 func (m Model) Init() tea.Cmd { return textarea.Blink }
+
+// searching — 입력창이 `/` 로 시작하지 않는 글자로 채워져 있고 포커스가
+// 입력창에 있으면 목록을 즉시 걸러 보여준다. 별도 검색 화면을 두지 않는 이유다.
+func (m Model) searching() bool {
+	v := strings.TrimSpace(m.input.Value())
+	return m.focus == focusInput && v != "" && !strings.HasPrefix(v, "/")
+}
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -55,48 +94,139 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc":
+		case "ctrl+c":
 			return m, tea.Quit
+		case "esc":
+			if m.focus == focusInput {
+				m.input.Reset()
+				m.focus = focusList
+				return m, nil
+			}
+			return m, tea.Quit
+		case "tab":
+			m.focus = (m.focus + 1) % 3
+			return m, nil
+		case "enter":
+			if m.focus == focusInput {
+				m.input.Reset()
+				m.focus = focusList
+			}
+			return m, nil
+		}
+
+		if m.focus != focusInput {
+			if handled, mm := m.handleNav(msg.String()); handled {
+				return mm, nil
+			}
+			// 글자를 치면 곧바로 입력창으로 넘어간다.
+			if len(msg.String()) == 1 || msg.String() == "/" {
+				m.focus = focusInput
+			}
 		}
 	}
 
-	var cmd tea.Cmd
-	m.input, cmd = m.input.Update(msg)
-	return m, cmd
+	if m.focus == focusInput {
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		m.clampList()
+		return m, cmd
+	}
+	return m, nil
+}
+
+func (m Model) handleNav(key string) (bool, Model) {
+	switch key {
+	case "up", "k":
+		if m.focus == focusSidebar {
+			m.sectionIdx = clamp(m.sectionIdx-1, 0, len(m.sections)-1)
+			m.listIdx, m.listTop = 0, 0
+		} else {
+			m.listIdx = clamp(m.listIdx-1, 0, maxInt(m.rowCount()-1, 0))
+		}
+		m.clampList()
+		return true, m
+	case "down", "j":
+		if m.focus == focusSidebar {
+			m.sectionIdx = clamp(m.sectionIdx+1, 0, len(m.sections)-1)
+			m.listIdx, m.listTop = 0, 0
+		} else {
+			m.listIdx = clamp(m.listIdx+1, 0, maxInt(m.rowCount()-1, 0))
+		}
+		m.clampList()
+		return true, m
+	case "left", "h":
+		m.focus = focusSidebar
+		return true, m
+	case "right", "l":
+		m.focus = focusList
+		return true, m
+	case " ":
+		m.playing = !m.playing
+		return true, m
+	}
+	return false, m
+}
+
+// clampList — 선택 행이 늘 보이도록 스크롤 위치를 맞춘다.
+func (m *Model) clampList() {
+	h := m.listHeight()
+	n := m.rowCount()
+	m.listIdx = clamp(m.listIdx, 0, maxInt(n-1, 0))
+	if m.listIdx < m.listTop {
+		m.listTop = m.listIdx
+	}
+	if m.listIdx >= m.listTop+h {
+		m.listTop = m.listIdx - h + 1
+	}
+	m.listTop = clamp(m.listTop, 0, maxInt(n-h, 0))
+}
+
+// 세로 예산: 헤더1 + 룰1 + 목록 + 룰1 + 근거(0|1) + 입력1 + 룰1 + 재생바1 + 여백2
+func (m Model) listHeight() int {
+	reserved := 8
+	if _, ok := m.viewReason(10); ok {
+		reserved++
+	}
+	return maxInt(m.h-reserved, 3)
 }
 
 func (m Model) View() tea.View {
-	if m.w == 0 {
+	if m.w == 0 || m.h == 0 {
 		return tea.NewView("")
 	}
-	s := m.session
 	w := contentWidth(m.w)
+	listW := w - sidebarWidth - 1
+	listH := m.listHeight()
 
 	var b strings.Builder
-	b.WriteString(header(s, w))
+	// 제목줄은 목록 쪽에만 둔다. 사이드바의 LIBRARY 와 겹치지 않게.
+	b.WriteString(strings.Repeat(" ", sidebarWidth+1) + m.listHeader(listW))
 	b.WriteString("\n")
 	b.WriteString(ruleBrand(w))
 	b.WriteString("\n")
 
-	switch m.screen {
-	case ScreenPlaying:
-		b.WriteString(viewPlaying(s, w))
-	}
-
+	body := lipgloss.JoinHorizontal(lipgloss.Top,
+		m.viewSidebar(listH),
+		stRule.Render(strings.Repeat("│\n", listH)),
+		m.viewList(listW, listH))
+	b.WriteString(body)
 	b.WriteString("\n")
 	b.WriteString(rule(w))
 	b.WriteString("\n")
+
+	if reason, ok := m.viewReason(w); ok {
+		b.WriteString(reason)
+		b.WriteString("\n")
+	}
 	b.WriteString(m.input.View())
 	b.WriteString("\n")
 	b.WriteString(rule(w))
 	b.WriteString("\n")
-	b.WriteString(statusBar(s, w))
+	b.WriteString(m.viewPlayer(w))
 
-	// 좌우 여백 한 칸.
 	v := tea.NewView(lipgloss.NewStyle().Padding(1, 1).Render(b.String()))
-	// v2 에서 alt screen 은 옵션이 아니라 View 의 속성이다.
 	v.AltScreen = true
-	v.WindowTitle = s.Title
+	v.WindowTitle = "Apple Music CLI"
 	return v
 }
 
@@ -116,24 +246,12 @@ func styleInput(ta *textarea.Model) {
 	ta.SetStyles(styles)
 }
 
-func header(s api.Session, w int) string {
-	state := stBrandBold.Render("● PLAYING")
-	if s.Status == api.Ended {
-		state = stFaint.Render("○ ENDED")
+func clamp(v, lo, hi int) int {
+	if v < lo {
+		return lo
 	}
-	return row(stTitle.Render(truncate(s.Title, w-12)), state, w)
-}
-
-// 상태줄 — 왼쪽은 큐 요약, 오른쪽은 누적 사용량.
-// 사용량을 상시 노출하는 것은 agentic CLI 의 관례다. docs/03 참조.
-func statusBar(s api.Session, w int) string {
-	left := stDim.Render("Queue is empty")
-	if q := s.Summary; q != nil {
-		left = stDim.Render(fmt.Sprintf("%d tracks · %s · ", q.TrackCount, humanMinutes(q.TotalDurationMs))) +
-			stFaint.Render(fmt.Sprintf("%d never played", q.NeverPlayedCount))
+	if v > hi {
+		return hi
 	}
-	u := s.Usage
-	right := stFaint.Render(fmt.Sprintf("↑%s ↓%s  $%.4f",
-		tokens(u.PromptTokens), tokens(u.CompletionTokens), u.CostUsd))
-	return row(left, right, w)
+	return v
 }
