@@ -1,21 +1,19 @@
 import SwiftUI
 import RelayCore
 
-/// 제안 카드. 대화 흐름 안에, 질문 말풍선 바로 아래에 선다.
+/// 제안. 대화 흐름 안에, 질문 말풍선 바로 아래에 선다.
 ///
-/// **말풍선처럼 그리지 않는다.** 버블은 "누군가 이 말을 했다"는 뜻인데 제안은
-/// 아무도 하지 않은 말이다 — 앱이 나한테만 건네는 것이다. 그래서 문법을 알림 배너
-/// 쪽에서 빌린다: 유리, 떠 있음, 꼬리 없음, 오른쪽으로 살짝 들여쓰기.
-/// 카드가 유리라서 뒤의 말풍선이 실제로 굴절돼 비친다 — "다른 층"이라는 게 설명 없이
-/// 읽히므로 웹에서 쓰던 점선 테두리(`border-dashed`)는 필요 없다.
+/// **말풍선과 같은 언어를 쓰되 같은 것으로 보이지는 않게 한다.**
+/// 폭·모서리·여백은 말풍선을 따르고, 위치는 내 쪽(오른쪽)이다 — 나에게 주는 말이니까.
+/// 다만 강조색 단색(내가 실제로 한 말)이 아니라 **중립 유리**다. 대화 위에 떠 있는
+/// 다른 층이라는 것이 재질로만 구분되고, 꼬리는 달지 않는다 — 아무도 하지 않은 말이다.
 ///
-/// **색은 옅게, 형태로 함께.** 판정을 진한 색면으로 칠하면 카드가 색칠한 사각형이
-/// 되어 유리가 사라진다. 틴트는 알아볼 만큼만 깔고, 판정의 실제 신호는 헤더의
-/// 심볼(✓ ! ?)과 색 있는 라벨이 맡는다 — 알림 센터가 쓰는 방식이다.
+/// **색을 쓰지 않는다.** Apple 은 색을 상태(경고·오류·진행)에만 쓰고, "이 내용이 어떤
+/// 종류인가"를 색으로 칠하지 않는다 — Mail 의 요약도 Writing Tools 의 제안도 무채색
+/// 평문이다. 판정 3색을 배경에 깔아 봤더니 카드가 화면을 지배하고 대화가 밀렸다(실측).
+/// 판정은 headline 과 조건 문구가 글로 말한다.
 ///
-/// **색이 글보다 먼저 온다.** 미팅 중엔 "말해도 되나?"가 "뭐라고 말하지?"보다 급하다.
-/// 서버도 그 순서로 보낸다 — `question.verdict`(판정) → `question.delta`(문구).
-/// 카드는 그 순서를 시각적으로 지킨다: 유리가 먼저 물들고, 문장은 나중에 차오른다.
+/// 지연 시간(`latencyMs`)도 보여주지 않는다. 미팅 중에 쓸 일이 없는 개발 정보다.
 ///
 /// 원본: `app/src/components/panel/suggestion-card.tsx`
 public struct SuggestionCard: View {
@@ -31,27 +29,21 @@ public struct SuggestionCard: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 5) {
             if let replyingTo, !replyingTo.isEmpty { quoted(replyingTo) }
             headline
             script
-            if let condition = item.condition, !condition.isEmpty { conditionRow(condition) }
-            Divider().opacity(0.5)
-            footer
+            if let condition = item.condition, !condition.isEmpty { conditionLine(condition) }
+            SourceBadge(evidence: item.evidence)
+                .padding(.top, 1)
         }
-        .padding(12)
-        .frame(maxWidth: 420, alignment: .leading)
-        // 순서가 전부다. `.background` 는 콘텐츠 뒤에 깔리고, `.glassEffect` 는 그
-        // 콘텐츠 전체 뒤에 유리를 넣는다 — 결과적으로 유리 → 판정 색 → 글자가 된다.
-        // 색을 유리보다 앞에 두어야 흘러내리는 것이 보이고, 글자보다 뒤에 두어야
-        // 본문 대비가 안 깎인다.
-        .background { verdictWash }
-        .glassEffect(.regular, in: cardShape)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .frame(maxWidth: 340, alignment: .leading)
+        .glassEffect(.regular, in: bubbleShape)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(mode.map { "\($0.label) suggestion" } ?? "Waiting for verdict")
+        .accessibilityLabel(verdictLabel)
         .frame(maxWidth: .infinity, alignment: .trailing)
-        // 나에게 주는 제안이라 내 말풍선과 같은 쪽에 선다. 살짝 들여써서 대화보다 앞에 뜬 층임을 보탠다.
-        .padding(.leading, 40)
         .task(id: item.done) {
             guard !item.done else { return cursorOn = false }
             while !Task.isCancelled {
@@ -61,61 +53,22 @@ public struct SuggestionCard: View {
         }
     }
 
-    /// 모서리는 숫자로 박지 않고 부모(창 30pt)와 동심을 맞춘다.
-    /// 카드가 창 가장자리에서 멀면 반경이 지나치게 작아지므로 하한을 둔다.
-    private var cardShape: ConcentricRectangle {
-        ConcentricRectangle(corners: .concentric(minimum: .fixed(12)))
-    }
+    /// 말풍선과 같은 반경. 다만 꼬리는 없다 — 발화가 아니기 때문이다.
+    private var bubbleShape: RoundedRectangle { RoundedRectangle(cornerRadius: 14) }
 
-    // MARK: - 판정
-
-    /// 판정 색이 카드 맨 위에서 시작하는 진하기. 아래로 가며 0 이 된다.
-    ///
-    /// 유리 전체를 색으로 칠하는 방식(`Glass.tint`)은 버렸다. 색이 면을 꽉 채우면
-    /// 굴절도 림 하이라이트도 안 보이는 색칠한 사각형이 되고, 대화보다 카드가
-    /// 화면을 지배한다(실측). 위에서 흘러내리다 사라지게 하면 재질이 살아 있는
-    /// 채로 색만 남는다.
-    private static let washStrength = 0.45
-
-    private struct Mode {
-        let label: String
-        let color: Color
-    }
-
-    /// 판정 전(`nil`)은 색을 쓰지 않는다 — 아직 아무것도 정해지지 않았다는 뜻이다.
-    private var mode: Mode? {
+    /// 화면에서는 판정을 색이나 라벨로 말하지 않으므로, 이름은 접근성 쪽에 남긴다.
+    private var verdictLabel: String {
         switch item.mode {
-        case .direct:      Mode(label: "Safe to answer", color: .green)
-        case .conditional: Mode(label: "Answer with condition", color: .orange)
-        case .escalate:    Mode(label: "Verify first", color: .red)
-        case nil:          nil
+        case .direct:      "Safe to answer suggestion"
+        case .conditional: "Conditional suggestion"
+        case .escalate:    "Needs verification suggestion"
+        case nil:          "Waiting for verdict"
         }
     }
 
-
     // MARK: - 조각
 
-    /// 판정을 알리는 색. 카드 위에서 아래로 흘러내리며 사라진다.
-    ///
-    /// 라벨 줄("Safe to answer" 등)을 두지 않는 대신 이것이 화면상 판정 신호의
-    /// 전부다. 글자를 한 줄 덜 놓으면서도 곁눈질에는 오히려 빨리 잡힌다 —
-    /// 미팅 중에는 카드를 '읽기' 전에 색부터 보기 때문이다.
-    /// 판정 전(`mode == nil`)에는 아무 색도 흐르지 않는다.
-    ///
-    /// 다만 화면에서는 색이 유일한 신호가 되므로, 판정 이름은 카드 전체의
-    /// 접근성 라벨로 남긴다 (`body` 의 `.accessibilityLabel`).
-    private var verdictWash: some View {
-        cardShape.fill(
-            LinearGradient(
-                stops: [
-                    .init(color: (mode?.color ?? .clear).opacity(Self.washStrength), location: 0),
-                    .init(color: .clear, location: 0.7),
-                ],
-                startPoint: .top, endPoint: .bottom))
-    }
-
     /// 어떤 말에 대한 제안인지 — iMessage 의 답장 인용과 같은 자리, 같은 문법이다.
-    /// 카드가 대화에서 떨어져 있어도 무엇에 답하는지가 즉시 읽힌다.
     /// 원문은 바로 위 말풍선에 그대로 있으므로 여기서는 한 줄로 줄인다.
     private func quoted(_ text: String) -> some View {
         HStack(spacing: 5) {
@@ -123,13 +76,11 @@ public struct SuggestionCard: View {
             Image(systemName: "arrow.uturn.right")
                 .font(.system(size: 9, weight: .semibold))
             Text(text)
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
-        .fixedSize(horizontal: false, vertical: true)
-        .frame(height: 14)
+        .font(.system(size: 10))
+        .foregroundStyle(.tertiary)
         .accessibilityLabel("Replying to: \(text)")
     }
 
@@ -169,31 +120,15 @@ public struct SuggestionCard: View {
     }
 
     /// 조건부 판정의 단서. 이걸 못 보고 말하면 판정이 없느니만 못하다.
-    private func conditionRow(_ condition: String) -> some View {
-        HStack(alignment: .top, spacing: 5) {
-            Image(systemName: "exclamationmark.triangle.fill")
+    /// 상자로 감싸지 않는다 — 카드 안에 또 상자를 넣으면 그때부터 시끄러워진다.
+    private func conditionLine(_ condition: String) -> some View {
+        HStack(alignment: .top, spacing: 4) {
+            Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 9))
             Text(condition)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .font(.system(size: 11))
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary, in: .rect(cornerRadius: 7))
-    }
-
-    private var footer: some View {
-        HStack(spacing: 6) {
-            SourceBadge(evidence: item.evidence)
-            Spacer(minLength: 8)
-            if let latency = item.latencyMs {
-                Text("\(latency)ms")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
-                    .monospacedDigit()
-            }
-        }
     }
 }
