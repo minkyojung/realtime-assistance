@@ -43,8 +43,15 @@ func (m Model) viewPlayer(w int) string {
 	if gate, ok := m.viewGate(w); ok {
 		return gate
 	}
-	t, ok := m.nowPlaying()
-	if !ok {
+	// Music.app 이 말해주는 것을 그대로 그린다.
+	// 라이브러리에 없는 곡(카탈로그 스트리밍)도 이 경로로 보인다.
+	title, artist, durationMs := m.live.Title, m.live.Artist, m.live.DurationMs
+	if title == "" {
+		if t, ok := m.nowPlaying(); ok {
+			title, artist, durationMs = t.Title, t.Artist.Name, t.DurationMs
+		}
+	}
+	if title == "" {
 		if !m.polled {
 			return stFaint.Render("Connecting to Music…")
 		}
@@ -56,11 +63,11 @@ func (m Model) viewPlayer(w int) string {
 		icon = stFaint.Render("❚❚")
 	}
 
-	label := stBody.Render(truncate(t.Title, 28)) +
-		stFaint.Render(" — "+truncate(t.Artist.Name, 20))
+	label := stBody.Render(truncate(title, 28)) +
+		stFaint.Render(" — "+truncate(artist, 20))
 
-	pos := clamp(m.positionMs, 0, t.DurationMs)
-	timeLabel := fmt.Sprintf(" %s / %s", mmss(pos), mmss(t.DurationMs))
+	pos := clamp(m.positionMs, 0, durationMs)
+	timeLabel := fmt.Sprintf(" %s / %s", mmss(pos), mmss(durationMs))
 	left := icon + "  " + label
 
 	barW := w - lipgloss.Width(left) - lipgloss.Width(timeLabel) - 3
@@ -69,8 +76,8 @@ func (m Model) viewPlayer(w int) string {
 	}
 
 	ratio := 0.0
-	if t.DurationMs > 0 {
-		ratio = float64(pos) / float64(t.DurationMs)
+	if durationMs > 0 {
+		ratio = float64(pos) / float64(durationMs)
 	}
 	return left + "  " + progress(barW, ratio) + stFaint.Render(timeLabel)
 }

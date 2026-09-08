@@ -46,3 +46,6 @@ func cmdPrevious() tea.Cmd {
 func cmdOpenSettings() tea.Cmd {
 	return func() tea.Msg { music.OpenSettings(); return nil }
 }
+
+// ProbeStatus 는 헤드리스 확인용이다. 실제 Music.app 상태를 한 번 읽는다.
+func ProbeStatus() tea.Msg { return fetchStatus() }

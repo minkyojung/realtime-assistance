@@ -51,6 +51,9 @@ type Model struct {
 	positionMs   int
 	playing      bool
 
+	// Music.app 이 말해주는 것 그대로. 라이브러리에 없는 곡도 여기 담긴다.
+	live music.PlayerState
+
 	// 첫 실행 관문 — 로그인이 아니라 권한과 앱 실행 여부다.
 	playerErr error
 	polled    bool
@@ -110,11 +113,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case statusMsg:
 		m.polled = true
 		m.playerErr = msg.err
-		if msg.err == nil && !msg.state.Stopped {
+		if msg.err == nil {
+			m.live = msg.state
 			m.playing = msg.state.Playing
 			m.positionMs = msg.state.PositionMs
-			// Music.app 이 실제로 틀고 있는 곡을 화면의 기준으로 삼는다.
-			// 다른 데서 곡을 바꿔도 화면이 따라간다.
+			// 라이브러리에 있는 곡이면 목록에서도 표시한다.
+			// 없으면(카탈로그 스트리밍) 재생 바만 그린다 — 그것도 정상 상태다.
+			m.nowPlayingID = 0
 			if id := msg.state.PersistentID; id != "" {
 				if t, ok := data.Lib().ByPersistentID(id); ok {
 					m.nowPlayingID = t.Id

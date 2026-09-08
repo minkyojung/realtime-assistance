@@ -38,15 +38,16 @@ func Running() bool {
 	return exec.Command("pgrep", "-x", "Music").Run() == nil
 }
 
+// tell 블록 안에서는 `as text` 를 쓴다. `as string` 은 구문 오류가 난다.
 const statusScript = `tell application "Music"
-	set st to (player state as string)
-	if st is "stopped" then return "stopped|||||"
+	set ps to (player state as text)
+	if ps is "stopped" then return "stopped|||||"
 	set t to current track
 	set pos to 0
 	try
 		set pos to player position
 	end try
-	return st & "|" & (persistent ID of t) & "|" & (name of t) & "|" & (artist of t) & "|" & (pos as string) & "|" & ((duration of t) as string)
+	return ps & "|" & (persistent ID of t) & "|" & (name of t) & "|" & (artist of t) & "|" & (pos as text) & "|" & ((duration of t) as text)
 end tell`
 
 // Status 는 현재 재생 상태를 읽는다. 1초 주기 폴링에 쓰인다.
