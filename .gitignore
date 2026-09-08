@@ -20,3 +20,9 @@ spikes/out/
 
 # OS
 .DS_Store
+
+# Next.js
+app/.next/
+app/out/
+app/node_modules/
+app/next-env.d.ts
