@@ -70,28 +70,29 @@ final class PanelWindow {
 
         // 데스크톱을 통과시키는 건 NSVisualEffectView(.behindWindow) 뿐이다.
         // NSGlassEffectView 는 **창 뒤를 샘플링하지 않는다** — 같은 창 안에서 자기 뒤에
-        // 그려진 픽셀만 굴절시킨다. 그래서 유리를 창 배경 자리에 그냥 놓으면 뒤에
-        // 아무것도 없어 단색 다크로 떨어진다(실측). 순서가 전부다:
-        //   NSVisualEffectView(뒤가 비침)  →  NSGlassEffectView(그걸 굴절)  →  hosting
+        // 그려진 픽셀만 굴절시킨다.
+        //
+        // **그래서 여기에 유리를 얹지 않는다.** 헤더가 그대로 말한다 —
+        // "A view that embeds its *content view* in a dynamic glass effect."
+        // 창 전체를 유리로 덮으면 굴절할 대상이 자기 자식(= 우리 콘텐츠)뿐이라
+        // 굴절이 죽고 밋밋한 틴트만 남는다. 게다가 그 위에 올린 pill 의
+        // `.glassEffect()` 는 유리 위의 유리가 되어 이중 블러로 뭉갠다.
+        //
+        // 유리는 배경의 재질이 아니라 **콘텐츠 위에 떠 있는 최상위 레이어**의 재질이다.
+        // 창은 여기까지(반투명 재질)만 맡고, 유리는 전부 SwiftUI 쪽에서 개별 요소
+        // (pill · 제안 카드 · 컨트롤)에 `.glassEffect()` 로 붙인다.
         let backdrop = NSVisualEffectView()
         backdrop.material = .underWindowBackground
         backdrop.blendingMode = .behindWindow
         backdrop.state = .active
 
-        let glass = NSGlassEffectView()
-        // .clear — backdrop 이 이미 흐렸다. .regular 를 겹치면 이중 블러가 된다.
-        glass.style = .clear
-        // 시스템이 그린 창 모서리와 동심을 맞춘다(툴바가 있어 약 30pt).
-        glass.cornerRadius = 30
-        glass.contentView = hosting
-
-        backdrop.addSubview(glass)
-        glass.translatesAutoresizingMaskIntoConstraints = false
+        backdrop.addSubview(hosting)
+        hosting.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            glass.topAnchor.constraint(equalTo: backdrop.topAnchor),
-            glass.bottomAnchor.constraint(equalTo: backdrop.bottomAnchor),
-            glass.leadingAnchor.constraint(equalTo: backdrop.leadingAnchor),
-            glass.trailingAnchor.constraint(equalTo: backdrop.trailingAnchor),
+            hosting.topAnchor.constraint(equalTo: backdrop.topAnchor),
+            hosting.bottomAnchor.constraint(equalTo: backdrop.bottomAnchor),
+            hosting.leadingAnchor.constraint(equalTo: backdrop.leadingAnchor),
+            hosting.trailingAnchor.constraint(equalTo: backdrop.trailingAnchor),
         ])
         panel.contentView = backdrop
     }
