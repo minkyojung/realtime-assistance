@@ -17,6 +17,11 @@ import RelayCore
 public struct PanelView: View {
     private let controller: SessionController
 
+    /// 스크롤 위치를 코드에서 옮기기 위한 손잡이.
+    @State private var scrollPosition = ScrollPosition(idType: String.self)
+    /// 지금 바닥에 붙어 있는가. 붙어 있을 때만 새 내용을 따라 내려간다.
+    @State private var pinnedToBottom = true
+
     public init(controller: SessionController) {
         self.controller = controller
     }
@@ -73,6 +78,25 @@ public struct PanelView: View {
         .scrollContentBackground(.hidden)
         // 패널이 작아서 스크롤바가 뜨면 말풍선 위를 덮는다. 흐름은 자동 스크롤로 따라간다.
         .scrollIndicators(.hidden)
+        .scrollPosition($scrollPosition)
+        // 대화는 아래가 현재다. 처음 열 때부터 바닥을 본다.
+        // (`.initialOffset` 만 지정한다. 전체 역할에 걸면 콘텐츠가 자랄 때마다
+        //  시스템이 바닥으로 끌어당겨, 사용자가 위로 올려둔 것을 무시한다.)
+        .defaultScrollAnchor(.bottom, for: .initialOffset)
+        // 바닥 근처인지 계속 지켜본다. 32pt 는 손으로 살짝 민 정도는 이탈로 보지 않는 여유다.
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y
+                >= geometry.contentSize.height - geometry.containerSize.height - 32
+        } action: { _, isNearBottom in
+            pinnedToBottom = isNearBottom
+        }
+        // 새 항목이 오거나 문구가 차오르면 따라 내려간다.
+        // **사용자가 위로 올려 뒀으면 따라가지 않는다** — 근거를 확인하려고 올려놨는데
+        // 새 발화가 왔다고 도로 내려가면 그 순간 이 패널은 쓸 수 없는 물건이 된다.
+        .onChange(of: contentSignature) {
+            guard pinnedToBottom else { return }
+            scrollPosition.scrollTo(edge: .bottom)
+        }
     }
 
     /// ScriptedSource 재생 컨트롤. 웹 패널의 footer 와 같다 — 실제 제품에서는 오디오 캡처 토글.
@@ -95,6 +119,17 @@ public struct PanelView: View {
         .disabled(controller.running)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+    }
+
+    /// 스크롤을 따라가야 할 변화를 한 값으로 모은다.
+    /// 항목이 늘어날 때뿐 아니라 **마지막 항목의 글자가 차오를 때도** 바뀌어야 한다 —
+    /// partial 자막과 스트리밍 script 가 그 경우다.
+    private var contentSignature: String {
+        switch controller.feed.last {
+        case let .utterance(item):  "\(controller.feed.count):\(item.text.count)"
+        case let .suggestion(item): "\(controller.feed.count):\(item.script.count)"
+        case nil:                   "0"
+        }
     }
 
     private enum Row: Identifiable {
