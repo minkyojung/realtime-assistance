@@ -55,6 +55,11 @@ func rule(width int) string {
 	return stRule.Render(strings.Repeat("─", width))
 }
 
+// 헤더 아래에만 쓴다. 화면 상단을 브랜드 색으로 닫는다.
+func ruleBrand(width int) string {
+	return stRuleBrand.Render(strings.Repeat("─", width))
+}
+
 // progress 는 재생 위치 막대다. 머리(●)가 현재 위치를 가리킨다.
 func progress(width int, ratio float64) string {
 	if width < 4 {

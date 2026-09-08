@@ -52,7 +52,7 @@ func track(id int64, title string, a api.Artist, alb *api.Album, genre string, y
 
 // Session 은 S1 재생 뷰가 그리는 세션이다.
 func Session() api.Session {
-	title := "조용한 걸로, 담아두고 안 들은 것 위주"
+	title := "something quiet, mostly things I never played"
 	total := 262079 + 225733 + 239375 + 285440 + 188039 + 380852 + 206742 + 232440
 
 	return api.Session{
@@ -74,15 +74,15 @@ func Session() api.Session {
 		},
 		QueueItems: &[]api.QueueItem{
 			qi(1, 1, track(11, "Perth", bonIver, albBonIver2011, "Alternative", 2011, 262079),
-				"2026년 7월에 담아두고 한 번도 재생하지 않았습니다", api.Playing),
+				"Added Jul 2026, never played once", api.Playing),
 			qi(2, 2, track(12, "Michicant", bonIver, albBonIver2011, "Alternative", 2011, 225733),
-				"같은 앨범에서 이어집니다. 역시 미재생", api.Pending),
+				"Continues the same record, also never played", api.Pending),
 			qi(3, 3, track(13, "Jirisan Breeze", akimbo, albSeoulSori, "Hip-Hop/Rap", 2018, 239375),
-				"장르는 다르지만 밀도가 비슷합니다", api.Pending),
+				"Different genre, similar density", api.Pending),
 			qi(4, 4, track(14, "Woods", bonIver, albBloodBank, "Alternative", 2009, 285440),
-				"미재생. 목소리만 남는 편성입니다", api.Pending),
+				"Never played. Strips down to just the voice", api.Pending),
 			qi(5, 5, track(15, "Towers", bonIver, albBonIver2011, "Alternative", 2011, 188039),
-				"미재생. 앞 곡보다 짧게 끊습니다", api.Pending),
+				"Never played. Shorter, ends the run", api.Pending),
 		},
 	}
 }

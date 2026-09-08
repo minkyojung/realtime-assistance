@@ -32,8 +32,10 @@ var (
 	stDim   = lipgloss.NewStyle().Foreground(colDim)
 	stFaint = lipgloss.NewStyle().Foreground(colFaint)
 	stRule  = lipgloss.NewStyle().Foreground(colRule)
+	stRuleBrand = lipgloss.NewStyle().Foreground(colBrandDeep)
 
 	stBrand     = lipgloss.NewStyle().Foreground(colBrand)
+	stBrandBold = lipgloss.NewStyle().Bold(true).Foreground(colBrand)
 	stBrandSoft = lipgloss.NewStyle().Foreground(colBrandSoft)
 	stTrackHead = lipgloss.NewStyle().Foreground(colBrandDeep)
 	stWarn      = lipgloss.NewStyle().Foreground(colWarn)
@@ -47,8 +49,14 @@ var (
 )
 
 // 앨범 아트 자리. Bubble Tea 는 셀 기반 렌더러라 진짜 이미지를 띄울 수 없어
-// 색 블록으로 대체한다. 아트는 무채색으로 둔다 — 빨강은 재생 신호에만 쓴다.
-var artShades = []string{"#3A3A42", "#4A4A54", "#5A5A66", "#4A4A54", "#3A3A42", "#2E2E36"}
+// 색 블록으로 대체한다.
+//
+// 여기는 브랜드 색을 크게 써도 되는 유일한 자리다. 원래 앨범 커버가 놓이는
+// 곳이라 색이 있어도 경보로 읽히지 않는다.
+var artShades = []string{"#5C0014", "#8C001F", "#C4002A", "#FA002C", "#C4002A", "#8C001F"}
+
+// 묘비 화면은 무채색을 쓴다. 되살릴 때 색이 돌아오는 대비가 이 제품의 핵심이다.
+var artShadesDead = []string{"#2E2E36", "#3A3A42", "#44444E", "#3A3A42", "#2E2E36", "#26262C"}
 
 func albumArt(shades []string, w, h int) string {
 	out := ""

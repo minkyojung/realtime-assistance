@@ -91,7 +91,7 @@ func upNext(rest []api.QueueItem, w int) string {
 	b.WriteString("\n")
 
 	for _, it := range rest {
-		left := stFaint.Render(fmt.Sprintf("%d. ", it.Position)) +
+		left := stTrackHead.Render(fmt.Sprintf("%d. ", it.Position)) +
 			stBody.Render(it.Track.Title) +
 			stMeta.Render(" — "+it.Track.Artist.Name)
 

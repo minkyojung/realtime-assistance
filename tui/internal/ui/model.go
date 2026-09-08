@@ -34,7 +34,7 @@ func New() Model {
 	ta.Prompt = "› "
 	styleInput(&ta)
 	// 스크린샷용으로 재편성 요청을 미리 채워 둔다. 지우고 쓰면 된다.
-	ta.SetValue("좀 더 조용한 걸로")
+	ta.SetValue("something even quieter")
 	ta.Focus()
 
 	return Model{
@@ -75,7 +75,7 @@ func (m Model) View() tea.View {
 	var b strings.Builder
 	b.WriteString(header(s, w))
 	b.WriteString("\n")
-	b.WriteString(rule(w))
+	b.WriteString(ruleBrand(w))
 	b.WriteString("\n")
 
 	switch m.screen {
@@ -112,13 +112,14 @@ func styleInput(ta *textarea.Model) {
 		st.Prompt = lipgloss.NewStyle().Foreground(colBrand)
 		st.Placeholder = lipgloss.NewStyle().Foreground(colFaint)
 	}
+	styles.Cursor.Color = colBrand
 	ta.SetStyles(styles)
 }
 
 func header(s api.Session, w int) string {
-	state := stBrand.Render("● Playing")
+	state := stBrandBold.Render("● PLAYING")
 	if s.Status == api.Ended {
-		state = stFaint.Render("○ Ended")
+		state = stFaint.Render("○ ENDED")
 	}
 	return row(stTitle.Render(truncate(s.Title, w-12)), state, w)
 }
