@@ -12,14 +12,17 @@
 Project Relay {
   database_type: 'PostgreSQL'
   Note: '''
-    개발팀의 GitHub 정보를 세일즈·PM이 고객 앞에서 바로 말할 수 있는
-    문장으로 바꿔 실시간 제공하는 어시스턴트.
+    미팅 전·중·후를 하나로 잇는 어시스턴트.
+
+      Before       참석자와 목표를 정하고, 준비된 답변으로 무장한다
+      In Progress  상대 질문에 즉답하고, 내 목표가 다뤄졌는지 체크한다
+      After        요약·할 일·개선점을 남긴다 -> 다음 미팅의 Before가 된다
 
     핵심 구조
-      1. 지식(사실)과 답변 규칙(말하는 방식)을 분리한다
+      1. 지식(사실)과 답변(말하는 방식)을 분리한다
       2. 접근 통제는 LLM이 아니라 WHERE 절이 한다 (audience_level, intent)
-      3. 답하지 못한 질문(knowledge_gap)은 일급 엔티티이며,
-         해소되면 response_rule이 되어 다음부터 즉답이 된다
+      3. 대화는 양방향이다. 상대가 묻는 것(question)과
+         내가 물어야 하는 것(session_goal)을 모두 추적한다
   '''
 }
 
@@ -69,18 +72,22 @@ Enum detection_method {
   model [note: '2차 소형모델']
 }
 
-Enum gap_reason {
-  no_rule              [note: '답변 규칙 없음']
-  no_knowledge         [note: '근거 지식 자체가 없음']
-  condition_unmet      [note: '규칙은 있으나 조건 미충족']
-  unconfirmed_timeline [note: 'intent=when 차단 — 미확정 일정']
-  user_rejected        [note: '사용자가 답변이 틀렸다고 신고']
+Enum goal_status {
+  pending [note: '아직 다뤄지지 않음']
+  covered [note: '대화에서 다뤄짐']
+  missed  [note: '미팅이 끝날 때까지 못 다룸 -> action_item 으로 이월']
 }
 
-Enum gap_status {
+Enum action_item_type {
+  follow_up      [note: '내가 할 일 — 자료 발송, 재미팅 등']
+  answer_needed  [note: '답하지 못한 질문 — 확인 후 회신 필요']
+  improvement    [note: '개선점 — 다음 미팅에서 다르게 할 것']
+}
+
+Enum action_item_status {
   open
-  resolved
-  rejected
+  done
+  dropped
 }
 
 Enum source_type {
@@ -129,7 +136,10 @@ Table participant {
   id            uuid             [pk, default: `gen_random_uuid()`]
   session_id    uuid             [not null, ref: > session.id]
   role          participant_role [not null]
-  display_name  varchar(100)     [null, note: '화면 표시용']
+  display_name  varchar(100)     [null, note: '이름']
+  org           varchar(200)     [null, note: '소속. Before 단계에서 입력']
+  title         varchar(100)     [null, note: '직책']
+  note          text             [null, note: '사전 메모 — 관심사, 이전 미팅 맥락']
   speaker_label varchar(10)      [null, note: '''
     1:N 확장용. MVP(1:1)에서는 항상 NULL.
     상대가 여러 명이면 A, B, C 가 들어간다.
@@ -172,7 +182,39 @@ Table utterance {
 
 
 // =============================================================
-//  2. 질문과 판정
+//  2. Before — 미팅에서 얻어내야 하는 것
+// =============================================================
+
+Table session_goal {
+  id                  uuid        [pk, default: `gen_random_uuid()`]
+  session_id          uuid        [not null, ref: > session.id]
+  text                text        [not null, note: '예: 예산 규모 확인, 의사결정자 파악']
+  embedding           vector(3072) [null, note: '대화에서 다뤄졌는지 판정할 때 사용']
+  status              goal_status [not null, default: 'pending']
+  covered_by          uuid        [null, ref: > utterance.id, note: '이 목표를 충족시킨 발화']
+  covered_at          timestamptz [null]
+  sort_order          integer     [not null, default: 0]
+  created_at          timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (session_id, status) [name: 'idx_goal_session_status']
+    covered_by
+  }
+  Note: '''
+    미팅 전에 정하는 "이건 꼭 물어봐야 한다" 목록.
+
+    질문(question)과 방향이 반대다.
+      question      상대가 나에게 묻는 것   -> 답을 제공한다
+      session_goal  내가 상대에게 물을 것   -> 물었는지 확인한다
+
+    이 테이블 때문에 파이프라인이 host 발화도 처리하게 된다.
+    기존에는 상대 발화만 질문 감지 대상이었다.
+  '''
+}
+
+
+// =============================================================
+//  3. In Progress — 상대의 질문과 판정
 // =============================================================
 
 Table question {
@@ -208,14 +250,13 @@ Table question {
   }
   Note: '''
     감지된 질문과 판정 결과. 화면 1-② 판정 카드, 1-③ 히스토리의 원천.
-    커버리지 지표는 이 테이블 건수와 knowledge_gap 건수로 계산되므로
-    별도 집계 테이블이 필요하지 않다.
+    즉답률은 이 테이블만으로 계산되므로 별도 집계 테이블이 필요하지 않다.
   '''
 }
 
 
 // =============================================================
-//  3. 지식 (Layer 1 — 원본 사실)
+//  4. 지식 (원본 사실)
 // =============================================================
 
 Table knowledge_source {
@@ -279,7 +320,7 @@ Table knowledge_chunk {
 
 
 // =============================================================
-//  4. 답변 규칙 (Layer 2 — 승인된 답)
+//  5. 준비된 답변
 // =============================================================
 
 Table response_rule {
@@ -298,10 +339,6 @@ Table response_rule {
   condition         text           [null, note: 'conditional 일 때 충족되어야 하는 조건']
   fallback_script   text           [null, note: '조건 미충족 시 대신 할 말']
   authority_role    varchar(100)   [null, note: '승인권자. 세일즈=영업팀장 / 채용=인사팀']
-  created_from      uuid           [null, unique, ref: - knowledge_gap.id, note: '''
-    이 규칙이 태어난 공백. knowledge_gap.resolved_by 와 양방향을 이룬다.
-    "쓸수록 좋아진다"는 주장의 데이터 증거이므로 반드시 유지한다.
-  ''']
   is_active         boolean        [not null, default: true]
   valid_from        date           [not null]
   valid_until       date           [null, note: '만료 임박 알림의 기준. 화면 3-②']
@@ -312,7 +349,6 @@ Table response_rule {
     (domain, intent, audience_level) [name: 'idx_rule_search', note: '검색 WHERE 절 복합 인덱스']
     is_active
     valid_until
-    created_from
     pattern_embedding [name: 'idx_rule_embedding', note: '''
       pgvector HNSW. 위와 동일하게 halfvec 캐스팅으로 인덱싱한다.
     ''']
@@ -337,48 +373,58 @@ Table response_rule_chunk {
 
 
 // =============================================================
-//  5. 지식 공백 (학습 루프)
+//  6. After — 회의가 끝난 뒤 남는 것
 // =============================================================
 
-Table knowledge_gap {
-  id                  uuid        [pk, default: `gen_random_uuid()`]
-  question_id         uuid        [not null, unique, ref: - question.id]
-  session_id          uuid        [not null, ref: > session.id]
-  domain              domain_type [not null]
-  question_normalized text        [not null, note: '빈도 집계 키. 동일 질문 반복을 묶는다']
-  intent              question_intent [not null]
-  reason              gap_reason  [not null]
-  status              gap_status  [not null, default: 'open']
-  resolved_by         uuid        [null, ref: > response_rule.id, note: '''
-    이 공백을 해소한 규칙. response_rule.created_from 과 양방향을 이룬다.
+Table session_summary {
+  id            uuid         [pk, default: `gen_random_uuid()`]
+  session_id    uuid         [not null, unique, ref: - session.id]
+  summary       text         [not null, note: '회의 요약']
+  improvements  text         [null, note: '개선점 — 다음에 다르게 할 것']
+  goal_coverage numeric(4,3) [null, note: '목표 달성률. covered / 전체 goal']
+  generated_at  timestamptz  [not null, default: `now()`]
 
-    관계가 방향에 따라 다르다는 점이 중요하다.
-      created_from  1:1  한 규칙은 하나의 공백에서 태어난다
-      resolved_by   N:1  여러 공백이 하나의 규칙으로 함께 해소된다
+  Note: '''
+    미팅 종료 시 utterance 전체를 근거로 생성한다.
+    실시간이 아니므로 지연 제약이 없다.
+  '''
+}
 
-    같은 질문이 6회 반복돼 공백이 6건 쌓였다면, 승인자가 규칙 하나를
-    만드는 순간 6건이 모두 그 규칙을 가리키며 해소된다.
-    이것이 "한 번 답하면 반복 질문이 한꺼번에 사라진다"는 동작의 근거다.
+Table action_item {
+  id                uuid               [pk, default: `gen_random_uuid()`]
+  session_id        uuid               [not null, ref: > session.id]
+  type              action_item_type   [not null]
+  status            action_item_status [not null, default: 'open']
+  text              text               [not null]
+  due_date          date               [null]
+  assignee          varchar(100)       [null]
+
+  from_question_id  uuid [null, ref: - question.id, note: '''
+    답하지 못한 질문에서 생긴 항목 (type = answer_needed).
+    담당자가 이걸 보고 response_rule 에 답변을 추가한다.
   ''']
-  resolved_at         timestamptz [null]
-  rejection_reason    text        [null, note: '기각 사유']
-  created_at          timestamptz [not null, default: `now()`]
+  from_goal_id      uuid [null, ref: - session_goal.id, note: '''
+    미팅에서 못 다룬 목표에서 이월된 항목 (type = follow_up).
+  ''']
+
+  resolved_at       timestamptz [null]
+  created_at        timestamptz [not null, default: `now()`]
 
   Indexes {
-    (status, created_at)       [name: 'idx_gap_queue', note: '화면 2-② 큐 리스트']
-    (question_normalized, domain) [name: 'idx_gap_frequency', note: '발생 빈도 집계']
-    reason
-    resolved_by
+    (session_id, status) [name: 'idx_action_session_status']
+    (type, status)       [name: 'idx_action_type_status']
+    from_question_id
+    from_goal_id
   }
   Note: '''
-    답하지 못한 질문. 일급 엔티티다.
+    미팅 후 할 일. 세 가지가 한 목록에 섞인다.
 
-    빈도순으로 정렬되어 담당팀에게 노출되는 것이 핵심이다.
-    전통적 사내 위키는 "무엇을 써야 할지 모른다"는 이유로 비어 있지만
-    Relay는 대화가 우선순위를 정해 준다.
-    "이 12개에 답해 주세요. 각각 3회, 5회 물어봤습니다."
+      follow_up      자료 발송, 재미팅 등 내가 할 일
+      answer_needed  답하지 못한 질문 — 확인 후 회신 필요
+      improvement    다음 미팅에서 다르게 할 것
 
-    화면 2-② 큐 리스트, 2-③ 상세.
+    사용자 입장에서 이 셋을 구분할 이유가 없으므로 한 테이블로 둔다.
+    "답 못 한 질문"을 별도 개념으로 분리하지 않는 이유도 같다.
   '''
 }
 
@@ -387,12 +433,11 @@ Table knowledge_gap {
 //  참고 — 지표는 테이블 없이 계산된다
 // =============================================================
 //
-//   커버리지        = 1 - (knowledge_gap 생성수 / question 총수)
-//   평균 해소 시간   = avg(resolved_at - created_at)
-//   규칙 사용 횟수   = count(question.matched_rule_id)
-//   공백 발생 빈도   = count(*) group by question_normalized
+//   즉답률          = count(question where response_mode != 'escalate') / count(question)
+//   목표 달성률      = count(session_goal where status='covered') / count(session_goal)
+//   미처리 할 일     = count(action_item where status='open')
+//   답변 사용 횟수   = count(*) from question group by matched_rule_id
 //
-//   화면 3-① 대시보드의 모든 값이 위 4개 쿼리로 나오므로
-//   집계 테이블을 두지 않는다.
+//   모든 지표가 위 4개 쿼리로 나오므로 집계 테이블을 두지 않는다.
 //
 // =============================================================

@@ -52,18 +52,22 @@ CREATE TYPE "detection_method" AS ENUM (
   'model'
 );
 
-CREATE TYPE "gap_reason" AS ENUM (
-  'no_rule',
-  'no_knowledge',
-  'condition_unmet',
-  'unconfirmed_timeline',
-  'user_rejected'
+CREATE TYPE "goal_status" AS ENUM (
+  'pending',
+  'covered',
+  'missed'
 );
 
-CREATE TYPE "gap_status" AS ENUM (
+CREATE TYPE "action_item_type" AS ENUM (
+  'follow_up',
+  'answer_needed',
+  'improvement'
+);
+
+CREATE TYPE "action_item_status" AS ENUM (
   'open',
-  'resolved',
-  'rejected'
+  'done',
+  'dropped'
 );
 
 CREATE TYPE "source_type" AS ENUM (
@@ -96,6 +100,9 @@ CREATE TABLE "participant" (
   "session_id" uuid NOT NULL,
   "role" participant_role NOT NULL,
   "display_name" varchar(100),
+  "org" varchar(200),
+  "title" varchar(100),
+  "note" text,
   "speaker_label" varchar(10),
   "voice_profile_id" varchar(100),
   "created_at" timestamptz NOT NULL DEFAULT (now())
@@ -110,6 +117,18 @@ CREATE TABLE "utterance" (
   "has_question_mark" boolean NOT NULL DEFAULT false,
   "started_at" timestamptz NOT NULL,
   "ended_at" timestamptz NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "session_goal" (
+  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
+  "session_id" uuid NOT NULL,
+  "text" text NOT NULL,
+  "embedding" vector(3072),
+  "status" goal_status NOT NULL DEFAULT 'pending',
+  "covered_by" uuid,
+  "covered_at" timestamptz,
+  "sort_order" integer NOT NULL DEFAULT 0,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
@@ -166,7 +185,6 @@ CREATE TABLE "response_rule" (
   "condition" text,
   "fallback_script" text,
   "authority_role" varchar(100),
-  "created_from" uuid UNIQUE,
   "is_active" boolean NOT NULL DEFAULT true,
   "valid_from" date NOT NULL,
   "valid_until" date,
@@ -181,18 +199,26 @@ CREATE TABLE "response_rule_chunk" (
   PRIMARY KEY ("rule_id", "chunk_id")
 );
 
-CREATE TABLE "knowledge_gap" (
+CREATE TABLE "session_summary" (
   "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
-  "question_id" uuid UNIQUE NOT NULL,
+  "session_id" uuid UNIQUE NOT NULL,
+  "summary" text NOT NULL,
+  "improvements" text,
+  "goal_coverage" numeric(4,3),
+  "generated_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "action_item" (
+  "id" uuid PRIMARY KEY DEFAULT (gen_random_uuid()),
   "session_id" uuid NOT NULL,
-  "domain" domain_type NOT NULL,
-  "question_normalized" text NOT NULL,
-  "intent" question_intent NOT NULL,
-  "reason" gap_reason NOT NULL,
-  "status" gap_status NOT NULL DEFAULT 'open',
-  "resolved_by" uuid,
+  "type" action_item_type NOT NULL,
+  "status" action_item_status NOT NULL DEFAULT 'open',
+  "text" text NOT NULL,
+  "due_date" date,
+  "assignee" varchar(100),
+  "from_question_id" uuid,
+  "from_goal_id" uuid,
   "resolved_at" timestamptz,
-  "rejection_reason" text,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
@@ -205,6 +231,10 @@ CREATE INDEX "idx_participant_session_role" ON "participant" ("session_id", "rol
 CREATE INDEX "idx_utterance_session_time" ON "utterance" ("session_id", "ended_at");
 
 CREATE INDEX ON "utterance" ("participant_id");
+
+CREATE INDEX "idx_goal_session_status" ON "session_goal" ("session_id", "status");
+
+CREATE INDEX ON "session_goal" ("covered_by");
 
 CREATE INDEX "idx_question_session_time" ON "question" ("session_id", "detected_at");
 
@@ -231,18 +261,16 @@ CREATE INDEX ON "response_rule" ("is_active");
 
 CREATE INDEX ON "response_rule" ("valid_until");
 
-CREATE INDEX ON "response_rule" ("created_from");
-
 
 CREATE INDEX ON "response_rule_chunk" ("chunk_id");
 
-CREATE INDEX "idx_gap_queue" ON "knowledge_gap" ("status", "created_at");
+CREATE INDEX "idx_action_session_status" ON "action_item" ("session_id", "status");
 
-CREATE INDEX "idx_gap_frequency" ON "knowledge_gap" ("question_normalized", "domain");
+CREATE INDEX "idx_action_type_status" ON "action_item" ("type", "status");
 
-CREATE INDEX ON "knowledge_gap" ("reason");
+CREATE INDEX ON "action_item" ("from_question_id");
 
-CREATE INDEX ON "knowledge_gap" ("resolved_by");
+CREATE INDEX ON "action_item" ("from_goal_id");
 
 COMMENT ON TABLE "session" IS '미팅 한 건. 화면 1-① 세션 헤더의 원천.';
 
@@ -262,7 +290,13 @@ session 1건에 participant N건이므로 상대가 늘어나도 행만 늘고 �
 질문 감지 조건은 role != host 이므로 코드도 변하지 않는다.
 ';
 
-COMMENT ON COLUMN "participant"."display_name" IS '화면 표시용';
+COMMENT ON COLUMN "participant"."display_name" IS '이름';
+
+COMMENT ON COLUMN "participant"."org" IS '소속. Before 단계에서 입력';
+
+COMMENT ON COLUMN "participant"."title" IS '직책';
+
+COMMENT ON COLUMN "participant"."note" IS '사전 메모 — 관심사, 이전 미팅 맥락';
 
 COMMENT ON COLUMN "participant"."speaker_label" IS '1:N 확장용. MVP(1:1)에서는 항상 NULL.
 상대가 여러 명이면 A, B, C 가 들어간다.
@@ -284,9 +318,24 @@ COMMENT ON COLUMN "utterance"."has_question_mark" IS 'STT가 예측한 물음표
 
 COMMENT ON COLUMN "utterance"."ended_at" IS '턴 종료 시각. 지연 측정 기준점';
 
+COMMENT ON TABLE "session_goal" IS '미팅 전에 정하는 "이건 꼭 물어봐야 한다" 목록.
+
+질문(question)과 방향이 반대다.
+  question      상대가 나에게 묻는 것   -> 답을 제공한다
+  session_goal  내가 상대에게 물을 것   -> 물었는지 확인한다
+
+이 테이블 때문에 파이프라인이 host 발화도 처리하게 된다.
+기존에는 상대 발화만 질문 감지 대상이었다.
+';
+
+COMMENT ON COLUMN "session_goal"."text" IS '예: 예산 규모 확인, 의사결정자 파악';
+
+COMMENT ON COLUMN "session_goal"."embedding" IS '대화에서 다뤄졌는지 판정할 때 사용';
+
+COMMENT ON COLUMN "session_goal"."covered_by" IS '이 목표를 충족시킨 발화';
+
 COMMENT ON TABLE "question" IS '감지된 질문과 판정 결과. 화면 1-② 판정 카드, 1-③ 히스토리의 원천.
-커버리지 지표는 이 테이블 건수와 knowledge_gap 건수로 계산되므로
-별도 집계 테이블이 필요하지 않다.
+즉답률은 이 테이블만으로 계산되므로 별도 집계 테이블이 필요하지 않다.
 ';
 
 COMMENT ON COLUMN "question"."utterance_id" IS '1:0..1 관계. 모든 발화가 질문은 아니며,
@@ -365,46 +414,48 @@ COMMENT ON COLUMN "response_rule"."fallback_script" IS '조건 미충족 시 대
 
 COMMENT ON COLUMN "response_rule"."authority_role" IS '승인권자. 세일즈=영업팀장 / 채용=인사팀';
 
-COMMENT ON COLUMN "response_rule"."created_from" IS '이 규칙이 태어난 공백. knowledge_gap.resolved_by 와 양방향을 이룬다.
-"쓸수록 좋아진다"는 주장의 데이터 증거이므로 반드시 유지한다.
-';
-
 COMMENT ON COLUMN "response_rule"."valid_until" IS '만료 임박 알림의 기준. 화면 3-②';
 
 COMMENT ON TABLE "response_rule_chunk" IS '규칙과 근거 청크의 M:N. 한 규칙이 여러 GitHub 근거를 인용할 수 있다.';
 
 COMMENT ON COLUMN "response_rule_chunk"."note" IS '이 근거를 채택한 이유';
 
-COMMENT ON TABLE "knowledge_gap" IS '답하지 못한 질문. 일급 엔티티다.
-
-빈도순으로 정렬되어 담당팀에게 노출되는 것이 핵심이다.
-전통적 사내 위키는 "무엇을 써야 할지 모른다"는 이유로 비어 있지만
-Relay는 대화가 우선순위를 정해 준다.
-"이 12개에 답해 주세요. 각각 3회, 5회 물어봤습니다."
-
-화면 2-② 큐 리스트, 2-③ 상세.
+COMMENT ON TABLE "session_summary" IS '미팅 종료 시 utterance 전체를 근거로 생성한다.
+실시간이 아니므로 지연 제약이 없다.
 ';
 
-COMMENT ON COLUMN "knowledge_gap"."question_normalized" IS '빈도 집계 키. 동일 질문 반복을 묶는다';
+COMMENT ON COLUMN "session_summary"."summary" IS '회의 요약';
 
-COMMENT ON COLUMN "knowledge_gap"."resolved_by" IS '이 공백을 해소한 규칙. response_rule.created_from 과 양방향을 이룬다.
+COMMENT ON COLUMN "session_summary"."improvements" IS '개선점 — 다음에 다르게 할 것';
 
-관계가 방향에 따라 다르다는 점이 중요하다.
-  created_from  1:1  한 규칙은 하나의 공백에서 태어난다
-  resolved_by   N:1  여러 공백이 하나의 규칙으로 함께 해소된다
+COMMENT ON COLUMN "session_summary"."goal_coverage" IS '목표 달성률. covered / 전체 goal';
 
-같은 질문이 6회 반복돼 공백이 6건 쌓였다면, 승인자가 규칙 하나를
-만드는 순간 6건이 모두 그 규칙을 가리키며 해소된다.
-이것이 "한 번 답하면 반복 질문이 한꺼번에 사라진다"는 동작의 근거다.
+COMMENT ON TABLE "action_item" IS '미팅 후 할 일. 세 가지가 한 목록에 섞인다.
+
+  follow_up      자료 발송, 재미팅 등 내가 할 일
+  answer_needed  답하지 못한 질문 — 확인 후 회신 필요
+  improvement    다음 미팅에서 다르게 할 것
+
+사용자 입장에서 이 셋을 구분할 이유가 없으므로 한 테이블로 둔다.
+"답 못 한 질문"을 별도 개념으로 분리하지 않는 이유도 같다.
 ';
 
-COMMENT ON COLUMN "knowledge_gap"."rejection_reason" IS '기각 사유';
+COMMENT ON COLUMN "action_item"."from_question_id" IS '답하지 못한 질문에서 생긴 항목 (type = answer_needed).
+담당자가 이걸 보고 response_rule 에 답변을 추가한다.
+';
+
+COMMENT ON COLUMN "action_item"."from_goal_id" IS '미팅에서 못 다룬 목표에서 이월된 항목 (type = follow_up).
+';
 
 ALTER TABLE "participant" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "utterance" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "utterance" ADD FOREIGN KEY ("participant_id") REFERENCES "participant" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "session_goal" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "session_goal" ADD FOREIGN KEY ("covered_by") REFERENCES "utterance" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "question" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
@@ -414,17 +465,17 @@ ALTER TABLE "question" ADD FOREIGN KEY ("matched_rule_id") REFERENCES "response_
 
 ALTER TABLE "knowledge_chunk" ADD FOREIGN KEY ("source_id") REFERENCES "knowledge_source" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "response_rule" ADD FOREIGN KEY ("created_from") REFERENCES "knowledge_gap" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
 ALTER TABLE "response_rule_chunk" ADD FOREIGN KEY ("rule_id") REFERENCES "response_rule" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "response_rule_chunk" ADD FOREIGN KEY ("chunk_id") REFERENCES "knowledge_chunk" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "knowledge_gap" ADD FOREIGN KEY ("question_id") REFERENCES "question" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "session_summary" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "knowledge_gap" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "action_item" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "knowledge_gap" ADD FOREIGN KEY ("resolved_by") REFERENCES "response_rule" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "action_item" ADD FOREIGN KEY ("from_question_id") REFERENCES "question" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "action_item" ADD FOREIGN KEY ("from_goal_id") REFERENCES "session_goal" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 -- ---------------------------------------------------------------
 --  벡터 인덱스 (DBML로 표현할 수 없어 생성기에서 부착)
