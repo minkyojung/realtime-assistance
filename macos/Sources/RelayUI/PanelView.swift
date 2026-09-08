@@ -10,7 +10,10 @@ import RelayCore
 ///   - 내 버블   강조색 단색
 ///
 /// 원본: `app/src/components/panel/panel-view.tsx`. 상태는 `SessionController` 가 들고
-/// 여기서는 그리기만 한다. 제안 카드(`SuggestionCard`)는 아직 없어서 피드에 있어도 건너뛴다.
+/// 여기서는 그리기만 한다.
+///
+/// 발화와 제안이 **한 흐름에 시간순으로** 섞인다. 피드가 이미 그 순서라서
+/// (`question.detected` 가 질문 발화 직후에 온다) 카드는 질문 말풍선 바로 아래에 선다.
 public struct PanelView: View {
     private let controller: SessionController
 
@@ -51,9 +54,15 @@ public struct PanelView: View {
                         .multilineTextAlignment(.center)
                         .padding(.top, 96)
                 }
-                ForEach(utterances, id: \.item.id) { entry in
-                    UtteranceBubble(entry.item, isLastInRun: entry.last)
-                        .padding(.top, entry.first ? 12 : 3)
+                ForEach(rows) { row in
+                    switch row {
+                    case let .utterance(item, first, last):
+                        UtteranceBubble(item, isLastInRun: last)
+                            .padding(.top, first ? 12 : 3)
+                    case let .suggestion(item):
+                        SuggestionCard(item)
+                            .padding(.top, 8)
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
@@ -62,6 +71,8 @@ public struct PanelView: View {
             .padding(.bottom, 16)
         }
         .scrollContentBackground(.hidden)
+        // 패널이 작아서 스크롤바가 뜨면 말풍선 위를 덮는다. 흐름은 자동 스크롤로 따라간다.
+        .scrollIndicators(.hidden)
     }
 
     /// ScriptedSource 재생 컨트롤. 웹 패널의 footer 와 같다 — 실제 제품에서는 오디오 캡처 토글.
@@ -86,25 +97,42 @@ public struct PanelView: View {
         .padding(.vertical, 10)
     }
 
-    private struct Entry {
-        let item: UtteranceItem
-        /// 연속 발화의 첫 줄인가 — 위 간격을 벌린다.
-        let first: Bool
-        /// 연속 발화의 마지막 줄인가 — 꼬리를 단다.
-        let last: Bool
+    private enum Row: Identifiable {
+        /// `first`/`last` 는 같은 화자의 연속 발화 묶음에서의 위치다.
+        /// 첫 줄은 위 간격을 벌리고, 마지막 줄만 꼬리를 단다.
+        case utterance(UtteranceItem, first: Bool, last: Bool)
+        case suggestion(SuggestionItem)
+
+        /// 발화 id 와 질문 id 는 다른 공간의 값이라 접두사로 갈라 둔다.
+        var id: String {
+            switch self {
+            case let .utterance(item, _, _): "u-\(item.id)"
+            case let .suggestion(item):      "s-\(item.id)"
+            }
+        }
     }
 
-    /// 피드에서 발화만 뽑고, 같은 화자의 연속 발화를 한 묶음으로 본다.
-    private var utterances: [Entry] {
-        let items = controller.feed.compactMap { item -> UtteranceItem? in
-            if case let .utterance(u) = item { u } else { nil }
+    /// 피드를 그릴 순서 그대로 훑는다.
+    ///
+    /// 연속 발화 판정에서 **제안 카드는 묶음을 끊는다.** 사이에 카드가 끼면 화면상
+    /// 이어진 말이 아니므로, 꼬리와 간격도 거기서 끊겨야 한다.
+    private var rows: [Row] {
+        let feed = controller.feed
+        func role(at index: Int) -> Role? {
+            guard feed.indices.contains(index), case let .utterance(u) = feed[index] else { return nil }
+            return u.role
         }
-        return items.indices.map { i in
-            Entry(
-                item: items[i],
-                first: i == 0 || items[i - 1].role != items[i].role,
-                last: i == items.count - 1 || items[i + 1].role != items[i].role
-            )
+
+        return feed.indices.map { i in
+            switch feed[i] {
+            case let .suggestion(item):
+                .suggestion(item)
+            case let .utterance(item):
+                .utterance(
+                    item,
+                    first: role(at: i - 1) != item.role,
+                    last: role(at: i + 1) != item.role)
+            }
         }
     }
 }

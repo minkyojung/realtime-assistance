@@ -32,7 +32,7 @@ final class PanelWindow {
     /// 실서버를 봐야 할 때만 `RELAY_LIVE=1` 로 켠다 (테스트의 실서버 스위트와 같은 이름).
     static var isLive: Bool { ProcessInfo.processInfo.environment["RELAY_LIVE"] == "1" }
 
-    init(size: NSSize = NSSize(width: 440, height: 700)) {
+    init(size: NSSize = NSSize(width: 640, height: 320)) {
         if Self.isLive {
             controller = SessionController()
         } else {
@@ -112,7 +112,19 @@ final class PanelWindow {
     }
 
     func show() {
-        panel.center()
+        positionAboveCenter()
         panel.orderFrontRegardless()
+    }
+
+    /// `panel.center()` 는 화면 정중앙에 놓는다. 패널은 대화 상대 화면(브라우저·미팅 창)
+    /// 위에 떠 있는 물건이라, 정중앙보다 조금 위가 시선 이동이 짧다.
+    private func positionAboveCenter() {
+        guard let screen = panel.screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        let frame = panel.frame
+        let x = visible.midX - frame.width / 2
+        // 남는 세로 여백을 위 1 : 아래 5 로 나눈다 — 화면 위쪽, 메뉴바 바로 아래 근처.
+        let y = visible.maxY - (visible.height - frame.height) / 6 - frame.height
+        panel.setFrameOrigin(NSPoint(x: x.rounded(), y: y.rounded()))
     }
 }
