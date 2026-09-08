@@ -1,0 +1,122 @@
+[
+  {
+    "kind": "utterance",
+    "id": "c410e4d1-5a39-4d87-9f4f-6a1ef59cff36",
+    "role": "counterpart",
+    "text": "지원서 잘 접수됐는지 확인차 연락드렸습니다.",
+    "isFinal": true
+  },
+  {
+    "kind": "utterance",
+    "id": "fcbb4076-544d-49cb-9cd6-9064945e4b6c",
+    "role": "counterpart",
+    "text": "이 포지션 연봉 밴드가 어떻게 되나요?",
+    "isFinal": true
+  },
+  {
+    "kind": "suggestion",
+    "id": "a43d688d-da12-40d8-9062-bdb5ef8c7dce",
+    "intent": "how",
+    "mode": "escalate",
+    "headline": "확정 답변 없음 · 이 포지션 연봉 밴드가 어떻게 되나요?",
+    "script": "연봉 밴드는 내부 기준을 확인해 정확한 범위로 안내드리겠습니다. 오늘 오후 5시까지 회신드릴게요. 보상 패키지에서 기본급 외에 특히 중요하게 보시는 항목이 있으실까요?",
+    "condition": null,
+    "evidence": [
+      {
+        "id": "ec6b68eb-9b6a-4797-a5e0-fd30818859c6",
+        "source_type": "merged_pr",
+        "source_url": "https://github.com/supabase/supabase/pull/42451",
+        "external_ref": "#42451",
+        "heading_path": "experiment:pricing feedback iteration on calculator > What kind of change does this PR introduce?",
+        "content": "experiment:pricing feedback iteration on calculator > What kind of change does this PR introduce?\n\nFeature — A/B experiment for a new pricing calculator on the `/pricing` page, gated behind a PostHog feature flag.",
+        "audience_level": "public",
+        "valid_from": "2026-09-07T15:00:00.000Z",
+        "distance": 0.8092088427487382
+      },
+      {
+        "id": "16844fe3-b2a1-4a63-a207-d0d59829508f",
+        "source_type": "merged_pr",
+        "source_url": "https://github.com/supabase/supabase/pull/49534",
+        "external_ref": "#49534",
+        "heading_path": "feat(studio): add plan-change panel presentation experiment > What",
+        "content": "feat(studio): add plan-change panel presentation experiment > What\n\nA/B test for the plan-change side panel (`/org/_/billing?panel=subscriptionPlan`) — gated behind PostHog flag `pricingPanelPlanPresentation` (multivariate, 3 arms).\n\nThe current panel drops `description`, `preface`, and `footer` from `shared-data/plans.ts` and uses a much smaller type scale than the www pricing page, so the two surfaces look unrelated and plan differences are hard to reason about. This experiment tests whether matching the www style and surfacing plan gaps improves upgrade conversion.\n\n| Variant | Surface |\n| --- | --- |\n| `control` | Current panel — no change (baseline cohort, still tracked) |\n| `parity` | www pricing page style: mono uppercase heading, description, CTA above price, large mono price, preface (\"Everything in the Free Plan, plus:\"), 13px features |\n| `gaps` | `parity` + gap rows at the bottom showing what the plan is missing (✗ Daily backups, ✗ Email support, dimmed ✓ 1-day log retention) |",
+        "audience_level": "public",
+        "valid_from": "2026-08-30T15:00:00.000Z",
+        "distance": 0.81714565360768
+      },
+      {
+        "id": "8c678630-2678-49e8-8ba5-bc0d3d50ad5e",
+        "source_type": "merged_pr",
+        "source_url": "https://github.com/supabase/supabase/pull/20744",
+        "external_ref": "#20744",
+        "heading_path": "Pricing page update",
+        "content": "Pricing page update",
+        "audience_level": "public",
+        "valid_from": "2026-09-07T15:00:00.000Z",
+        "distance": 0.8286583337996893
+      }
+    ],
+    "latencyMs": 302,
+    "done": true
+  },
+  {
+    "kind": "utterance",
+    "id": "8aa76b59-c1d7-45b8-9e51-117bfa7a767b",
+    "role": "counterpart",
+    "text": "최종 결과는 언제쯤 나오나요?",
+    "isFinal": true
+  },
+  {
+    "kind": "suggestion",
+    "id": "98dbefce-93bd-4521-b604-1d8e4f149812",
+    "intent": "when",
+    "mode": "escalate",
+    "headline": "일정 확인 필요 · 최종 결과는 언제쯤 나오나요?",
+    "script": "최종 결과 일정은 내부 확인 후 오늘 오후 5시까지 정확히 안내드리겠습니다. 현재 1차 면접 단계 기준으로, 결과 안내를 받으셔야 하는 특별한 일정이나 희망 시점이 있으실까요?",
+    "condition": null,
+    "evidence": [
+      {
+        "id": "df460c5c-e730-4d57-89d8-9d48bc979dc0",
+        "source_type": "release",
+        "source_url": "https://github.com/supabase/supabase/releases/tag/v1.24.09",
+        "external_ref": "v1.24.09",
+        "heading_path": "Developer Update - September 2024 > Launch Week 12 Hackathon Winners",
+        "content": "Developer Update - September 2024 > Launch Week 12 Hackathon Winners\n\nMany high quality projects were submitted for LW12’s hackathon but our panel of judges selected [Whisker Jam](https://supabase.link/whisker-jam-lw12) as Best Overall Project because of its cuteness (who doesn’t love cats), funky musical instruments, and multiplayer functionality. Congratulations 👏 to [@n0t_buddy](https://twitter.com/n0t_buddy) who will receive the prize of mechanical keyboards.\n\n[Full list of winners](https://supabase.link/lw12-hackathon-winners) | [All the submissions](https://supabase.link/lw12-submissions)",
+        "audience_level": "public",
+        "valid_from": "2024-10-09T15:00:00.000Z",
+        "distance": 0.8019944665800405
+      },
+      {
+        "id": "97f7cba9-fd2e-4682-8764-80b9ee70f3c4",
+        "source_type": "release",
+        "source_url": "https://github.com/supabase/supabase/releases/tag/v1.26.08",
+        "external_ref": "v1.26.08",
+        "heading_path": "Developer Update - August 2026 > Introducing Supabase Evals",
+        "content": "Developer Update - August 2026 > Introducing Supabase Evals\n\nSupabase Evals is now open source, a benchmark that runs AI coding agents like Claude Code and Codex against real Supabase tasks and publishes the scores.\n\n[Read the blog →](https://supabase.com/blog/introducing-supabase-evals)",
+        "audience_level": "public",
+        "valid_from": "2026-08-06T15:00:00.000Z",
+        "distance": 0.810303016189263
+      },
+      {
+        "id": "321b13df-48fc-4c1e-8de0-4489463acfe9",
+        "source_type": "release",
+        "source_url": "https://github.com/supabase/supabase/releases/tag/v1.24.09",
+        "external_ref": "v1.24.09",
+        "heading_path": "Developer Update - September 2024 > Supabase AI Hackathon at Y Combinator",
+        "content": "Developer Update - September 2024 > Supabase AI Hackathon at Y Combinator\n\nOn November 22 + 23 we’re hosting an AI-focused hackathon at Y Combinator in San Francisco. We’re welcoming anyone to apply and build the next wave of AI applications. The panel of judges will include our founders, [Paul Copplestone](https://x.com/kiwicopple) and [Ant Wilson](https://x.com/AntWilson), and YC partners.\n\n[Full announcement](https://supabase.link/supabase-yc-ai-hackathon)",
+        "audience_level": "public",
+        "valid_from": "2024-10-09T15:00:00.000Z",
+        "distance": 0.8250987226165497
+      }
+    ],
+    "latencyMs": 280,
+    "done": true
+  },
+  {
+    "kind": "utterance",
+    "id": "59c8145f-589c-48ab-bb9e-52d1354f66d5",
+    "role": "host",
+    "text": "확인해서 안내드리겠습니다.",
+    "isFinal": true
+  }
+]
