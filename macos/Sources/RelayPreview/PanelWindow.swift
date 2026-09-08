@@ -32,7 +32,16 @@ final class PanelWindow {
     /// 실서버를 봐야 할 때만 `RELAY_LIVE=1` 로 켠다 (테스트의 실서버 스위트와 같은 이름).
     static var isLive: Bool { ProcessInfo.processInfo.environment["RELAY_LIVE"] == "1" }
 
-    init(size: NSSize = NSSize(width: 640, height: 320)) {
+    /// 어느 쪽 가장자리에 붙일지. 미팅 앱을 반대쪽에 두는 사람도 있어서 한 줄로 뒤집는다.
+    enum Edge { case left, right }
+    static let edge: Edge = .right
+
+    /// 가장자리 여백. 창 그림자가 화면 밖으로 잘리지 않을 만큼만 띄운다.
+    private static let margin: CGFloat = 16
+
+    /// 폭만 고정한다. 높이는 화면에 맞춰 `positionAtEdge()` 가 늘린다 —
+    /// 제안 카드가 들어오면 세로로 길어지고, 그걸 담는 게 이 패널의 형태다.
+    init(size: NSSize = NSSize(width: 380, height: 720)) {
         if Self.isLive {
             controller = SessionController()
         } else {
@@ -112,19 +121,28 @@ final class PanelWindow {
     }
 
     func show() {
-        positionAboveCenter()
+        positionAtEdge()
         panel.orderFrontRegardless()
     }
 
-    /// `panel.center()` 는 화면 정중앙에 놓는다. 패널은 대화 상대 화면(브라우저·미팅 창)
-    /// 위에 떠 있는 물건이라, 정중앙보다 조금 위가 시선 이동이 짧다.
-    private func positionAboveCenter() {
+    /// 화면 한쪽 가장자리에 세로로 붙인다.
+    ///
+    /// 상단 가로 배치도 검토했지만(카메라 근처라 시선이 덜 튄다), 피드에 제안 카드가
+    /// 들어오면 콘텐츠가 세로로 길어져서 가로 밴드에는 애초에 담기지 않는다.
+    /// 읽는 시간이 길어지는 이상 시선 이점은 사라지고, 남는 건 담을 높이뿐이다.
+    private func positionAtEdge() {
         guard let screen = panel.screen ?? NSScreen.main else { return }
         let visible = screen.visibleFrame
-        let frame = panel.frame
-        let x = visible.midX - frame.width / 2
-        // 남는 세로 여백을 위 1 : 아래 5 로 나눈다 — 화면 위쪽, 메뉴바 바로 아래 근처.
-        let y = visible.maxY - (visible.height - frame.height) / 6 - frame.height
-        panel.setFrameOrigin(NSPoint(x: x.rounded(), y: y.rounded()))
+        let margin = Self.margin
+
+        // 화면 세로를 거의 다 쓰되, 기본 높이보다 크게는 늘리지 않는다.
+        let height = min(panel.frame.height, visible.height - margin * 2)
+        let width = panel.frame.width
+        let x = Self.edge == .right ? visible.maxX - width - margin : visible.minX + margin
+        let y = visible.maxY - margin - height
+
+        panel.setFrame(
+            NSRect(x: x.rounded(), y: y.rounded(), width: width, height: height.rounded()),
+            display: false)
     }
 }

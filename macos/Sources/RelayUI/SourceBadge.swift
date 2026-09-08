@@ -12,11 +12,11 @@ struct SourceBadge: View {
 
     /// DB 의 `source_type` 을 사람 말로. 모르는 값은 원문 그대로 보여준다.
     private static let label = [
-        "release": "릴리즈",
-        "changelog": "변경이력",
+        "release": "Release",
+        "changelog": "Changelog",
         "merged_pr": "PR",
-        "open_issue": "이슈",
-        "milestone": "마일스톤",
+        "open_issue": "Issue",
+        "milestone": "Milestone",
     ]
 
     var body: some View {
@@ -30,7 +30,7 @@ struct SourceBadge: View {
 
                     // 언제 기준의 정보인지. 오래된 근거를 그대로 말하는 게 가장 위험하다.
                     Text(top.validFrom.prefix(7))
-                    if evidence.count > 1 { Text("· 외 \(evidence.count - 1)건") }
+                    if evidence.count > 1 { Text("· +\(evidence.count - 1) more") }
                     Image(systemName: "arrow.up.forward")
                 }
                 .font(.system(size: 10))

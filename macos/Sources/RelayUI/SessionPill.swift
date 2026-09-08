@@ -25,7 +25,7 @@ public struct SessionPill: View {
             Circle()
                 .fill(running ? Color.red : Color.secondary.opacity(0.5))
                 .frame(width: 7, height: 7)
-                .accessibilityLabel(running ? "녹음 중" : "녹음 정지")
+                .accessibilityLabel(running ? "Recording" : "Not recording")
 
             Text(Self.formatElapsed(elapsed))
                 .monospacedDigit()
@@ -34,7 +34,7 @@ public struct SessionPill: View {
                 Text("·").foregroundStyle(.tertiary)
                 Text(session.counterpartOrg)
 
-                Text(session.context.ndaSigned ? "NDA 체결" : "NDA 미체결")
+                Text(session.context.ndaSigned ? "NDA signed" : "No NDA")
                     .font(.caption)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2)

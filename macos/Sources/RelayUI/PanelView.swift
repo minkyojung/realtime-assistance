@@ -48,7 +48,7 @@ public struct PanelView: View {
                         .padding(.top, 12)
                 }
                 if controller.feed.isEmpty && controller.errorMessage == nil {
-                    Text(controller.running ? "세션을 여는 중…" : "아직 감지된 대화가 없습니다.\n아래에서 미팅을 시작하세요.")
+                    Text(controller.running ? "Opening session…" : "No conversation yet.\nStart a meeting below.")
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -59,8 +59,8 @@ public struct PanelView: View {
                     case let .utterance(item, first, last):
                         UtteranceBubble(item, isLastInRun: last)
                             .padding(.top, first ? 12 : 3)
-                    case let .suggestion(item):
-                        SuggestionCard(item)
+                    case let .suggestion(item, replyingTo):
+                        SuggestionCard(item, replyingTo: replyingTo)
                             .padding(.top, 8)
                     }
                 }
@@ -78,16 +78,16 @@ public struct PanelView: View {
     /// ScriptedSource 재생 컨트롤. 웹 패널의 footer 와 같다 — 실제 제품에서는 오디오 캡처 토글.
     private var footer: some View {
         HStack(spacing: 8) {
-            Button(controller.running ? "진행 중…" : "미팅 시작 (세일즈)") {
+            Button(controller.running ? "Running…" : "Start meeting (Sales)") {
                 controller.start(domain: .sales)
             }
             .buttonStyle(.borderedProminent)
-            Button("채용 도메인") {
+            Button("Recruiting") {
                 controller.start(domain: .recruiting)
             }
             .buttonStyle(.bordered)
             Spacer()
-            Text("ScriptedSource · 오디오 미사용")
+            Text("ScriptedSource · no audio")
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
         }
@@ -101,13 +101,14 @@ public struct PanelView: View {
         /// `first`/`last` 는 같은 화자의 연속 발화 묶음에서의 위치다.
         /// 첫 줄은 위 간격을 벌리고, 마지막 줄만 꼬리를 단다.
         case utterance(UtteranceItem, first: Bool, last: Bool)
-        case suggestion(SuggestionItem)
+        /// `replyingTo` 는 이 제안이 답하는 말 — 바로 앞 발화다.
+        case suggestion(SuggestionItem, replyingTo: String?)
 
         /// 발화 id 와 질문 id 는 다른 공간의 값이라 접두사로 갈라 둔다.
         var id: String {
             switch self {
             case let .utterance(item, _, _): "u-\(item.id)"
-            case let .suggestion(item):      "s-\(item.id)"
+            case let .suggestion(item, _):   "s-\(item.id)"
             }
         }
     }
@@ -118,20 +119,22 @@ public struct PanelView: View {
     /// 이어진 말이 아니므로, 꼬리와 간격도 거기서 끊겨야 한다.
     private var rows: [Row] {
         let feed = controller.feed
-        func role(at index: Int) -> Role? {
+        func utterance(at index: Int) -> UtteranceItem? {
             guard feed.indices.contains(index), case let .utterance(u) = feed[index] else { return nil }
-            return u.role
+            return u
         }
 
         return feed.indices.map { i in
             switch feed[i] {
             case let .suggestion(item):
-                .suggestion(item)
+                // 답하는 대상은 바로 앞 발화다 — 서버가 `question.detected` 를 질문
+                // 발화 직후에 보내므로 피드 순서가 곧 답장 관계다.
+                .suggestion(item, replyingTo: utterance(at: i - 1)?.text)
             case let .utterance(item):
                 .utterance(
                     item,
-                    first: role(at: i - 1) != item.role,
-                    last: role(at: i + 1) != item.role)
+                    first: utterance(at: i - 1)?.role != item.role,
+                    last: utterance(at: i + 1)?.role != item.role)
             }
         }
     }
