@@ -8,3 +8,7 @@
 
 # OS
 .DS_Store
+
+# Go 빌드 산출물
+spikes/**/hangul-spike
+*.test
