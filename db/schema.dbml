@@ -19,6 +19,7 @@ Project apple_music_cli {
     2. `track.persistent_id` 가 Music.app 과의 동기화 키다.
     3. `loved` 와 `bpm` 은 실측 결과 사용 불가하여 스키마에서 제외했다.
     4. 반응(reaction)은 키 입력이 아니라 재생 상태 폴링으로 수집된다.
+    5. 자연어 요청은 session_turn 한 행으로 남으며 비동기 잡의 상태를 담는다.
   '''
 }
 
@@ -45,6 +46,22 @@ Enum tag_source {
 Enum session_status {
   active
   ended
+}
+
+Enum turn_status {
+  queued
+  running
+  succeeded
+  failed
+  cancelled
+}
+
+Enum turn_intent {
+  generate_queue  [note: 'F1 자연어 큐 생성']
+  refine_queue    [note: 'F3 되물어 재편성']
+  explain         [note: '"이거 왜 골랐어?"']
+  react           [note: '"이건 별로야"']
+  unknown         [note: 'L2 분류 실패']
 }
 
 Enum queue_item_state {
@@ -214,9 +231,42 @@ Table listening_session {
   }
 }
 
+Table session_turn {
+  id                 bigint        [pk, increment]
+  session_id         bigint        [not null, ref: > listening_session.id]
+  prompt             text          [not null, note: '사용자 자연어 입력 원문']
+  intent             turn_intent   [null, note: 'L2 분류 결과. 분류 전에는 NULL']
+  status             turn_status   [not null, default: 'queued']
+  assistant_message  text          [null, note: '사용자에게 보여줄 응답 문장']
+
+  error_code         varchar(64)   [null, note: 'MODEL_UNAVAILABLE 등. API ErrorCode 와 동일 어휘']
+  error_message      text          [null]
+
+  prompt_tokens      integer       [not null, default: 0]
+  completion_tokens  integer       [not null, default: 0]
+  cost_usd           numeric(10,6) [not null, default: 0]
+
+  created_at         timestamptz   [not null, default: `now()`]
+  finished_at        timestamptz   [null]
+
+  indexes {
+    (session_id, created_at)
+    status
+  }
+
+  Note: '''
+    자연어 요청 한 건 = 한 행. 비동기 잡의 상태를 담는다.
+    POST /sessions/{id}/turns 가 202 와 함께 이 행을 만들고,
+    GET /turns/{id} 가 이 행을 조회한다.
+
+    status = failed 여도 기존 큐의 재생은 계속된다.
+  '''
+}
+
 Table queue_item {
   id          bigint             [pk, increment]
   session_id  bigint             [not null, ref: > listening_session.id]
+  turn_id     bigint             [null, ref: > session_turn.id, note: '어느 요청에서 나온 곡인지. 되살리기·수동 추가는 NULL']
   track_id    bigint             [not null, ref: > track.id]
   position    smallint           [not null]
   reason      text               [null, note: '★ F2 선정 근거 한 줄. L4 실패 시 NULL 이며 재생은 계속된다']
