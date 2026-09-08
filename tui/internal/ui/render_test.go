@@ -1,10 +1,13 @@
 package ui
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
+	"amcli/tui/internal/api"
 	"amcli/tui/internal/data"
+	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -144,5 +147,61 @@ func TestFirstRunGates(t *testing.T) {
 		if !strings.Contains(out, c.hintPart) {
 			t.Errorf("%v: 안내에 %q 가 없다", c.err, c.hintPart)
 		}
+	}
+}
+
+// 프롬프트를 보내면 Thinking 이 뜨고, 결과가 오면 큐로 바뀌는지.
+// 실제 API 는 부르지 않는다 — queueMsg 를 직접 흘려보낸다.
+func TestPromptToQueue(t *testing.T) {
+	var m tea.Model = New()
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+	m = typeText(m, "quiet")
+
+	m, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("enter 를 눌렀는데 아무 Cmd 도 나오지 않았다")
+	}
+	if out := m.View().Content; !strings.Contains(out, "Thinking") {
+		t.Error("요청 중인데 Thinking 표시가 없다")
+	}
+
+	l := data.Lib()
+	m, _ = m.Update(queueMsg{res: intent.Result{
+		Title: "quiet set",
+		Picks: []intent.Pick{
+			{TrackID: l.Tracks[0].Id, Reason: "never played since you added it"},
+			{TrackID: l.Tracks[1].Id, Reason: "same record"},
+		},
+		Usage: api.Usage{PromptTokens: 10000, CompletionTokens: 500, CostUsd: 0.0074},
+	}})
+
+	out := m.View().Content
+	for _, want := range []string{
+		"never played since you added it", // 근거가 뜬다
+		"quiet set",                       // 큐 제목이 상태줄에
+		"2 tracks",                        // 큐 요약
+		"$0.0074",                         // 사용량
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("화면에 %q 가 없다", want)
+		}
+	}
+	if strings.Contains(out, "Thinking") {
+		t.Error("결과가 왔는데 Thinking 이 남아 있다")
+	}
+}
+
+// 요청이 실패해도 화면이 살아 있어야 한다.
+func TestQueueFailureShowsBadge(t *testing.T) {
+	var m tea.Model = New()
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+	m, _ = m.Update(queueMsg{err: errors.New("model unavailable")})
+
+	out := m.View().Content
+	if !strings.Contains(out, "FAILED") || !strings.Contains(out, "model unavailable") {
+		t.Error("실패 사유가 화면에 없다")
+	}
+	if !strings.Contains(out, "LIBRARY") {
+		t.Error("실패했다고 화면이 사라지면 안 된다")
 	}
 }

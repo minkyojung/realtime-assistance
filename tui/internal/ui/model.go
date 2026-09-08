@@ -1,11 +1,14 @@
 package ui
 
 import (
+	"errors"
 	"strings"
 
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/data"
+	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
+	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -54,12 +57,19 @@ type Model struct {
 	// Music.app 이 말해주는 것 그대로. 라이브러리에 없는 곡도 여기 담긴다.
 	live music.PlayerState
 
+	// 의도 층 — 자연어 한 줄이 큐가 되는 경로.
+	thinking   bool
+	spinner    spinner.Model
+	queueTitle string
+	note       string
+	intentErr  error
+	usage      api.Usage
+
 	// 첫 실행 관문 — 로그인이 아니라 권한과 앱 실행 여부다.
 	playerErr error
 	polled    bool
 
-	usage api.Usage
-	w, h  int
+	w, h int
 }
 
 func New() Model {
@@ -74,9 +84,14 @@ func New() Model {
 
 	ta.Focus() // 입력창은 늘 활성이다. 타이핑이 언제나 먼저 온다.
 
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = lipgloss.NewStyle().Foreground(colBrand)
+
 	m := Model{
 		sections: buildSections(l),
 		input:    ta,
+		spinner:  sp,
 		playing:  true,
 	}
 
@@ -85,7 +100,7 @@ func New() Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(textarea.Blink, fetchStatus, tick())
+	return tea.Batch(textarea.Blink, m.spinner.Tick, fetchStatus, tick())
 }
 
 // searching — 입력창이 `/` 로 시작하지 않는 글자로 채워져 있고 포커스가
@@ -107,6 +122,19 @@ func (m *Model) applyMode() {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
+	case queueMsg:
+		m.thinking = false
+		if msg.err != nil {
+			m.intentErr = msg.err
+			return m, nil
+		}
+		return m.applyQueue(msg.res)
+
 	case tickMsg:
 		return m, tea.Batch(fetchStatus, tick())
 
@@ -199,10 +227,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				mm, cmd := m.playSelected()
 				return mm, cmd
 			}
-			if strings.TrimSpace(m.input.Value()) != "" {
+			if prompt := strings.TrimSpace(m.input.Value()); prompt != "" {
+				if m.thinking {
+					return m, nil // 이미 도는 중이면 겹쳐 보내지 않는다
+				}
 				m.input.Reset()
+				m.thinking = true
+				m.intentErr = nil
 				m.clampList()
-				return m, nil
+				return m, tea.Batch(
+					cmdBuildQueue(prompt, data.Lib().Tracks),
+					m.spinner.Tick,
+				)
 			}
 			mm, cmd := m.playSelected()
 			return mm, cmd
@@ -214,6 +250,51 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.clampList()
 	return m, cmd
 }
+
+// applyQueue 는 의도 층의 결과를 화면에 앉힌다.
+// 큐 섹션으로 옮기고 첫 곡을 튼다 — 요청했으면 소리가 나야 한다.
+func (m Model) applyQueue(res intent.Result) (Model, tea.Cmd) {
+	l := data.Lib()
+	m.queueTitle, m.note = res.Title, res.Note
+	m.usage.PromptTokens += res.Usage.PromptTokens
+	m.usage.CompletionTokens += res.Usage.CompletionTokens
+	m.usage.CostUsd += res.Usage.CostUsd
+
+	items := make([]api.QueueItem, 0, len(res.Picks))
+	for i, p := range res.Picks {
+		t, ok := l.Track(p.TrackID)
+		if !ok {
+			continue // 스키마가 막지만, 없는 id 는 조용히 버린다
+		}
+		reason := p.Reason
+		items = append(items, api.QueueItem{
+			Id: int64(i + 1), SessionId: 1, Position: i + 1,
+			Track: t, Reason: &reason,
+			State: api.Pending, Origin: api.QueueItemOriginGeneration,
+		})
+	}
+	if len(items) == 0 {
+		m.intentErr = errNoTracks
+		return m, nil
+	}
+
+	m.queue = items
+	m.listIdx, m.listTop = 0, 0
+	for i, s := range m.sections {
+		if s.kind == secQueue {
+			m.sectionIdx = i
+		}
+	}
+
+	first := items[0].Track
+	m.nowPlayingID = first.Id
+	if first.PersistentId != nil {
+		return m, cmdPlayTrack(*first.PersistentId)
+	}
+	return m, nil
+}
+
+var errNoTracks = errors.New("고른 곡이 라이브러리에 없습니다")
 
 // 목록에서 고른 곡을 튼다. 실제 재생은 Music.app 이 하고, 화면은 폴링으로 따라간다.
 func (m Model) playSelected() (Model, tea.Cmd) {
@@ -266,7 +347,7 @@ const maxListRows = 14
 
 // 세로 예산: 재생바1 + 룰1 + 목록 + 룰1 + 근거(0|1) + 입력1 + 여백2
 func (m Model) listHeight() int {
-	reserved := 6
+	reserved := 7
 	if _, ok := m.viewGateHint(10); ok {
 		reserved++
 	} else if _, ok := m.viewReason(10); ok {
@@ -312,6 +393,8 @@ func (m Model) View() tea.View {
 	b.WriteString(m.input.View())
 	b.WriteString("\n")
 	b.WriteString(rule(w))
+	b.WriteString("\n")
+	b.WriteString(m.viewStatus(w))
 
 	v := tea.NewView(lipgloss.NewStyle().Padding(1, 1).Render(b.String()))
 	v.AltScreen = true

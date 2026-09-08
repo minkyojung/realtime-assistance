@@ -76,15 +76,27 @@ func Status() (PlayerState, error) {
 	}, nil
 }
 
-// PlayPersistentID 는 라이브러리에서 곡을 찾아 튼다.
+// PlayPersistentID 는 곡을 찾아 튼다.
 // persistent ID 는 Music.app 재시작에도 유지되는 유일한 식별자다.
+//
+// 라이브러리를 먼저 보고, 없으면 플레이리스트를 뒤진다.
+// 플레이리스트에만 담고 라이브러리에는 추가하지 않은 곡이 실제로 있다.
 func PlayPersistentID(id string) error {
 	if !Running() {
 		return ErrNotRunning
 	}
 	_, err := run(`tell application "Music"
-	set t to (first track of library playlist 1 whose persistent ID is "` + id + `")
-	play t
+	try
+		play (first track of library playlist 1 whose persistent ID is "` + id + `")
+		return "ok"
+	end try
+	repeat with p in user playlists
+		try
+			play (first track of p whose persistent ID is "` + id + `")
+			return "ok"
+		end try
+	end repeat
+	error "track not found"
 end tell`)
 	return err
 }

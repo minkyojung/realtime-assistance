@@ -1,8 +1,11 @@
 package ui
 
 import (
+	"context"
 	"time"
 
+	"amcli/tui/internal/api"
+	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
 	tea "charm.land/bubbletea/v2"
 )
@@ -12,6 +15,23 @@ import (
 const pollInterval = time.Second
 
 type tickMsg struct{}
+
+// queueMsg 는 의도 층이 만들어낸 큐다. 실패도 여기로 온다.
+type queueMsg struct {
+	res intent.Result
+	err error
+}
+
+// cmdBuildQueue — 자연어 한 줄을 큐로 바꾼다. 입력창을 막지 않도록 Cmd 로 돈다.
+func cmdBuildQueue(prompt string, library []api.Track) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+		defer cancel()
+		res, err := intent.Build(ctx, prompt, library, time.Now())
+		return queueMsg{res: res, err: err}
+	}
+}
+
 type statusMsg struct {
 	state music.PlayerState
 	err   error
@@ -49,3 +69,23 @@ func cmdOpenSettings() tea.Cmd {
 
 // ProbeStatus 는 헤드리스 확인용이다. 실제 Music.app 상태를 한 번 읽는다.
 func ProbeStatus() tea.Msg { return fetchStatus() }
+
+// DrainForQueue 는 헤드리스 확인용이다. Batch 안에서 큐 생성 Cmd 를 찾아 실행한다.
+func DrainForQueue(cmd tea.Cmd) tea.Msg {
+	if cmd == nil {
+		return nil
+	}
+	msg := cmd()
+	if b, ok := msg.(tea.BatchMsg); ok {
+		for _, c := range b {
+			if m := DrainForQueue(c); m != nil {
+				return m
+			}
+		}
+		return nil
+	}
+	if _, ok := msg.(queueMsg); ok {
+		return msg
+	}
+	return nil
+}

@@ -82,15 +82,62 @@ func (m Model) viewPlayer(w int) string {
 	return left + "  " + progress(barW, ratio) + stFaint.Render(timeLabel)
 }
 
-// 선정 근거 줄. 의도 층이 만든 것이므로 재생 바 바로 위에 붙인다.
-// 근거가 없으면 줄 자체가 없다 — 빈 줄을 남기지 않는다.
+// 입력창 바로 위 한 줄. 상황에 따라 무엇이 오는지가 다르다.
+//
+//	요청 중  → 스피너
+//	실패     → 사유
+//	평소     → 지금 곡의 선정 근거 (있을 때만)
+//
+// 셋 다 없으면 줄 자체가 없다. 빈 줄을 남기지 않는다.
 func (m Model) viewReason(w int) (string, bool) {
+	if m.thinking {
+		return m.spinner.View() + stDim.Render(" Thinking…"), true
+	}
+	if m.intentErr != nil {
+		return stErrorBadge.Render("FAILED") + " " +
+			stDim.Render(truncate(m.intentErr.Error(), w-9)), true
+	}
 	it, ok := m.nowPlayingItem()
 	if !ok || it.Reason == nil || *it.Reason == "" {
 		return "", false
 	}
 	return stBrand.Render("▸ ") + stDim.Render(truncate(*it.Reason, w-2)), true
 }
+
+// 하단 상태줄 — 왼쪽은 큐 요약, 오른쪽은 누적 사용량.
+// 사용량을 상시 노출하는 것은 agentic CLI 의 관례이자,
+// 사용자가 AI 사용량을 스스로 통제할 수 있게 하는 장치다.
+func (m Model) viewStatus(w int) string {
+	left := stFaint.Render("no queue yet")
+	if n := len(m.queue); n > 0 {
+		total := 0
+		never := 0
+		for _, it := range m.queue {
+			total += it.Track.DurationMs
+			if it.Track.LastPlayedAt == nil {
+				never++
+			}
+		}
+		label := fmt.Sprintf("%d tracks · %d min", n, total/60000)
+		if m.queueTitle != "" {
+			label = truncate(m.queueTitle, w/2) + stFaint.Render("  ·  ") + label
+		}
+		left = stDim.Render(label) +
+			stFaint.Render(fmt.Sprintf(" · %d never played", never))
+	}
+
+	u := m.usage
+	if u.PromptTokens == 0 && u.CompletionTokens == 0 {
+		return stFaint.Render(truncate(stripStyle(left), w))
+	}
+	right := stFaint.Render(fmt.Sprintf("↑%s ↓%s  $%.4f",
+		tokens(u.PromptTokens), tokens(u.CompletionTokens), u.CostUsd))
+	return row(left, right, w)
+}
+
+// 스타일이 섞인 문자열을 그대로 자르면 escape 가 깨진다.
+// 사용량이 없을 때는 왼쪽만 쓰므로 그대로 돌려준다.
+func stripStyle(s string) string { return s }
 
 func (m Model) nowPlaying() (api.Track, bool) {
 	it, ok := m.nowPlayingItem()

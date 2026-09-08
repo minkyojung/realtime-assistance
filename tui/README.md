@@ -10,8 +10,9 @@ Bubble Tea v2 기반 터미널 클라이언트.
 ├──────────┬──────────────────────────┤
 │ 사이드바  │  목록 (최대 14줄)          │
 ├──────────┴──────────────────────────┤
-│ 선정 근거 (있을 때만)                 │
+│ 근거 / Thinking… / 실패 (있을 때만)   │
 │ 입력창 (자연어 · / 명령 · 검색)        │
+│ 상태줄 (큐 요약 · 누적 사용량)         │
 └─────────────────────────────────────┘
 ```
 
@@ -28,6 +29,14 @@ Bubble Tea v2 기반 터미널 클라이언트.
 **사이드바가 무엇을 고르든 목록 패널 하나가 다 그린다.**
 Recently Added · Artists · Albums · Songs · 플레이리스트 · Queue 가 전부
 같은 패널이므로 화면이 늘어나지 않는다.
+
+## 환경 변수
+
+의도 층에 `OPENAI_API_KEY` 가 필요하다. 저장소 루트의 `.env` 를 읽는다.
+
+```
+set -a && . ./.env && set +a && cd tui && go run .
+```
 
 ## 첫 실행 — 로그인은 없다
 
@@ -46,6 +55,8 @@ Music.app 이 이미 사용자 Apple ID 로 로그인되어 있으므로 **별�
 ```
 go run .                  실제 TUI
 go run ./cmd/render 96    헤드리스 렌더 (TTY 없이 화면 확인)
+go run ./cmd/queue "1시간 코딩용 큐"   의도 층만 확인
+go run ./cmd/flow  "30분 조용한 걸로"  프롬프트→큐 전체 흐름 확인
 go test ./...             폭 계산 · 필수 요소 검증
 ```
 
@@ -74,7 +85,7 @@ go test ./...             폭 계산 · 필수 요소 검증
 | `ctrl+g` | (권한 막혔을 때) 시스템 설정 열기 |
 | `↑` `↓` (`ctrl+p` `ctrl+n`) | 목록 이동 |
 | `tab` / `shift+tab` | 사이드바 섹션 이동 |
-| `enter` | 모드에 따라 (위 표) |
+| `enter` | **프롬프트면 큐를 만들고 첫 곡을 튼다.** 검색이면 고른 곡 재생 |
 | `esc` | 검색 나가기 → 입력 비우기 → 종료 |
 | `ctrl+c` | 종료 |
 
@@ -88,6 +99,7 @@ main.go                    진입점
 cmd/render/                헤드리스 렌더
 internal/api/types.gen.go  ★ api/openapi.yml 에서 자동 생성 (oapi-codegen)
 internal/music/music.go    ★ Music.app 제어 (AppleScript)
+internal/intent/           ★ 자연어 한 줄 → 큐 (gpt-5.5, 구조화 출력)
 internal/data/
   library.json             ★ 실제 Music.app 라이브러리 157곡
   library.go               조회 · 정렬 · 검색
@@ -124,8 +136,9 @@ go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest \
 | 검색 (입력창 타이핑) | ✅ |
 | 재생 제어 실연동 (AppleScript) | ✅ |
 | 첫 실행 관문 (권한 · 앱 실행) | ✅ |
-| 자연어 의도 → 선곡 (서버) | — |
+| **자연어 의도 → 선곡 → 재생** | ✅ |
 | 취향 규칙 화면 | — |
+| 반응 수집 (스킵 관찰) | — |
 
 ## 알려진 제약
 
