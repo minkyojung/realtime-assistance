@@ -20,30 +20,15 @@ public struct SuggestionCard: View {
     private let item: SuggestionItem
     /// 어떤 말에 대한 제안인지. iMessage 의 답장 인용과 같은 역할이다.
     private let replyingTo: String?
-    /// 카드끼리·pill 과 유리를 병합하고 모핑시킬 좌표계. 없으면 그냥 각자 그려진다.
-    private let glassNamespace: Namespace.ID?
     /// 스트리밍 중 커서 깜빡임. `done` 이면 돌지 않는다.
     @State private var cursorOn = true
 
-    public init(_ item: SuggestionItem, replyingTo: String? = nil,
-                in glassNamespace: Namespace.ID? = nil) {
+    public init(_ item: SuggestionItem, replyingTo: String? = nil) {
         self.item = item
         self.replyingTo = replyingTo
-        self.glassNamespace = glassNamespace
     }
 
-    @ViewBuilder
     public var body: some View {
-        // 신원을 주면 스켈레톤 → 판정 → 완료로 바뀌는 동안 SwiftUI 가 "같은 유리가
-        // 변형된 것"으로 알고 이어서 그린다. 없으면 매번 새로 그려져 툭툭 끊긴다.
-        if let glassNamespace {
-            card.glassEffectID(item.id, in: glassNamespace)
-        } else {
-            card
-        }
-    }
-
-    private var card: some View {
         VStack(alignment: .leading, spacing: 5) {
             if let replyingTo, !replyingTo.isEmpty { quoted(replyingTo) }
             headline
@@ -55,10 +40,17 @@ public struct SuggestionCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .frame(maxWidth: 340, alignment: .leading)
-        // 레이어 순서가 전부다. `.background` 는 콘텐츠 뒤·유리 앞에 놓인다 —
-        // 유리보다 앞이어야 번지는 게 보이고, 글자보다 뒤여야 본문 대비가 안 깎인다.
+        // 레이어 순서가 전부다. 판정 색은 재질보다 앞·글자보다 뒤에 놓인다 —
+        // 앞이어야 번지는 게 보이고, 뒤여야 본문 대비가 안 깎인다.
         .background { verdictGlow }
-        .glassEffect(.regular, in: bubbleShape)
+        // **유리가 아니라 재질이다.** Liquid Glass 는 뒤 픽셀을 실시간으로 샘플링해
+        // 굴절시키는 효과라, 스크롤로 뒤가 매 프레임 바뀌면 카드 수만큼 그 작업이
+        // 반복된다 — 실제로 스크롤이 눈에 띄게 밀렸다(실측).
+        //
+        // 애초에 Apple 의 규칙이기도 하다 — "Liquid Glass applies to the topmost
+        // layer of the interface". 유리는 떠 있는 최상위 레이어(pill)의 것이지
+        // 스크롤되는 콘텐츠 행의 것이 아니다. 창 배경에서 유리를 걷어낸 것과 같은 이유다.
+        .background(.ultraThinMaterial, in: bubbleShape)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(verdictLabel)
         .frame(maxWidth: .infinity, alignment: .trailing)

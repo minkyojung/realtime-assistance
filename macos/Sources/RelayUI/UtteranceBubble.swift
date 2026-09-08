@@ -22,7 +22,6 @@ public struct UtteranceBubble: View {
         Text(item.text)
             .font(.system(size: 14))
             .foregroundStyle(textColor)
-            .textSelection(.enabled)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(background)

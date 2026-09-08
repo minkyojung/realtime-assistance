@@ -37,7 +37,6 @@ struct SourceBadge: View {
                 .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .pointerStyle(.link)
         }
     }
 }

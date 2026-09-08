@@ -19,27 +19,24 @@ public struct PanelView: View {
 
     /// 지금 바닥에 붙어 있는가. 붙어 있을 때만 새 내용을 따라 내려간다.
     @State private var pinnedToBottom = true
-    /// 유리들을 한 좌표계로 묶는다. 카드가 이 안에서 신원을 갖는다.
-    @Namespace private var glass
 
     public init(controller: SessionController) {
         self.controller = controller
     }
 
     public var body: some View {
-        // 가까이 있는 유리들을 한 패스로 **병합**해 그린다. pill 과 카드가 서로
-        // 다가오면 붙었다 떨어지는 액체 거동이 여기서 나오고, 렌더 패스도 줄어든다.
-        // 개별 유리를 각자 그리면 그 거동이 아예 생기지 않는다.
-        GlassEffectContainer(spacing: 20) {
-            ZStack(alignment: .top) {
-                flow
-                SessionPill(
-                    session: controller.session,
-                    elapsed: controller.elapsed,
-                    running: controller.running
-                )
-                .padding(.top, 12)
-            }
+        // GlassEffectContainer 로 감싸지 않는다. 그 API 는 툴바 버튼 묶음처럼 **개수가
+        // 고정되고 움직이지 않는** 소수의 유리를 병합하라고 있는 것이다. 스크롤로 계속
+        // 움직이는 목록을 넣으면 병합 계산이 매 프레임 다시 돈다. 지금 유리는 pill
+        // 하나뿐이라 묶을 것도 없다.
+        ZStack(alignment: .top) {
+            flow
+            SessionPill(
+                session: controller.session,
+                elapsed: controller.elapsed,
+                running: controller.running
+            )
+            .padding(.top, 12)
         }
         // VStack 으로 쌓지 않고 safeAreaBar 로 붙인다. 시스템이 이 바를 Tahoe 재질로
         // 직접 그리고, 창 아래 모서리 안쪽으로 알아서 배치한다 — 우리가 그리면 그 둘을
@@ -51,9 +48,10 @@ public struct PanelView: View {
     private var flow: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                // Lazy — 화면에 보이는 행만 만든다. 행 하나하나가 유리라서 눈에 안 보이는
-                // 것까지 전부 살려 두면 스크롤 한 프레임의 비용이 대화 길이에 비례해 커진다.
-                LazyVStack(spacing: 0) {
+                // Lazy 가 아니라 그냥 VStack 이다. 한 세션의 대화는 수십 줄 규모라
+                // laziness 로 아낄 게 거의 없는데, 스크롤 중 행이 생성·파괴되면서
+                // 높이를 다시 재고 바닥 앵커가 그걸 또 보정하는 되먹임만 생긴다.
+                VStack(spacing: 0) {
                     if let message = controller.errorMessage {
                         Text(message)
                             .font(.system(size: 12))
@@ -73,10 +71,8 @@ public struct PanelView: View {
                             UtteranceBubble(item, isLastInRun: last)
                                 .padding(.top, first ? 12 : 3)
                         case let .suggestion(item, replyingTo):
-                            SuggestionCard(item, replyingTo: replyingTo, in: glass)
+                            SuggestionCard(item, replyingTo: replyingTo)
                                 .padding(.top, 8)
-                                // 새 카드가 유리가 맺히듯 등장한다. 지금은 툭 나타난다.
-                                .glassEffectTransition(.materialize)
                         }
                     }
                 }
