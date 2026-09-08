@@ -29,7 +29,18 @@ async function createWindow() {
     height: 900,
     title: 'Relay',
     titleBarStyle: 'hiddenInset',
-    backgroundColor: '#ffffff',
+    // macOS 네이티브 vibrancy(NSVisualEffectView). 창 뒤 화면이 시스템 블러로
+    // 비치려면 Electron 쪽 배경이 완전 투명이어야 하고, 렌더러(/panel)의
+    // html/body 배경도 transparent 여야 한다(globals.css 참고).
+    // 애플의 Liquid Glass(NSGlassEffectView)는 Electron이 아직 노출하지 않는다.
+    ...(process.platform === 'darwin'
+      ? {
+          transparent: true,
+          backgroundColor: '#00000000',
+          vibrancy: 'under-window',
+          visualEffectState: 'active',
+        }
+      : { backgroundColor: '#ffffff' }),
     webPreferences: { contextIsolation: true, nodeIntegration: false },
   })
 

@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge'
 
 export default function PanelPage() {
   return (
-    <main className="flex min-h-screen flex-col">
+    <main data-vibrancy className="flex min-h-screen flex-col">
       {/* 창 드래그 영역. macOS 신호등 버튼 자리를 비워 둔다. */}
       <header className="drag-region flex h-11 shrink-0 items-center gap-2 border-b pl-20 pr-4">
         <span className="text-sm font-semibold">Relay</span>
