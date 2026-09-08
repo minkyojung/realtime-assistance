@@ -7,7 +7,7 @@ mkdirSync(OUT, { recursive: true })
 
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 440, height: 900 }, deviceScaleFactor: 2 })
-await page.goto('http://localhost:3000/panel', { waitUntil: 'networkidle' })
+await page.goto('http://localhost:3000/panel-full', { waitUntil: 'networkidle' })
 
 await page.screenshot({ path: `${OUT}/mvp-01-idle.png` })
 console.log('01 대기 상태')

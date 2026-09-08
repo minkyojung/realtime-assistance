@@ -1,6 +1,5 @@
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -19,13 +18,12 @@ const MODE = {
   escalate:    { label: '확인 필요',      border: 'border-l-red-600',    dot: 'bg-red-600' },
 } as const
 
-export function SuggestionCard({
-  item,
-  onReject,
-}: {
-  item: SuggestionItem
-  onReject?: (questionId: string) => void
-}) {
+/**
+ * 답변 오류 신고 버튼은 두지 않는다.
+ * POST /questions/{id}/reject 를 구현하기 전까지 누를 수 있는 버튼을 노출하면
+ * 동작하지 않는 UI가 된다. API 구현 시 함께 되살린다.
+ */
+export function SuggestionCard({ item }: { item: SuggestionItem }) {
   // 판정 전 — 질문은 감지됐고 검색 중
   if (!item.mode) {
     return (
@@ -81,19 +79,9 @@ export function SuggestionCard({
 
       <CardFooter className="flex-wrap items-center gap-x-2 gap-y-1 px-4 pt-1">
         <SourceBadge evidence={item.evidence} />
-        <div className="ml-auto flex items-center gap-1">
-          {item.latencyMs !== null && (
-            <span className="text-[10px] text-muted-foreground">{item.latencyMs}ms</span>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="no-drag h-6 px-2 text-[11px] text-muted-foreground"
-            onClick={() => onReject?.(item.id)}
-          >
-            답변이 틀렸어요
-          </Button>
-        </div>
+        {item.latencyMs !== null && (
+          <span className="ml-auto text-[10px] text-muted-foreground">{item.latencyMs}ms</span>
+        )}
       </CardFooter>
     </Card>
   )
