@@ -165,7 +165,7 @@ Table track {
   disliked         boolean            [not null, default: false]
   rating           smallint           [null, note: '0-100']
 
-  added_at         timestamptz        [not null, note: 'Music.app date added']
+  added_at         timestamptz        [null, note: '★ 라이브러리에 없는 곡은 NULL 이다. 담은 적이 없으므로 담은 날짜도 없다. 없는 값을 채우면 선정 근거가 사실이 아니게 된다']
   in_library       boolean            [not null, default: true, note: '플레이리스트에만 담고 라이브러리에는 추가하지 않은 곡이 실제로 있다. 실측 CH 30곡 중 28곡이 그렇다']
   excluded         boolean            [not null, default: false, note: 'F7 묘비 정리. 원본은 삭제하지 않는다']
   synced_at        timestamptz        [not null]

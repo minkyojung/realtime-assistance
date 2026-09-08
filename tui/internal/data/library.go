@@ -89,7 +89,14 @@ func (l *Library) Songs() []api.Track {
 // RecentlyAdded 는 담은 순 역순이다. Apple Music 의 기본 화면.
 func (l *Library) RecentlyAdded() []api.Track {
 	out := l.inLibrary()
-	sort.Slice(out, func(i, j int) bool { return out[i].AddedAt.After(out[j].AddedAt) })
+	// addedAt 이 없는 곡(라이브러리 밖)은 뒤로 민다.
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i].AddedAt, out[j].AddedAt
+		if a == nil || b == nil {
+			return b == nil && a != nil
+		}
+		return a.After(*b)
+	})
 	return out
 }
 

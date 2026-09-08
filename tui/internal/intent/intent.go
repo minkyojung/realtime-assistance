@@ -15,7 +15,8 @@ import (
 	"time"
 
 	"amcli/tui/internal/api"
-	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 // 라이브러리가 200곡 남짓이라 전곡을 그대로 컨텍스트에 넣고 한 번에 부른다.
@@ -23,7 +24,10 @@ import (
 // 뒤 단계가 앞 단계의 맥락을 잃기 때문이다.
 //
 // 라이브러리가 수천 곡으로 커지면 사전 태깅(L1)으로 후보를 먼저 좁혀야 한다.
-const model = "claude-opus-5"
+const model = openai.ChatModelGPT5_5
+
+// 지연 예산이 UX 의 전부다. docs/03 8절.
+var effort = shared.ReasoningEffortLow
 
 // Pick 은 고른 곡 하나와 그 근거다.
 type Pick struct {
@@ -40,7 +44,10 @@ type Result struct {
 	Usage api.Usage
 }
 
-// 응답 스키마. 모델이 이 모양을 벗어날 수 없다.
+// 응답 스키마. strict 모드에서 모델이 이 모양을 벗어날 수 없다.
+//
+// strict 는 모든 객체에 additionalProperties:false 와, properties 전부를
+// required 에 넣을 것을 요구한다. 선택 필드를 두려면 타입에 "null" 을 넣어야 한다.
 var schema = map[string]any{
 	"type":                 "object",
 	"additionalProperties": false,
@@ -104,27 +111,27 @@ func Build(ctx context.Context, prompt string, library []api.Track, now time.Tim
 		return Result{}, fmt.Errorf("빈 요청")
 	}
 
-	client := anthropic.NewClient()
-	adaptive := anthropic.ThinkingConfigAdaptiveParam{}
+	client := openai.NewClient()
 
-	resp, err := client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     model,
-		MaxTokens: 8000,
-		Thinking:  anthropic.ThinkingConfigParamUnion{OfAdaptive: &adaptive},
-		OutputConfig: anthropic.OutputConfigParam{
-			Effort: anthropic.OutputConfigEffortMedium,
-			Format: anthropic.JSONOutputFormatParam{Schema: schema},
+	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Model: model,
+		// 선곡은 긴 추론이 필요한 일이 아니다. 목록을 읽고 조건에 맞는 것을
+		// 고르는 작업이라 추론을 낮추면 지연이 크게 줄어든다.
+		ReasoningEffort: effort,
+		// 시스템 프롬프트와 라이브러리 목록을 먼저 두어야 프롬프트 캐시가 걸린다.
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.SystemMessage(systemPrompt),
+			openai.SystemMessage(renderLibrary(library, now)),
+			openai.UserMessage(prompt),
 		},
-		System: []anthropic.TextBlockParam{{
-			Text: systemPrompt,
-			// 시스템 프롬프트와 라이브러리 목록은 요청마다 같으므로 캐시한다.
-			CacheControl: anthropic.NewCacheControlEphemeralParam(),
-		}},
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(
-				anthropic.NewTextBlock(renderLibrary(library, now)),
-				anthropic.NewTextBlock("Request: "+prompt),
-			),
+		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
+			OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{
+				JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{
+					Name:   "queue",
+					Strict: openai.Bool(true),
+					Schema: schema,
+				},
+			},
 		},
 	})
 	if err != nil {
@@ -136,8 +143,8 @@ func Build(ctx context.Context, prompt string, library []api.Track, now time.Tim
 		return Result{}, err
 	}
 	out.Usage = api.Usage{
-		PromptTokens:     int(resp.Usage.InputTokens),
-		CompletionTokens: int(resp.Usage.OutputTokens),
+		PromptTokens:     int(resp.Usage.PromptTokens),
+		CompletionTokens: int(resp.Usage.CompletionTokens),
 		CostUsd:          cost(resp.Usage),
 	}
 	return out, nil
@@ -149,7 +156,8 @@ func Build(ctx context.Context, prompt string, library []api.Track, now time.Tim
 // 모델이 그 사실을 볼 수 있어야 한다.
 func renderLibrary(tracks []api.Track, now time.Time) string {
 	var b strings.Builder
-	b.WriteString("The person's library. Columns: id | title | artist | album | genre | year | length | plays | last played | added\n\n")
+	b.WriteString("The person's library. Columns: id | title | artist | album | genre | year | length | plays | last played | added\n")
+	b.WriteString("\"added: not in library\" means the track sits in a playlist but was never added to the library, so no add date exists. Never claim a date for those.\n\n")
 	for _, t := range tracks {
 		if t.Excluded {
 			continue
@@ -169,10 +177,15 @@ func renderLibrary(tracks []api.Track, now time.Time) string {
 		if t.LastPlayedAt != nil {
 			last = fmt.Sprintf("%dd ago", int(now.Sub(*t.LastPlayedAt).Hours()/24))
 		}
-		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s | %s | %d plays | %s | %dd ago\n",
+		// 라이브러리에 없는 곡은 담은 날짜가 없다. 지어내지 않는다 —
+		// 없는 값을 채우면 근거가 사실이 아니게 된다.
+		added := "not in library"
+		if t.AddedAt != nil {
+			added = fmt.Sprintf("%dd ago", int(now.Sub(*t.AddedAt).Hours()/24))
+		}
+		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s | %s | %d plays | %s | %s\n",
 			t.Id, t.Title, t.Artist.Name, album, genre, year,
-			mmss(t.DurationMs), t.PlayCount, last,
-			int(now.Sub(t.AddedAt).Hours()/24))
+			mmss(t.DurationMs), t.PlayCount, last, added)
 	}
 	return b.String()
 }
@@ -182,9 +195,17 @@ func mmss(ms int) string {
 	return fmt.Sprintf("%d:%02d", s/60, s%60)
 }
 
-// Claude Opus 5 — 입력 $5 / 출력 $25 per MTok.
-func cost(u anthropic.Usage) float64 {
-	in := float64(u.InputTokens+u.CacheReadInputTokens/10) / 1e6 * 5
-	out := float64(u.OutputTokens) / 1e6 * 25
+// gpt-5.5 기준 대략치. 정확한 청구는 사용량 대시보드를 본다.
+const (
+	usdPerMTokIn  = 1.25
+	usdPerMTokOut = 10.0
+)
+
+func cost(u openai.CompletionUsage) float64 {
+	cached := u.PromptTokensDetails.CachedTokens
+	fresh := u.PromptTokens - cached
+	// 캐시된 입력은 크게 싸다.
+	in := (float64(fresh) + float64(cached)*0.1) / 1e6 * usdPerMTokIn
+	out := float64(u.CompletionTokens) / 1e6 * usdPerMTokOut
 	return in + out
 }

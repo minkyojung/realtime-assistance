@@ -669,10 +669,13 @@ type TasteRule struct {
 
 // Track defines model for Track.
 type Track struct {
-	AddedAt      time.Time `json:"addedAt"`
-	Album        *Album    `json:"album,omitempty"`
-	AppleMusicId *string   `json:"appleMusicId,omitempty"`
-	Artist       Artist    `json:"artist"`
+	// AddedAt 라이브러리에 담은 시각. **라이브러리에 없는 곡(`inLibrary=false`)은
+	// `null`** 이다 — 담은 적이 없으므로 담은 날짜도 없다.
+	// 없는 값을 채워 넣으면 선정 근거가 사실이 아니게 된다.
+	AddedAt      *time.Time `json:"addedAt,omitempty"`
+	Album        *Album     `json:"album,omitempty"`
+	AppleMusicId *string    `json:"appleMusicId,omitempty"`
+	Artist       Artist     `json:"artist"`
 
 	// CloudStatus Example: subscription
 	CloudStatus *string `json:"cloudStatus,omitempty"`

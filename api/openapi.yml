@@ -1099,7 +1099,7 @@ components:
       type: object
       required:
         [id, title, artist, durationMs, source, playCount, skipCount,
-         favorited, disliked, excluded, inLibrary, addedAt]
+         favorited, disliked, excluded, inLibrary]
       properties:
         id:
           type: integer
@@ -1161,6 +1161,11 @@ components:
         addedAt:
           type: string
           format: date-time
+          nullable: true
+          description: |
+            라이브러리에 담은 시각. **라이브러리에 없는 곡(`inLibrary=false`)은
+            `null`** 이다 — 담은 적이 없으므로 담은 날짜도 없다.
+            없는 값을 채워 넣으면 선정 근거가 사실이 아니게 된다.
         inLibrary:
           type: boolean
           description: |
