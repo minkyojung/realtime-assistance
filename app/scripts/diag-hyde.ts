@@ -1,5 +1,5 @@
 /** HyDE 실측 — 가상 답변으로 검색하면 어휘 불일치가 풀리는가. */
-import 'dotenv/config'
+import './_env'
 import { pool, query } from '@/lib/db'
 import { embedOne, toVector } from '@/lib/embed'
 

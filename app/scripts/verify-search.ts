@@ -3,7 +3,7 @@
  *   1. 스파이크 1의 원형 질문 10개로 커버리지를 잰다.
  *   2. audience_level 필터가 실제로 차단하는지 확인한다.
  */
-import 'dotenv/config'
+import './_env'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { searchChunks } from '@/lib/search'

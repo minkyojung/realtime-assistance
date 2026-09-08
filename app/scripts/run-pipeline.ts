@@ -1,5 +1,5 @@
 /** 파이프라인 전체 실행 — 대화 스크립트를 재생하며 판정을 출력한다. */
-import 'dotenv/config'
+import './_env'
 import { createSession, participantByRole } from '@/lib/session'
 import { saveUtterance, processUtterance } from '@/lib/pipeline'
 import { DEMO_SCRIPT } from '@/lib/scripted-source'

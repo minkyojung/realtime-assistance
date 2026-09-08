@@ -1,5 +1,5 @@
 /** 근거 검색 실패가 교차언어 문제인지, 군말 문제인지, 코퍼스 공백인지 가른다. */
-import 'dotenv/config'
+import './_env'
 import { pool, query } from '@/lib/db'
 import { embedOne, toVector } from '@/lib/embed'
 

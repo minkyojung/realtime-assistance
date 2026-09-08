@@ -1,5 +1,5 @@
 /** 판정 + 생성 실측. 지연(TTFT/headline)이 예산 안에 드는지 본다. */
-import 'dotenv/config'
+import './_env'
 import { detectQuestion } from '@/lib/detect'
 import { extractIntent } from '@/lib/intent'
 import { decide } from '@/lib/verdict'

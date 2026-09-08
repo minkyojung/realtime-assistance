@@ -8,7 +8,7 @@
  * 그리고 response_rule.created_from <-> knowledge_gap.resolved_by
  * 양방향 연결이 실제로 생성되는지 확인한다.
  */
-import 'dotenv/config'
+import './_env'
 import { createSession, participantByRole } from '@/lib/session'
 import { saveUtterance, processUtterance } from '@/lib/pipeline'
 import { resolveGap, listGaps } from '@/lib/gaps'

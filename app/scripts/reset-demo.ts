@@ -7,7 +7,7 @@
  * 단순 삭제 순서로는 풀 수 없다. 두 제약 모두 DEFERRABLE 로 생성돼 있으므로
  * 트랜잭션 안에서 검사를 커밋 시점까지 미룬다.
  */
-import 'dotenv/config'
+import './_env'
 import { pool, query, transaction } from '@/lib/db'
 
 async function main() {

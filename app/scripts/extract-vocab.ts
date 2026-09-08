@@ -6,7 +6,7 @@
  * 고유명사가 깨지면 BM25 검색이 전면 실패하므로, 지식 소스에서
  * 고유명사를 추출해 세션 시작 시 STT에 넘긴다.
  */
-import 'dotenv/config'
+import './_env'
 import { pool, query } from '@/lib/db'
 
 // 영어 일반어. 고유명사로 오인하기 쉬운 문장 첫 단어들.

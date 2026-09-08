@@ -5,7 +5,7 @@
  *
  * 실행: cd app && npx tsx ../scripts/ingest.ts
  */
-import 'dotenv/config'
+import './_env'
 import { buildDocs } from './build-docs'
 import { chunkDoc } from '@/lib/chunk'
 import { AUDIENCE_BY_SOURCE } from '@/lib/audience'

@@ -4,7 +4,7 @@
  * 실제 운영에서는 이 행들이 knowledge_gap 해소(2막)를 통해 생기지만,
  * 첫 데모에는 사전 승인된 규칙이 몇 개 있어야 3막 루프를 보여줄 수 있다.
  */
-import 'dotenv/config'
+import './_env'
 import { pool, query, queryOne } from '@/lib/db'
 import { embed, toVector } from '@/lib/embed'
 import type { Intent } from '@/lib/intent'
