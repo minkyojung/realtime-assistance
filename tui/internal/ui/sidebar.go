@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 
 	"amcli/tui/internal/data"
@@ -52,6 +51,13 @@ func (m Model) viewSidebar(height int) string {
 	var b strings.Builder
 	write := func(s string) { b.WriteString(s + "\n") }
 
+	// 검색 중에는 사이드바 맨 위에 임시 항목이 뜬다.
+	// 목록이 왜 걸러졌는지가 여기서 설명된다.
+	if m.mode == modeSearch {
+		write(stBrand.Render("▌") + stBrandBold.Render(" ⌕ Search"))
+		write("")
+	}
+
 	write(stFaint.Render("LIBRARY"))
 	for i, s := range m.sections {
 		if s.kind == secPlaylist && (i == 0 || m.sections[i-1].kind != secPlaylist) {
@@ -63,10 +69,11 @@ func (m Model) viewSidebar(height int) string {
 		}
 
 		label := truncate(s.label, sidebarWidth-2)
-		if i == m.sectionIdx {
+		// 검색 중에는 섹션 선택 표시를 죽인다. 보고 있는 건 검색 결과다.
+		if i == m.sectionIdx && m.mode != modeSearch {
 			write(stBrand.Render("▌") + stBrandBold.Render(" "+label))
 		} else {
-			write("  " + stDim.Render(label))
+			write("  " + stFaint.Render(label))
 		}
 	}
 
@@ -76,18 +83,4 @@ func (m Model) viewSidebar(height int) string {
 	}
 	return lipgloss.NewStyle().Width(sidebarWidth).Render(
 		strings.Join(lines[:height], "\n"))
-}
-
-// 목록 패널의 제목줄 — 무엇을 보고 있는지와 몇 개인지.
-func (m Model) listHeader(w int) string {
-	s := m.sections[m.sectionIdx]
-	title := s.label
-	if m.searching() {
-		title = "Search"
-	}
-	count := ""
-	if n := m.rowCount(); n > 0 {
-		count = fmt.Sprintf("%d", n)
-	}
-	return row(stTitle.Render(truncate(title, w-10)), stFaint.Render(count), w)
 }

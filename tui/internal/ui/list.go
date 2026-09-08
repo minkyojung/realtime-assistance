@@ -68,8 +68,11 @@ func (m Model) viewList(w, h int) string {
 	rows := m.rows()
 	if len(rows) == 0 {
 		msg := "Nothing here yet"
-		if m.searching() {
+		if m.mode == modeSearch {
 			msg = "No matches"
+			if strings.TrimSpace(m.input.Value()) == "" {
+				msg = "Type to search your library"
+			}
 		}
 		return lipgloss.NewStyle().Width(w).Height(h).Render(stFaint.Render(msg))
 	}

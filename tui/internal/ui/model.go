@@ -22,9 +22,22 @@ import (
 //
 // 사이드바가 무엇을 고르든 목록 패널 하나가 다 그린다. 그래서 화면이 늘지 않는다.
 
+// 입력창은 하나지만 하는 일이 둘이다. 무엇을 하는 중인지 화면이 말해야 한다.
+//
+//	기본     › 프롬프트 — 자연어 요청. 목록을 건드리지 않는다
+//	ctrl+f   ⌕ 검색   — 라이브러리를 즉시 걸러 보여준다
+//	/        › 명령    — 로컬에서 바로 실행
+type inputMode int
+
+const (
+	modePrompt inputMode = iota
+	modeSearch
+)
+
 type Model struct {
 	sections   []section
 	sectionIdx int
+	mode       inputMode
 
 	listIdx int
 	listTop int
@@ -49,7 +62,6 @@ func New() Model {
 	ta.SetHeight(1)
 	ta.CharLimit = 500
 	ta.ShowLineNumbers = false
-	ta.Prompt = "› "
 	styleInput(&ta)
 
 	ta.Focus() // 입력창은 늘 활성이다. 타이핑이 언제나 먼저 온다.
@@ -59,6 +71,8 @@ func New() Model {
 		input:    ta,
 		playing:  true,
 	}
+
+	(&m).applyMode()
 	// 시작 상태는 사람이 목록에서 직접 고른 것과 같다 — 근거가 없다.
 	// 근거 줄은 의도 층(자연어 요청)이 만들어낸 곡에서만 나타난다.
 	if songs := l.RecentlyAdded(); len(songs) > 0 {
@@ -76,8 +90,18 @@ func (m Model) Init() tea.Cmd { return textarea.Blink }
 // searching — 입력창이 `/` 로 시작하지 않는 글자로 채워져 있고 포커스가
 // 입력창에 있으면 목록을 즉시 걸러 보여준다. 별도 검색 화면을 두지 않는 이유다.
 func (m Model) searching() bool {
-	v := strings.TrimSpace(m.input.Value())
-	return v != "" && !strings.HasPrefix(v, "/")
+	return m.mode == modeSearch && strings.TrimSpace(m.input.Value()) != ""
+}
+
+// 입력창이 지금 무엇인지에 따라 기호와 안내 문구를 바꾼다.
+func (m *Model) applyMode() {
+	if m.mode == modeSearch {
+		m.input.Prompt = "⌕ "
+		m.input.Placeholder = "Search your library"
+	} else {
+		m.input.Prompt = "› "
+		m.input.Placeholder = "What do you want to hear?    /  commands     ?  help"
+	}
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -93,7 +117,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "ctrl+f":
+			m.mode = modeSearch
+			m.input.Reset()
+			m.applyMode()
+			m.listIdx, m.listTop = 0, 0
+			return m, nil
+
 		case "esc":
+			// 검색 중이면 검색만 빠져나온다. 그다음 한 번 더 누르면 종료.
+			if m.mode == modeSearch {
+				m.mode = modePrompt
+				m.input.Reset()
+				m.applyMode()
+				m.listIdx, m.listTop = 0, 0
+				return m, nil
+			}
 			if m.input.Value() != "" {
 				m.input.Reset()
 				m.clampList()
@@ -120,7 +159,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "enter":
-			// 입력이 있으면 요청, 없으면 선택한 곡을 튼다.
+			// 검색 중에는 고른 곡을 튼다. 프롬프트일 때만 요청으로 보낸다.
+			if m.mode == modeSearch {
+				return m.playSelected(), nil
+			}
 			if strings.TrimSpace(m.input.Value()) != "" {
 				m.input.Reset()
 				m.clampList()

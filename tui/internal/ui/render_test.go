@@ -54,18 +54,39 @@ func TestTabSwitchesSection(t *testing.T) {
 	}
 }
 
-// 글자를 치면 입력창에 들어가고 목록이 걸러지는지.
-// 입력창이 늘 활성이어야 한다 — 이게 깨지면 아무것도 칠 수 없다.
-func TestTypingFiltersList(t *testing.T) {
-	var m tea.Model = New()
-	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
-
-	for _, r := range "oasis" {
+func typeText(m tea.Model, s string) tea.Model {
+	for _, r := range s {
 		m, _ = m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
+	return m
+}
+
+// 입력창은 늘 활성이어야 한다. 이게 깨지면 아무것도 칠 수 없다.
+// 그리고 프롬프트 모드에서는 목록을 건드리지 않아야 한다.
+func TestPromptDoesNotFilterList(t *testing.T) {
+	var m tea.Model = New()
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+	m = typeText(m, "something quiet")
+
 	out := m.View().Content
-	if !strings.Contains(out, "oasis") {
+	if !strings.Contains(out, "something quiet") {
 		t.Fatal("친 글자가 입력창에 없다 — 입력창이 활성이 아니다")
+	}
+	if !strings.Contains(out, "Peanut butter Sandwich") {
+		t.Error("프롬프트를 치는 중인데 목록이 걸러졌다")
+	}
+}
+
+// ctrl+f 로 들어간 검색 모드에서만 목록이 걸러져야 한다.
+func TestSearchModeFiltersList(t *testing.T) {
+	var m tea.Model = New()
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+	m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
+	m = typeText(m, "oasis")
+
+	out := m.View().Content
+	if !strings.Contains(out, "⌕ Search") {
+		t.Error("검색 중이라는 표시가 없다")
 	}
 	// 재생 바에 뜨는 곡은 목록과 무관하게 남으므로, 재생 중이 아닌 곡으로 확인한다.
 	if strings.Contains(out, "Peanut butter Sandwich") {
