@@ -9,6 +9,10 @@ import RelayCore
 /// 카드가 유리라서 뒤의 말풍선이 실제로 굴절돼 비친다 — "다른 층"이라는 게 설명 없이
 /// 읽히므로 웹에서 쓰던 점선 테두리(`border-dashed`)는 필요 없다.
 ///
+/// **색은 옅게, 형태로 함께.** 판정을 진한 색면으로 칠하면 카드가 색칠한 사각형이
+/// 되어 유리가 사라진다. 틴트는 알아볼 만큼만 깔고, 판정의 실제 신호는 헤더의
+/// 심볼(✓ ! ?)과 색 있는 라벨이 맡는다 — 알림 센터가 쓰는 방식이다.
+///
 /// **색이 글보다 먼저 온다.** 미팅 중엔 "말해도 되나?"가 "뭐라고 말하지?"보다 급하다.
 /// 서버도 그 순서로 보낸다 — `question.verdict`(판정) → `question.delta`(문구).
 /// 카드는 그 순서를 시각적으로 지킨다: 유리가 먼저 물들고, 문장은 나중에 차오른다.
@@ -33,19 +37,21 @@ public struct SuggestionCard: View {
             headline
             script
             if let condition = item.condition, !condition.isEmpty { conditionRow(condition) }
+            Divider().opacity(0.5)
             footer
         }
         .padding(12)
         .frame(maxWidth: 420, alignment: .leading)
-        // 판정 색은 유리 전체의 틴트로 들어간다. 웹은 왼쪽 4px 바였는데(`border-l-4`),
-        // 곁눈질로 읽혀야 하는 정보라 면적을 키웠다.
+        // 판정 색은 옅은 틴트로만 깔린다. 진하게 넣어 봤더니 색이 꽉 차서 유리가
+        // 통째로 죽었다 — 굴절도 림 하이라이트도 없는 색칠한 사각형이 됐다(실측).
+        // 색을 알아보는 일은 헤더의 심볼·라벨이 맡고, 유리는 재질로 남는다.
         //
         // 모서리는 숫자로 박지 않고 ConcentricRectangle 로 부모(창 30pt)와 동심을
         // 맞춘다. 다만 카드가 창 가장자리에서 멀면 반경이 지나치게 작아지므로 하한을 둔다.
         .glassEffect(glass, in: ConcentricRectangle(corners: .concentric(minimum: .fixed(12))))
         .frame(maxWidth: .infinity, alignment: .trailing)
         // 나에게 주는 제안이라 내 말풍선과 같은 쪽에 선다. 살짝 들여써서 대화보다 앞에 뜬 층임을 보탠다.
-        .padding(.leading, 24)
+        .padding(.leading, 40)
         .task(id: item.done) {
             guard !item.done else { return cursorOn = false }
             while !Task.isCancelled {
@@ -57,39 +63,52 @@ public struct SuggestionCard: View {
 
     // MARK: - 판정
 
+    /// 유리에 색을 얼마나 섞을지.
+    ///
+    /// 1.0 으로 두면 색이 꽉 차서 **유리가 죽는다** — 굴절도 림 하이라이트도 안 보이고
+    /// 색칠한 사각형이 된다(실측). 재질을 살리면서 색은 알아볼 만큼만 남기는 값이다.
+    /// 0 으로 두면 완전 중립 유리 + 심볼·라벨 색만 남는다 (알림 센터 방식).
+    private static let tintStrength = 0.22
+
     private struct Mode {
         let label: String
         let color: Color
+        /// 색만으로 알리지 않기 위한 형태 신호. 색각 이상에서도 세 판정이 구분된다.
+        let symbol: String
     }
 
     /// 판정 전(`nil`)은 색을 쓰지 않는다 — 아직 아무것도 정해지지 않았다는 뜻이다.
     private var mode: Mode? {
         switch item.mode {
-        case .direct:      Mode(label: "Safe to answer", color: .green)
-        case .conditional: Mode(label: "Answer with condition", color: .orange)
-        case .escalate:    Mode(label: "Verify first", color: .red)
+        case .direct:      Mode(label: "Safe to answer", color: .green,
+                                symbol: "checkmark.circle.fill")
+        case .conditional: Mode(label: "Answer with condition", color: .orange,
+                                symbol: "exclamationmark.circle.fill")
+        case .escalate:    Mode(label: "Verify first", color: .red,
+                                symbol: "questionmark.circle.fill")
         case nil:          nil
         }
     }
 
     private var glass: Glass {
         guard let mode else { return .regular }
-        return .regular.tint(mode.color)
+        return .regular.tint(mode.color.opacity(Self.tintStrength))
     }
 
     // MARK: - 조각
 
     /// 색만으로 판정을 알리지 않는다. 점 옆의 글자가 같은 정보를 문자로 반복한다.
     private var header: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(mode?.color ?? Color.secondary)
-                .frame(width: 6, height: 6)
+        HStack(spacing: 5) {
+            Image(systemName: mode?.symbol ?? "ellipsis.circle")
+                .font(.system(size: 11))
             Text(mode?.label ?? "Assessing")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
             Spacer(minLength: 0)
         }
+        // 판정 색은 여기(심볼·라벨)에서 진하게 쓴다. 유리 틴트는 옅게 깔릴 뿐이라
+        // 색을 알아보는 일은 이 줄이 맡는다.
+        .foregroundStyle(mode?.color ?? Color.secondary)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(mode.map { "\($0.label) suggestion" } ?? "Waiting for verdict")
     }
@@ -98,10 +117,12 @@ public struct SuggestionCard: View {
     /// 카드가 대화에서 떨어져 있어도 무엇에 답하는지가 즉시 읽힌다.
     /// 원문은 바로 위 말풍선에 그대로 있으므로 여기서는 한 줄로 줄인다.
     private func quoted(_ text: String) -> some View {
-        HStack(spacing: 6) {
-            Capsule()
-                .fill(.tertiary)
-                .frame(width: 2)
+        HStack(spacing: 5) {
+            // 위 발화에서 내려와 이 카드로 들어온다는 뜻. 좌우를 뒤집어 오른쪽으로 돌게 한다.
+            // (`arrow.turn.down.right` 로 바꾸면 각진 갈래 모양이 된다.)
+            Image(systemName: "arrow.uturn.down")
+                .font(.system(size: 9, weight: .semibold))
+                .scaleEffect(x: -1, anchor: .center)
             Text(text)
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
@@ -125,7 +146,7 @@ public struct SuggestionCard: View {
     private var script: some View {
         Text(streamed)
             .font(.system(size: 12))
-            .foregroundStyle(.primary.opacity(0.9))
+            .foregroundStyle(.secondary)
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
             .redacted(reason: item.script.isEmpty ? .placeholder : [])
