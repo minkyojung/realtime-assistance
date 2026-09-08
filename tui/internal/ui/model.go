@@ -57,13 +57,16 @@ func New() Model {
 	m := Model{
 		sections: buildSections(l),
 		input:    ta,
-		queue:    data.Queue(),
 		playing:  true,
-		usage:    api.Usage{PromptTokens: 1240, CompletionTokens: 380, CostUsd: 0.0031},
 	}
-	if len(m.queue) > 0 {
-		m.nowPlayingID = m.queue[0].Track.Id
-		m.positionMs = data.PlaybackPositionMs
+	// 시작 상태는 사람이 목록에서 직접 고른 것과 같다 — 근거가 없다.
+	// 근거 줄은 의도 층(자연어 요청)이 만들어낸 곡에서만 나타난다.
+	if songs := l.RecentlyAdded(); len(songs) > 0 {
+		m.listIdx = 0
+		m = m.playSelected()
+		// 재생 위치는 곡 길이에 비례해 잡는다. 고정값을 쓰면
+		// 짧은 곡에서 남은 시간이 음수가 된다.
+		m.positionMs = songs[0].DurationMs * 2 / 5
 	}
 	return m
 }
@@ -218,6 +221,8 @@ func (m Model) View() tea.View {
 		b.WriteString("\n")
 	}
 	b.WriteString(m.input.View())
+	b.WriteString("\n")
+	b.WriteString(rule(w))
 
 	v := tea.NewView(lipgloss.NewStyle().Padding(1, 1).Render(b.String()))
 	v.AltScreen = true

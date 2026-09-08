@@ -24,7 +24,8 @@ func (m Model) viewPlayer(w int) string {
 	label := stBody.Render(truncate(t.Title, 28)) +
 		stFaint.Render(" — "+truncate(t.Artist.Name, 20))
 
-	timeLabel := fmt.Sprintf(" %s / %s", mmss(m.positionMs), mmss(t.DurationMs))
+	pos := clamp(m.positionMs, 0, t.DurationMs)
+	timeLabel := fmt.Sprintf(" %s / %s", mmss(pos), mmss(t.DurationMs))
 	left := icon + "  " + label
 
 	barW := w - lipgloss.Width(left) - lipgloss.Width(timeLabel) - 3
@@ -34,7 +35,7 @@ func (m Model) viewPlayer(w int) string {
 
 	ratio := 0.0
 	if t.DurationMs > 0 {
-		ratio = float64(m.positionMs) / float64(t.DurationMs)
+		ratio = float64(pos) / float64(t.DurationMs)
 	}
 	return left + "  " + progress(barW, ratio) + stFaint.Render(timeLabel)
 }

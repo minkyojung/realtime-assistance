@@ -67,7 +67,11 @@ func TestTypingFiltersList(t *testing.T) {
 	if !strings.Contains(out, "oasis") {
 		t.Fatal("친 글자가 입력창에 없다 — 입력창이 활성이 아니다")
 	}
-	if strings.Contains(out, "Please Wait for Me") {
+	// 재생 바에 뜨는 곡은 목록과 무관하게 남으므로, 재생 중이 아닌 곡으로 확인한다.
+	if strings.Contains(out, "Peanut butter Sandwich") {
 		t.Error("검색어를 쳤는데 목록이 걸러지지 않았다")
+	}
+	if !strings.Contains(out, "Oasis") {
+		t.Error("검색 결과에 Oasis 곡이 없다")
 	}
 }
