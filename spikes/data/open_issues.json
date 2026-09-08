@@ -1,0 +1,751 @@
+[
+  {
+    "number": 6435,
+    "title": "Allow newlines in SMS OTP template",
+    "body": "# Feature request\r\n\r\n## Is your feature request related to a problem? Please describe.\r\n\r\nI'm using the SMS OTP feature for a progressive web application to be used on mobiles and would like to use the [WebOTP API](https://wicg.github.io/web-otp/) to automatically handle the SMS. The new templating feature gets me almost there – but only almost since it does not allow newlines (\\n).\r\n\r\n## Describe the solution you'd like\r\n\r\nTo conform to the WebOTP API, the SMS needs to contain at least one newline, see e.g. [here](https://web.dev/web-otp/#format) or [here](https://wicg.github.io/sms-one-time-codes/#origin-bound-one-time-code-message). The template should allow for newlines.\r\n\r\n## Describe alternatives you've considered\r\n\r\nThere currently is no alternative to WebOTP for automated SMS OTP handling.\r\n\r\n## Additional context\r\n\r\nI've tried to sneak a newline into the template via \"\\n\" and \"\\\\\\n\", but to no avail.",
+    "comments": 68,
+    "created_at": "2021-09-20T10:56:54Z",
+    "url": "https://github.com/supabase/supabase/issues/6435",
+    "labels": [
+      "enhancement",
+      "good first issue",
+      "frontend",
+      "auth"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 37312,
+    "title": "Cookie “__cf_bm” has been rejected for invalid domain, when opening assets in Firefox",
+    "body": "- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nWhen loading a static image asset from a bucket in Firefox, a browser console error shows, \"Cookie “__cf_bm” has been rejected for invalid domain.\". This is inconsequential, but it happens for each image loaded on the page, so they stack up.\n\n## To Reproduce\n\nOpen the \n\n1. Open Firefox.\n2. Open an asset's url (e.g., here's one from my bucket https://qitwqbodzgvopxlvwsde.supabase.co/storage/v1/render/image/public/artwork/6f55179b-aff8-43b8-8217-7d04dc07c61d)\n3. Open console\n4. Observe \"Cookie “__cf_bm” has been rejected for invalid domain\" in console\n\n## Expected behavior\nNo error when using an asset.\n\n## Screenshots\n<img width=\"1758\" height=\"902\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/c7e57ce4-a31b-4448-94f0-5494eaf1be4f\" />\n\nIf applicable, add screenshots to help explain your problem.\n\n## System information\n\n- OS: macOS\n- Browser: firefox\n",
+    "comments": 32,
+    "created_at": "2025-07-18T21:38:06Z",
+    "url": "https://github.com/supabase/supabase/issues/37312",
+    "labels": [
+      "bug",
+      "needs-analysis",
+      "awaiting-details",
+      "internal-fix",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 43662,
+    "title": "Supabase MCP OAuth fails with {\"message\":\"Unrecognized client_id\"} in Cursor",
+    "body": "## Bug Report\n\n**Summary:** When using the official Supabase MCP server in Cursor, the OAuth flow fails immediately with `{\"message\":\"Unrecognized client_id\"}` when the browser is redirected to mcp.supabase.com, preventing MCP authentication from completing.\n\n---\n\n### MCP Config (`.cursor/mcp.json`)\n\n```json\n{\n  \"supabase\": {\n    \"type\": \"http\",\n    \"url\": \"https://mcp.supabase.com/mcp\"\n  }\n}\n```\n\n---\n\n### Steps to Reproduce\n\n1. Add the above MCP config to Cursor.\n2. Open Cursor and wait for the Supabase MCP server to initialize.\n3. Click **Authenticate** when Cursor prompts for MCP authentication.\n4. Browser opens to the Supabase OAuth page.\n5. Immediately see `{\"message\":\"Unrecognized client_id\"}` returned from `mcp.supabase.com`.\n\n---\n\n### Expected Behavior\n\nClicking **Authenticate** for the Supabase MCP in Cursor should:\n1. Open the browser to Supabase\n2. Allow project selection\n3. Return a valid token to Cursor so MCP tools can query the project\n\n---\n\n### Actual Behavior\n\n- Browser opens to Supabase and immediately shows: `{\"message\":\"Unrecognized client_id\"}`\n- Cursor reports: `Tool rejected: User skipped MCP authentication`\n- Cursor reports: `Authentication timed out after 2 minutes`\n- The OAuth flow never completes and Cursor never receives a token\n- This cannot be resolved by modifying `mcp.json` or rotating API keys — the issue appears to be that the `client_id` being used by the MCP app is not registered/recognized on `mcp.supabase.com`\n\n---\n\n### Environment\n\n| Field | Value |\n|---|---|\n| Editor | Cursor |\n| Supabase Project URL | https://rumdmulxzmjtsplsjngi.supabase.co |\n| MCP Server URL | https://mcp.supabase.com/mcp |\n| Supabase MCP Plugin Version | `release_v0.1.3` (from `.cursor/plugins/cache/cursor-public/supabase/release_v0.1.3/mcp.json`) |\n\n---\n\n### Notes\n\n- Direct SQL execution in Supabase Studio works fine; the issue is isolated to the MCP OAuth flow.\n- Reference/repro project: `BruceTyndall/socelle-global` (if needed for investigation)\n- This ",
+    "comments": 30,
+    "created_at": "2026-03-11T16:10:14Z",
+    "url": "https://github.com/supabase/supabase/issues/43662",
+    "labels": [
+      "awaiting-details",
+      "external-issue",
+      "mcp"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 34425,
+    "title": "Custom SMTP does not work with Microsoft Office 365 / Outlook > 504 Process Timeout Error",
+    "body": "# Bug report\n\n- [X] I confirm this is a bug with Supabase, not with my own application. \n- [X] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nCustom SMTP does not work with MS Office 365 or Outlook (smtp.office365.com or smtp.outlook.com)\n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\n1. Go to 'Authentication'\n2. Setup Custom SMTP for office/outlook\n3. Run any built-in email functions like (Confirm signup, Invite user, Magic Link, Reset Password etc.) \nFor example: \n```\nconst { error } = await supabase.auth.signUp({\n    email,\n    password,\n    options: {\n      emailRedirectTo: `${origin}/auth/callback`,\n    },\n  });\n```\n\n4. Error received: \"504: Processing this request timed out, please retry after a moment.\"\n\n## Expected behavior\n\nSuccessfully send email to user using custom smtp and sender email\n\n## Screenshots\n\n**Example Custom SMTP Setup:**\n![Image](https://github.com/user-attachments/assets/e2195899-5f8c-41da-9f0f-f41607802484)\n\n\n## System information\n\n- OS: Windows 10\n- Browser (if applies) Chrome, Firefox\n- Version of supabase-js: 2.49.1\n- Version of Node.js: 20.16.0\n\n## Additional context\n\n- Tested that it works with **smtp.gmail.com** \n- Tested that it works using the same credential and microsoft office 365 smtp.office365.com via Python (not via supabase), signalling the issue is with supabase\n- Microsoft recently upgraded TLS, which may or may not be relevant\nhttps://support.microsoft.com/en-au/topic/update-to-enable-tls-1-1-and-tls-1-2-as-default-secure-protocols-in-winhttp-in-windows-c4bd73d2-31d7-761e-0178-11268bb10392\n- Tested with smtp-legacy.office365.com config as well with supabase, and it's not working.\n",
+    "comments": 23,
+    "created_at": "2025-03-26T07:33:22Z",
+    "url": "https://github.com/supabase/supabase/issues/34425",
+    "labels": [
+      "bug",
+      "frontend",
+      "auth",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 40617,
+    "title": "New created Supabase project triggers 'pg_pgrst_no_exposed_schemas' error",
+    "body": "# Bug report\n\n<!-- \n\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\n\n- Docs: https://docs.supabase.com\n- Discussions: https://github.com/supabase/supabase/discussions\n- Discord: https://discord.supabase.com\n\nBefore opening a bug report, please verify the following: \n\n-->\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [ ] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nWhen creating a new Supabase project or accessing the database via ConnectionString from a C# .NET 9 Backend Service with Entity Framework triggers the error: schema \"pg_pgrst_no_exposed_schemas\" does not exist\n\nNo tables, migrations, or custom schemas exist in the project yet. The error appears on a fresh project without any user changes. This prevents PostgREST from initializing and querying metadata for the project.\n\nAlso trying to update the db with entity framework 'dotnet ef database update' does not work and the same error occurs in the logs.\n\nError appears in Postgres and  PostgREST logs and dashboard shows \"Unhealthy\" status only for PostgREST\n\nPostgres error in logs: schema \"pg_pgrst_no_exposed_schemas\" does not exist\n\nPostgREST error: Failed to load the schema cache using db-schemas=pg_pgrst_no_exposed_schemas and db-extra-search-path=public,extensions. {\"code\":\"3F000\",\"details\":null,\"hint\":null,\"message\":\"schema \\\"pg_pgrst_no_exposed_schemas\\\" does not exist\"}\n\nAPI gateway error log: 503 HEAD /rest-admin/v1/ready\n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\n1. Go to supabase dashboard and create a new project\n2. Click on Postgres Logs\n3. Observe above mentioned errors in Postgres and PostgREST logs\n\n## Expected Behavior:\n\nPostgres should initialize without errors, even ",
+    "comments": 22,
+    "created_at": "2025-11-19T12:43:04Z",
+    "url": "https://github.com/supabase/supabase/issues/40617",
+    "labels": [
+      "postgREST",
+      "database",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 21261,
+    "title": "Supabase fails to load in web component",
+    "body": "# Bug report\r\n\r\n- [x] I confirm this is a bug with Supabase, not with my own application. \r\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\n\r\nAdding a component that uses Supabase to [Shoelace components](https://github.com/shoelace-style/shoelace) produces the following error:\r\n```\r\nSyntaxError: The requested module './../../../node-fetch/lib/index.js' does not provide an export named 'default' (at PostgrestBuilder.js:1:8)\r\n```\r\n\r\nWhich references [this line in PostgrestBuild.js](https://github.com/supabase/postgrest-js/blob/master/src/PostgrestBuilder.ts#L2):\r\n\r\n```\r\n// @ts-ignore\r\nimport nodeFetch from '@supabase/node-fetch';\r\n```\r\n\r\n## To Reproduce\r\n\r\nSteps to reproduce the behavior, please provide code snippets or a repository:\r\n\r\n1. `git clone https://github.com/shoelace-style/shoelace`\r\n2. `cd shoelace`\r\n3. `npm install @supabase/supabase-js`\r\n4. `npm install`\r\n5. `npm run build`\r\n6. `npm run test` => All tests pass, check.\r\n7. Add Supabase to one of the components such as `src/components/alert/alert.component.ts` by adding the following two lines after the existing `import` statements:\r\n```\r\nimport { createClient } from '@supabase/supabase-js'\r\ncreateClient('https://xyzcompany.supabase.co', 'public-anon-key')\r\n```\r\n8. `npm run test` \r\n9. Observe that now *all* tests fail to even load, each giving an error of the following form:\r\n```\r\nsrc/components/alert/alert.test.ts:\r\n\r\n 🚧 Browser logs on Chromium:\r\n      SyntaxError: The requested module './../../../node-fetch/lib/index.js' does not provide an export named 'default'\r\n 🚧 Browser logs on Webkit:\r\n      SyntaxError: Importing binding name 'default' cannot be resolved by star export entries.\r\n\r\n ❌ Could not import your test module. Check the browser logs or open the browser in debug mode for more information. \r\n```\r\n## Expected behavior\r\n\r\nAdding ",
+    "comments": 22,
+    "created_at": "2024-02-14T15:47:17Z",
+    "url": "https://github.com/supabase/supabase/issues/21261",
+    "labels": [
+      "needs-analysis"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 20982,
+    "title": "Failed Fetch API in Safari due to access control checks",
+    "body": "### Discussed in https://github.com/orgs/supabase/discussions/19983\r\n\r\n<div type='discussions-op-text'>\r\n\r\n<sup>Originally posted by **asyncink** December 23, 2023</sup>\r\nHello! \r\n\r\nWe are facing errors in Safari which are not reproduced in 100% cases, but are definitely on Supabase side and are reproduced consistently in Safari browser. Safari makes preflight request (OPTIONS) when interacting with Supabase API. And for some reason, that we can not clearly figure out on our side, these requests are failed with following errors to the browser console. Fetch fails when fetching rows from database or during authentication (actually any Supabase APIs are affected). \r\n\r\n```\r\nFetch API cannot load https://jhfjkcfjxvjlvipwubnk.supabase.co/rest/v1/orders?select=*&order=creationDate.desc due to access control checks.\r\n```\r\n\r\n```\r\nFetch API cannot load https://jhfjkcfjxvjlvipwubnk.supabase.co/auth/v1/token?grant_type=password due to access control checks.\r\n```\r\n\r\nAnd even logout fails:\r\n\r\n```\r\nFetch API cannot load https://jhfjkcfjxvjlvipwubnk.supabase.co/auth/v1/logout?scope=global due to access control checks.\r\n```\r\n\r\nWe can see these request in Supabase logs and they have status 200 OK, but we suppose that reason is in inappropriate response headers.\r\n\r\n```\r\n\r\nOPTIONS \\| 200 \\| 62.217.185.59 \\| 839c5ef3cf951640 \\| https://jhfjkcfjxvjlvipwubnk.supabase.co/rest/v1/orders?select=*&order=creationDate.desc \\| Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15,\"[{\"cf\":[{\"asOrganization\":\"Lovitel\",\"asn\":41275,\"botManagement\":[{\"corporateProxy\":false,\"detectionIds\":[],\"ja3Hash\":null,\"jsDetection\":[{\"passed\":false}],\"score\":99,\"staticResource\":false,\"verifiedBot\":false}],\"city\":\"Moscow\",\"clientAcceptEncoding\":\"gzip, deflate, br\",\"clientTcpRtt\":null,\"clientTrustScore\":null,\"colo\":\"DME\",\"continent\":\"EU\",\"country\":\"RU\",\"edgeRequestKeepAliveStatus\":1,\"httpProtocol\":\"HTTP/3\",\"isEUCountry\":null,\"latitude\":\"55.74830\",\"lon",
+    "comments": 22,
+    "created_at": "2024-02-04T03:31:47Z",
+    "url": "https://github.com/supabase/supabase/issues/20982",
+    "labels": [
+      "bug",
+      "auth",
+      "needs-analysis"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 41529,
+    "title": "plpgsql_check causing \"cannot find parent statement on pldbgapi2 call stack\" error in recursive PL/pgSQL functions",
+    "body": "I'm encountering an internal error in PL/pgSQL functions that stems from `plpgsql_check`, which Supabase appears to load automatically via shared_preload_libraries. It's highly unexpected that correct SQL code can fail due to a library injected at the platform level that the user has no control over. Users shouldn't need to debug Supabase's infrastructure choices to run standard PostgreSQL functions.\nThe error occurs when running [pgstac](https://github.com/stac-utils/pgstac) during recursive PL/pgSQL function calls:\n\n\n```sql\npsycopg.errors.InternalError_: cannot find parent statement on pldbgapi2 call stack\nCONTEXT:  PL/pgSQL function run_or_queue(text) line 13 at RETURN\nSQL statement \"SELECT run_or_queue(format($q$\n            UPDATE collections\n            SET content = jsonb_set_lax(\n                content,\n                '{extent}'::text[],\n                collection_extent(%L, FALSE),\n                true,\n                'use_json_null'\n            ) WHERE id=%L\n            ;\n        $q$, collection, collection))\"\nPL/pgSQL function update_partition_stats(text,boolean) line 57 at PERFORM\nSQL statement \"SELECT update_partition_stats('_items_1', 'f');\"\nPL/pgSQL function run_or_queue(text) line 11 at EXECUTE\nSQL statement \"SELECT run_or_queue(\n        format('SELECT update_partition_stats(%L, %L);', _partition, istrigger)\n    )\"\nPL/pgSQL function update_partition_stats_q(text,boolean) line 4 at PERFORM\n```\n\n## Investigation:\n\nI have not installed any debugger extension:\n* `SELECT * FROM pg_extension` shows no debugger-related extensions\n* `SELECT proname FROM pg_proc WHERE proname LIKE '%pldbg%'` returns no rows\n* `SELECT * FROM pg_available_extensions WHERE name LIKE '%debug%'` returns no rows\n\nHowever, `SHOW shared_preload_libraries` returns:\n```\npg_stat_statements, pgaudit, plpgsql, plpgsql_check, pg_cron, pg_net, pgsodium, timescaledb, auto_explain, pg_tle, plan_filter, supabase_vault\n```\n\nThe error references `pldbgapi2`, which is part of the PL/pgSQL debu",
+    "comments": 20,
+    "created_at": "2025-12-22T08:50:34Z",
+    "url": "https://github.com/supabase/supabase/issues/41529",
+    "labels": [
+      "bug",
+      "needs-analysis",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 48497,
+    "title": "error while running - pnpm dev",
+    "body": "<img width=\"502\" height=\"136\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/3713c11d-ef87-4704-9075-961b80101d9f\" />\n<img width=\"618\" height=\"529\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/68df5df3-508e-47f4-9bcd-017cd1661816\" />\n<img width=\"621\" height=\"530\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/9299f2fd-716b-44e7-8b98-9c4828ab690d\" />\n\n# Bug report\n\n<!-- \n\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\n\n- Docs: https://docs.supabase.com\n- Discussions: https://github.com/supabase/supabase/discussions\n- Discord: https://discord.supabase.com\n\nBefore opening a bug report, please verify the following: \n\n-->\n\n- [ ] I confirm this is a bug with Supabase, not with my own application. \n- [ ] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## I have been facing the issue while running - pnpm dev\n\nI have forked and cloned the repo locally and setup it from the given instructions in the Readme or Contribution.md\n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\npnpm dev\n\n## Expected behavior\n\nA clear and concise description of what you expected to happen.\n\n## Screenshots\n\n<img width=\"502\" height=\"136\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/25c6b4ab-2b17-4ba3-9ae6-839825f15112\" />\n<img width=\"618\" height=\"529\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/607e3e4c-16b2-4be7-8b36-f1da97945393\" />\n<img width=\"621\" height=\"530\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/46ef01aa-1782-4200-a20e-3b8fbdf4237d\" />\n\n## System information\n\n- OS: windows 11\n- Browser - Brave\n- Version of supabase-js: [latest]\n- Version of Node.js: [v22.19.0\n]\n\n## Additional context\n\nI first asked chat gpt about the problem thinking wh",
+    "comments": 19,
+    "created_at": "2026-07-30T15:23:42Z",
+    "url": "https://github.com/supabase/supabase/issues/48497",
+    "labels": [
+      "bug",
+      "awaiting-details",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 44104,
+    "title": "Self-hosted Logflare with BigQuery backend cannot work out of the box",
+    "body": "# Bug report\n\n<!-- \n\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\n\n- Docs: https://docs.supabase.com\n- Discussions: https://github.com/supabase/supabase/discussions\n- Discord: https://discord.supabase.com\n\nBefore opening a bug report, please verify the following: \n\n-->\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nI used Claude to help me play \"spot the difference\" with some of this, so forgive me for also using it to help with a writeup. This is likely both a documentation and code bug. The first problem is that when starting up Logflare with a BigQuery backend, Logflare creates the necessary tables, but does not create the necessary columns within those schemas up-front. The columns will get created as rows enter BigQuery, which is fine, but if I don't use several products those tables will remain with a default, incomplete set of columns causing errors not only on that tab, but depending on the table *all of the tabs* because of details in the below writeup. There is also a disparity between what Vector sends for columns vs what Studio queries against in some of the Logs tabs, meaning even if the rows and columns get created eventually some of those tabs will *never* work without additional work.\n\nClaude-generated writeup/additional details follows:\n\nWhen using BigQuery as the Logflare backend for self-hosted Supabase, all Studio log tabs fail with invalidQuery errors. There are three issues:\n1. Vector sends fewer fields than Studio queries expect\nThe self-hosted Vector pipeline sends a limited set of metadata fields, but Studio's queries reference fields that only exist on the Supabase Platform. BigQuery auto-creates table schemas from ing",
+    "comments": 16,
+    "created_at": "2026-03-23T19:04:15Z",
+    "url": "https://github.com/supabase/supabase/issues/44104",
+    "labels": [
+      "bug",
+      "self-hosted",
+      "analytics",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 39961,
+    "title": "docker: self-hosted mcp password auth failed for user supabase_read_only_user",
+    "body": "# Bug report\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nWhen calling `list_tables` tool password auth fails for user `supabase_read_only_user`\n```json\n{\n  \"error\": {\n    \"name\": \"PgMetaDatabaseError\",\n    \"message\": \"password authentication failed for user \\\"supabase_read_only_user\\\"\"\n  }\n}\n```\n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\n- http POST request on /mcp route with this json body\n  ```json\n  {\n    \"jsonrpc\": \"2.0\",\n    \"id\": \"3\",\n    \"method\": \"tools/call\",\n    \"params\": {\n      \"name\": \"list_tables\",\n      \"arguments\": {}\n    }\n  }\n  ```\n\n## Expected behavior\n\nauth success\n",
+    "comments": 16,
+    "created_at": "2025-10-29T07:20:07Z",
+    "url": "https://github.com/supabase/supabase/issues/39961",
+    "labels": [
+      "bug",
+      "self-hosted",
+      "external-issue",
+      "mcp"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 30632,
+    "title": "Creating enum in custom schema fails",
+    "body": "# Bug report\r\n\r\n- [X] I confirm this is a bug with Supabase, not with my own application. \r\n- [X] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\nI am experiencing this bug in local and hosted versions in slightly different ways - but seems to be related:\r\n\r\n# Local version issue\r\nFor a brand new Supabase project, whenever I try to create an enum for a custom schema, either via the Studio UI or the Studio's SQL editor, it never creates the enum (even though in both cases it claims it has). The same project hosted on Supabase creates them fine.\r\n\r\nFor example via the Studio UI, I create the enum, the toast appears saying it's successfully created, but the inline table with the created enums never shows my new one.\r\n\r\n# Hosted version issue\r\nFor a brand new Supabase project, I am able to create an enum for a custom schema fine and it shows up, however whenever I try to then use that enum in a new column of a table within that custom schema, I get the error: `failed to create pg.columns: type \"my_enum_name\" does not exist`.\r\n\r\nThis issue in the hosted version again does not happen if I'm using the `public` schema.\r\n\r\n",
+    "comments": 14,
+    "created_at": "2024-11-24T12:57:23Z",
+    "url": "https://github.com/supabase/supabase/issues/30632",
+    "labels": [
+      "bug",
+      "frontend",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 1318,
+    "title": "PostGIS Tiger: Data not loaded to use geocode function",
+    "body": "# Feature request\r\n\r\n## Is your feature request related to a problem? Please describe.\r\n\r\nI have enabled to `POSTGIS_TIGER_GEOCODER`, but whenever I use the its geocoding functionality no results are returned. I believe this is because while the extension is enabled, the census data it uses to geocode is not loaded. See the PostGIS Tiger docs for more info: http://postgis.net/docs/postgis_installation.html#install_tiger_geocoder_extension.\r\n\r\nThe query I'm using to test is:\r\n```\r\nselect tiger.geocode('... my address ...');\r\n```\r\nwhich returns\r\n```\r\n geocode\r\n---------\r\n(0 rows)\r\n```\r\n\r\n## Describe the solution you'd like\r\n\r\nDocumentation on how to load the census data and/or automatically loading it when enabling the extension.\r\n\r\n## Describe alternatives you've considered\r\n\r\n## Additional context\r\n",
+    "comments": 13,
+    "created_at": "2021-04-29T18:15:36Z",
+    "url": "https://github.com/supabase/supabase/issues/1318",
+    "labels": [
+      "documentation",
+      "enhancement",
+      "extensions"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 49847,
+    "title": "Dashboard sign-in impossible: auth.supabase.io/auth/v1/authorize answers 301 to itself → ERR_TOO_MANY_REDIRECTS (reproducible from 2 regions since ~09:00 UTC, 1 Sep 2026)",
+    "body": "- [x] I confirm this is a bug with Supabase, not with my own application.\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com).\n\n## Describe the bug\n\nSince roughly 09:00 UTC on 1 Sep 2026 I cannot sign in to the Supabase dashboard (supabase.com/dashboard) with \"Continue with GitHub\". The browser lands on `auth.supabase.io/auth/v1/authorize?provider=github&redirect_to=...` and Chrome stops with **ERR_TOO_MANY_REDIRECTS** (\"auth.supabase.io redirected you too many times\").\n\n`curl` shows why: `auth.supabase.io` answers every request to `/auth/v1/authorize` with **HTTP 301 whose `Location` is the same URL with `:443` appended**, so the client loops forever. No `cf-mitigated` header is present (so this is not a bot challenge), every hop sets a fresh `__cf_bm` cookie, and the response `date` matches my local clock to the second.\n\nThe identical loop comes back from two independent network paths that terminate at different Cloudflare PoPs (LAX and SIN), and it reproduces in a fresh Chrome incognito window (no cookies/storage, extensions disabled). Shortly before the loop started (same hour) the OAuth flow still completed, but the dashboard showed the toast \"Failed to add login event: JWT failed verification\" and bounced back to the sign-in page.\n\nMy account is GitHub-linked only (the password-reset email confirms \"you can only sign in with the GitHub login option\"), and the ChatGPT / SSO buttons also go through the same `/authorize` endpoint, so there is no alternative way in. status.supabase.com currently shows Dashboard and Auth as Operational (API Gateway: Degraded Performance).\n\n## To Reproduce\n\n1. Open https://supabase.com/dashboard/sign-in in a fresh incognito window.\n2. Click \"Continue with GitHub\".\n3. Browser navigates to `https://auth.supabase.io/auth/v1/authorize?provider=github&redirect_to=...` and fails with ERR_TOO_MANY_REDIRECTS",
+    "comments": 12,
+    "created_at": "2026-09-01T12:27:32Z",
+    "url": "https://github.com/supabase/supabase/issues/49847",
+    "labels": [
+      "bug",
+      "external-issue",
+      "to-triage"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 48819,
+    "title": "Project is Healthy but all project hostnames return NXDOMAIN after resuming",
+    "body": "## Bug report\n\n### Describe the bug\n\nMy Supabase project appears as **Healthy** in the dashboard after being resumed from the paused state, but none of the project's public hostnames resolve.\n\nProject reference:\n\n`xhbgqajdmtkluaskjymc`\n\n### What happens\n\nThe following hostnames return **NXDOMAIN**:\n\n- https://xhbgqajdmtkluaskjymc.supabase.co\n- db.xhbgqajdmtkluaskjymc.supabase.co\n\nBecause of this, the Flutter application cannot connect to Supabase.\n\n### What I have verified\n\n- The project status is **Healthy**.\n- The Project URL matches the Project Reference exactly.\n- `.env.dev` contains the same URL.\n- The compiled Flutter application contains exactly the same URL.\n- DNS was tested using:\n  - Local DNS\n  - Google DNS (8.8.8.8)\n  - Cloudflare DNS (1.1.1.1)\n  - Direct queries to the authoritative Cloudflare nameservers\n- Every test returns **NXDOMAIN**.\n\nThe problem started after resuming the project from the paused state.\n\n### Expected behavior\n\nThe project hostname and database hostname should resolve normally.\n\n### Additional information\n\nCould you please verify whether the DNS records or API Gateway provisioning for this project completed successfully?\n\nThank you.",
+    "comments": 12,
+    "created_at": "2026-08-06T20:14:26Z",
+    "url": "https://github.com/supabase/supabase/issues/48819",
+    "labels": [
+      "bug",
+      "awaiting-details"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 47438,
+    "title": "Bug: Repeated FATAL: database \"supabase_admin\" does not exist errors across projects (Free & Pro plans)",
+    "body": "Starting from June 29, 2026, at approximately 11:00 PM IST, the project logs began filling up with rapid, repeated FATAL errors stating database \"supabase_admin\" does not exist. This issue appears to be originating from an internal platform or automated management process rather than user-initiated application actions, as it affects multiple independent projects across both Free and Pro tier plans.\n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\n1. Log into the Supabase Dashboard.\n2. Navigate to Project Settings -> Logs -> Database Logs.\n3. View the recurring FATAL connection attempts trying to access a supabase_admin database.\n\n## Expected behavior\n\nInternal system processes should authenticate seamlessly without causing database connection failures or cluttering the logs with high-frequency fatal crash items.\n\n## Screenshots\n\n<img width=\"1919\" height=\"745\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/ab50dd8a-8ca1-4131-971d-b95ffcd249f9\" />\n\n## System information\n\nSystem Information\n\n- Environment: Hosted Supabase Platform (supabase.com)\n- Tiers Affected: Both Free and Pro tiers\n- Timeline Started: June 29, 2026, ~11:00 PM IST (ongoing on June 30, 2026)\n",
+    "comments": 12,
+    "created_at": "2026-06-30T08:51:23Z",
+    "url": "https://github.com/supabase/supabase/issues/47438",
+    "labels": [
+      "bug",
+      "database",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 35544,
+    "title": "Maybe I'm misunderstanding, but there seems to be a discrepancy in the documentation about the 'auth/callback' route",
+    "body": "# Improve documentation\n\n## Link \n\nhttps://supabase.com/docs/guides/auth/server-side/nextjs?queryGroups=router&router=app\n\n## Describe the problem\n\nIn the Supabase Vercel starter: https://vercel.com/templates/next.js/supabase\nthere is a route 'auth/callback'. \nA comment in this file says this:\n\n>   // The `/auth/callback` route is required for the server-side auth flow implemented\n>   // by the SSR package. It exchanges an auth code for the user's session.\n>   // https://supabase.com/docs/guides/auth/server-side/nextjs\n\nBut this 'auth/callback' route is not described anywhere in the supabase doc that is linked by the url\n\n## Describe the improvement\n\nI don't understand if I need that route or not. If I DO need it, then I think it should be explained in the supabase guide at https://supabase.com/docs/guides/auth/server-side/nextjs\n\n## Additional context\n\nI'd also appreciate a response explaining if I need the auth/callback route or not",
+    "comments": 12,
+    "created_at": "2025-05-08T04:26:05Z",
+    "url": "https://github.com/supabase/supabase/issues/35544",
+    "labels": [
+      "documentation",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 30900,
+    "title": "Subtle bug in Remix guide",
+    "body": "# Improve documentation\r\n\r\n## Link \r\n\r\n https://supabase.com/docs/guides/auth/social-login/auth-github?queryGroups=environment&environment=server&queryGroups=framework&framework=remix\r\n\r\n## Describe the problem\r\n\r\nThis code is wrong:\r\n```ts\r\nconst { data, error } = await supabase.auth.signInWithOAuth({\r\n  provider,\r\n  options: {\r\n    redirectTo: 'http://example.com/auth/callback',\r\n  },\r\n})\r\n\r\nif (data.url) {\r\n  redirect(data.url) // use the redirect API for your server framework\r\n}\r\n```\r\nIt causes a bug where the cookie is not set and the auth does not work\r\n\r\n## Describe the improvement\r\n\r\n```ts\r\nconst headers = new Headers();\r\n\r\n const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_API_KEY!, { \r\n\tcookies: {\r\n\t\tgetAll() {\r\n\t\t\treturn parseCookieHeader(request.headers.get(\"Cookie\") ?? \"\")\r\n\t\t},\r\n\t\tsetAll(cookiesToSet) {\r\n\t\t\tfor (const { name, value, options } of cookiesToSet) {\r\n\t\t\t\theaders.append(\"Set-Cookie\", serializeCookieHeader(name, value, options))\r\n\t\t\t}\r\n\t\t},\r\n\t},\r\n})\r\nconst { data, error } = await supabase.auth.signInWithOAuth({\r\n  provider,\r\n  options: {\r\n    redirectTo: 'http://example.com/auth/callback',\r\n  },\r\n})\r\n\r\nif (data.url) { \r\n  redirect(data.url, { headers }) // use the redirect API for your server framework\r\n}\r\n```\r\n\r\n## Additional context\r\n\r\nThe previous docs cause a subtle and hard to catch bug that cost my employee 2 days of work, and me 2 hours to figure out. It doesn't append the cookie headers to the redirect and doesn't set the cookies in the browser making the subsequent request to the callback url NOT have the verifier code or whatever it's called and making supabase throw an error",
+    "comments": 12,
+    "created_at": "2024-12-04T16:26:42Z",
+    "url": "https://github.com/supabase/supabase/issues/30900",
+    "labels": [
+      "documentation",
+      "help wanted",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 47612,
+    "title": "Left navigation menu invisible in Brave Browser at 100% zoom (only visible at 200%)",
+    "body": "# Bug report\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nWhen logging into the Supabase dashboard using the **Brave Browser** at 100% zoom, the left navigation menu (and the hamburger menu icon) is entirely invisible/missing. The menu only becomes visible when zooming the browser in to **200%**. In contrast, Google Chrome displays the hamburger menu and navigation perfectly fine at 100% zoom.\n\n## To Reproduce\n\nSteps to reproduce the behavior:\n\n1. Open the Supabase dashboard in **Brave Browser** at standard 100% zoom.\n2. Log in and either select an existing project or create a new one.\n3. Observe the dashboard view: the left navigation menu/hamburger icon is completely missing.\n4. Zoom the browser in to **200%**.\n5. Observe that the navigation menu finally becomes visible.\n\n## Expected behavior\n\nThe left navigation menu (or the mobile/responsive hamburger menu icon) should be visible at the default 100% zoom level in Brave Browser, just as it is in Google Chrome.\n\n\n## System information\n\n- **OS:** macOS\n\nhttps://github.com/user-attachments/assets/c76a762e-f79b-4702-bb00-a5d9c472dd93\n\n- **Browser:** Brave Browser\n- **Brave Version:** [Brave 1.92.134 (Official Build) (arm64)](https://brave.com/latest/)\nChromium: 150.0.7871.63\n\n## Additional context\n\nThis seems to be an issue specific to Brave's rendering engine or potentially how its built-in Shields interact with the dashboard's responsive CSS breakpoints at 100% zoom.",
+    "comments": 11,
+    "created_at": "2026-07-05T04:43:15Z",
+    "url": "https://github.com/supabase/supabase/issues/47612",
+    "labels": [
+      "bug",
+      "design",
+      "cannot-reproduce"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 44369,
+    "title": "Scrolling not working (Mac)",
+    "body": "Suddenly, scrolling stopped working for supabase in table view.  Both the scrolling to see all open table and the scrolling for the table itself. For the table, scrolling appears if I use the mouse button to scroll down or arrow keys to scroll left or right, but once I stop, the scroll bars disappear and do not appear when you hover over the area like they did before.\n\nLooking at the dev tools console, I see this:\n\nonfigCat - WARN - [3000] There is an existing client instance for the specified SDK Key. No new client instance will be created and the specified options are ignored. Returning the existing client instance. SDK Key: 'configcat-proxy/frontend-v2'.\n\n[Warning] Please install/enable Redux devtools extension\n(anonymous) @ 3d33833c15e0b486.js?dpl=dpl_132ttFEpBUuU7cic9kjNjWCWahSy:13Understand this warning\n8Loading the image '<URL>' violates the following Content Security Policy directive: \"img-src 'self' blob: data: <URL> <URL> <URL> <URL> <URL> <URL> <URL> <URL> <URL> <URL>\". The action has been blocked.Understand this error\n/dashboard/project/ognnfanapdotgrmsmwav/settings/api-keys:1 Loading the image 'https://www.googletagmanager.com/a?id=G-XW18KGKGNR&v=3&t=t&pid=1215103441&gtm=45he63u0h2v9244750491za20kzb9206779285zd9206779285&cv=1&rv=63u0&tc=8&x=2&tag_exp=0~115616985~115938466~115938468~117266400~117484252&es=1&e=gtm.init&eid=5&u=AAAAAIAAAAAAAAAAAAAAEAAY&h=Ag&tr=1ogt1pdatav2.1ccdgafirst.1setproductsettings.1ccdgaregscope.1ccdconversionmarking.1ccdautoredact.1ccdgalast&ti=2ogt1pdatav2.2ccdgafirst.2setproductsettings.2ccdgaregscope.2ccdconversionmarking.2ccdautoredact.2ccdgalast&z=0' violates the following Content Security Policy directive: \"img-src 'self' blob: data: http://localhost:8000 https://supabase.com https://*.supabase.co https://*.storage.supabase.co https://avatars.githubusercontent.com https://lh3.googleusercontent.com https://frontend-assets.supabase.com https://app.usercentrics.eu https://ss.supabase.com https://*.usercentrics.eu\". The action ha",
+    "comments": 11,
+    "created_at": "2026-03-30T22:49:48Z",
+    "url": "https://github.com/supabase/supabase/issues/44369",
+    "labels": [
+      "bug",
+      "frontend",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 32306,
+    "title": "Queues: Update the API documentation for 'read' + feature request of 'batch_delete' :) ",
+    "body": "# Improve documentation\r\n\r\n## Link \r\n\r\nhttps://supabase.com/docs/guides/queues/api#pgmqpublicreadqueuename-sleepseconds-n\r\n\r\n## Describe the problem\r\n\r\nIn the documentation for 'read'-ing of queues, the description says \"optional 'sleep_seconds'\". However, when I try to make an RPC call with the supabase-js client, I get the following error message if I don't include that parameter:\r\n```\r\n  error: {\r\n    code: 'PGRST202',\r\n    details: 'Searched for the function pgmq_public.read with parameters n, queue_name or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',\r\n    hint: 'Perhaps you meant to call the function pgmq_public.read(n, queue_name, sleep_seconds)',\r\n    message: 'Could not find the function pgmq_public.read(n, queue_name) in the schema cache'\r\n  },\r\n```\r\n\r\nIt works fine when I specify the \"sleep_seconds\".\r\n\r\n## Describe the improvement\r\n\r\n1. When I read the documentation, I didn't understand what \"sleep_seconds\" means. Is it the column that says \"status\" in the queue? Also what is a recommended sleep_seconds? It would be great to hyperlink to a page with more information regarding this.\r\n2. Sort of a feature request in this issue, but is it possible to get a function to \"delete in batch\", as well? (My use-case: I want to read the first 10 messages, process them, and then delete them) \r\n",
+    "comments": 11,
+    "created_at": "2024-12-29T22:03:16Z",
+    "url": "https://github.com/supabase/supabase/issues/32306",
+    "labels": [
+      "documentation",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 29073,
+    "title": "Calling `supabase.auth.admin.updateUserById` in custom access token hook causes sign in to fail",
+    "body": "# Bug report\r\n\r\n- [x] I confirm this is a bug with Supabase, not with my own application. \r\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\n\r\nTL;DR in local development calling `supabase.auth.admin.updateUserById` in a custom access token hook to update the user for which the custom access token hook is currently being called causes the in progress sign in request to fail with an HTTP 400 `{\"error\":\"server_error\",\"error_description\":\"Internal Server Error\"}` even though the custom auth hook returns an HTTP 200 with valid claims. Running the same user update call after the hook returns instead (e.g. by `new Promise(resolve => setTimeout(1000, resolve)).then(() => /* do the update */)`) avoids the error.\r\n\r\nThis \r\n\r\nI have an internal authentication API that, similarly to Supabase's Google auth, accepts a Google issued ID token and returns a short lived access token and long lived refresh token. When a user signs in this way I store the access token in the app metadata and the refresh token in a separate DB table. In the custom auth hook I validate the access token and, if it's expired, request a new one using the refresh token - I then need to store the new access token against the user so that that it can be referenced later.\r\n\r\nLooking in the supabase auth logs I can see that the error is because the auth hook is timing out with logs like this.\r\n\r\n```\r\n2024-09-04 10:16:53 {\"action\":\"run_hook\",\"auth_event\":{\"action\":\"login\",\"actor_id\":\"5f3aafb5-cb8c-42d4-bf30-bfce25d669eb\",\"actor_name\":\"Liam O'Boyle\",\"actor_username\":\"61403123456\",\"actor_via_sso\":false,\"log_type\":\"account\",\"traits\":{\"provider\":\"google\"}},\"component\":\"api\",\"duration\":5005401,\"error\":\"422: Failed to reach hook within maximum time of 5.000000 seconds\",\"hook\":\"http://host.docker.internal:54321/functions/v1/auth-hook\",\"level\":\"warning\",\"metho",
+    "comments": 11,
+    "created_at": "2024-09-04T00:28:26Z",
+    "url": "https://github.com/supabase/supabase/issues/29073",
+    "labels": [
+      "bug",
+      "auth",
+      "awaiting-details",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 18413,
+    "title": "After a Database Passwort reset I cant use a edge function anymore",
+    "body": "# Bug report\r\n\r\n- [x] I confirm this is a bug with Supabase, not with my own application. \r\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\n\r\nI changed my password in the studio here:\r\n<img width=\"1086\" alt=\"Screenshot 2023-10-23 at 18 46 36\" src=\"https://github.com/supabase/supabase/assets/97842699/6f26eb1c-2fea-4bb1-8fc0-03381063947c\">\r\n\r\nThe password changed worked an I updated my connection in DbVisulizer and was able to connect.\r\n\r\nI have an edge function in my supabase db. To call this function I use the DB URL and DB Anon Key, but I got this:\r\n500 Internal Server Error BODY: password authentication failed for user \"postgres\"\r\n\r\nOk, then I changed back to the old password and the edge function work again!\r\n\r\nThat's strange, isn'it?\r\n\r\n## To Reproduce\r\n\r\nSteps to reproduce the behavior, please provide code snippets or a repository:\r\n\r\n1. Create an edge function\r\n2. Use the function in flutter dart code\r\n3. Change the DB passwort in Supabase Studio\r\n4. Try again the edge function and you get an: 500 Internal Server Error BODY: password authentication failed for user \"postgres\"\r\n\r\n## Expected behavior\r\n\r\nAfter a DB Password change should all edge functions work because the auth for this is an anon key and not the password.\r\nAre the anon keys still valid?\r\n\r\n## Screenshots\r\n\r\nNot applicable\r\n\r\n## System information\r\n\r\n- OS: [e.g. macOS\r\n- Browser : --\r\n- Version of supabase-dart:  supabase: ^1.11.10\r\n\r\n## Additional context\r\n\r\nI guess that has nothing todo with my client code.\r\n",
+    "comments": 11,
+    "created_at": "2023-10-23T16:57:07Z",
+    "url": "https://github.com/supabase/supabase/issues/18413",
+    "labels": [
+      "bug",
+      "edge functions",
+      "awaiting-details"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 48229,
+    "title": "chore: opportunity for monorepo-wide dead code cleanup with knip",
+    "body": "`npx knip` reports a large amount of potentially removable dead code across the monorepo (~357 unused files, ~83 unused dependencies, ~64 unused devDependencies on current `master` [my local is a dozen commits behind but it around this area]). \n\nFrom my experience using knip on other repositories, unused dependencies tend to have false positives but unused files are usually pretty accurate.\n\nTo validate, I picked a random file that it flagged: [apps/www/components/BackedBy.tsx](https://github.com/supabase/supabase/blob/master/apps/www/components/BackedBy.tsx) (~3 years old). Global search for `BackedBy` returns no imports/usages outside the file itself. The commit [f26761121a](https://github.com/supabase/supabase/commit/f26761121ad57b9ddda0c7c478920770a7817b79) is the commit that removed the last invocation of the BackedBy component.\n\nKnip was added in #35072 and there has been recent studio-focused cleanup (#47122, #47387, #47399), but there doesn't appear to be a tracking issue for monorepo-wide dead code removal especially outside `apps/studio`.\n\nI think there's significant cleanup opportunity in `apps/www`, `apps/docs`, `apps/design-system`, etc.), much of it likely leftover from App Router / component migrations.\n",
+    "comments": 10,
+    "created_at": "2026-07-23T04:37:17Z",
+    "url": "https://github.com/supabase/supabase/issues/48229",
+    "labels": [
+      "needs-analysis",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 46669,
+    "title": "PG 15→17 upgrade fails at completion (\"pg_cron has no update path from 1.6 to 1.6.4\"), leaves project with no valid restart target and rest/auth down",
+    "body": "# Bug report\n\n- [x] I confirm this is a bug with Supabase, not with my own application.\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com).\n\n## Describe the bug\n\nAn in-place Postgres 15 → 17 upgrade failed at the finalization step and left the\nproject in a broken, unrecoverable-by-user state, taking our production application\nfully down.\n\n- Project ref: `mxxqgiqimawzeoajiklw` (ca-central-1, GA release channel)\n- Upgrade initiated: 2026-06-05 05:55:58 UTC\n- `GET /v1/projects/{ref}/upgrade/status` returns:\n  `{\"error\":\"5_data_upgrade_completion_failed\",\"status\":2,\"target_version\":\"17\",\"latest_status_at\":\"2026-06-05T06:01:33\"}`\n\nThe root cause visible in the Postgres logs is the extension update that runs during\nupgrade completion:\n\nERROR: extension \"pg_cron\" has no update path from version \"1.6\" to \"1.6.4\"\n\nResulting state:\n\n1. The database itself **did** come up on the new version (17.6.1.127) and accepts\n   connections — `realtime`, `storage`, and `pooler` are all ACTIVE_HEALTHY and\n   connected to it.\n2. `rest` (PostgREST), `auth` (GoTrue), and the `db` health check are UNHEALTHY.\n   All API requests fail with:\n   `upstream connect error or disconnect/reset before headers ... delayed connect error: 111` (HTTP 503).\n3. **Dashboard \"Restart project\" fails** with:\n   `Unable to locate a single valid target for the restart; found 0 for mxxqgiqimawzeoajiklw`\n   — the control plane appears to have lost the project's compute target.\n4. Management API `POST /v1/projects/{ref}/database/query/read-only` times out (HTTP 544).\n5. Because the completion step aborted at the pg_cron error, the rest of finalization\n   never ran: logs are flooded with collation version mismatch warnings\n   (`created using collation version 2.39, but the operating system provides 2.40`),\n   i.e. `REFRESH COLLATION VERSION` / reindexing was never performed.\n6. `GET /",
+    "comments": 10,
+    "created_at": "2026-06-05T06:41:48Z",
+    "url": "https://github.com/supabase/supabase/issues/46669",
+    "labels": [
+      "bug",
+      "database",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 43643,
+    "title": "Self-hosted: `pg-wal` files grow indefinitely because `analytics` replication falls behind (see  #40546)",
+    "body": "# Bug report\n\n- [X] I confirm this is a bug with Supabase, not with my own application. \n- [X] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nEven an idle self-hosted supabase instance may suffer from indefinitely growing `pg_wal` files because the `analytics` replication slot falls indefinitely behind.\n\nI saw that in a self-hosted instance on fly.io and found #40546 describing the same problem.\n\n## To Reproduce\n\nI created a reproducer, see:\n\nhttps://github.com/tvogel/supabase/blob/reproducer-40546/docker/PROBLEM.md\n\n\n## Expected behavior\n\nIn an idle scenario, the `pg_wal` directory should fluctuate around the `min_wal_size`.\n\n## System information\n\n- OS: openSUSE Tumbleweed 20260226\n\n## Additional context\n\nI am not sure, this only happens when WAL archiving is on. I do use WAL-G backups on the fly.io instance and also configured fake WAL backups for the reproducer.\n",
+    "comments": 10,
+    "created_at": "2026-03-11T14:05:30Z",
+    "url": "https://github.com/supabase/supabase/issues/43643",
+    "labels": [
+      "bug",
+      "self-hosted",
+      "database",
+      "analytics",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 30407,
+    "title": "Using supabase breaks vitest due to improper ESM handling by @supabase/node-fetch",
+    "body": "# Bug report\r\n\r\n<!-- \r\n\r\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\r\n\r\n- Docs: https://docs.supabase.com\r\n- Discussions: https://github.com/supabase/supabase/discussions\r\n- Discord: https://discord.supabase.com\r\n\r\nBefore opening a bug report, please verify the following: \r\n\r\n-->\r\n\r\n- [x] I confirm this is a bug with Supabase, not with my own application. \r\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\n\r\nUsing supabase breaks vitest due to improper ESM handling by @supabase/node-fetch\r\nRelated to: https://github.com/supabase/supabase/issues/21261\r\n\r\n## To Reproduce\r\n\r\nSteps to reproduce the behavior, please provide code snippets or a repository:\r\n\r\n1. Create typescript project with vitest and supabase\r\n2. Import supabase somewhere and run a test, see the following:\r\n```\r\n FAIL  test/entry-date.spec.ts [ test/entry-date.spec.ts ]\r\nError: No such module \"Users/bob/notes/node_modules/.pnpm/@supabase+postgrest-js@1.16.3/node_modules/@supabase/postgrest-js/dist/cjs/@supabase/node-fetch\".\r\n ❯ Users/bob/notes/node_modules/.pnpm/@supabase+postgrest-js@1.16.3/node_modules/@supabase/postgrest-js/dist/cjs/PostgrestBuilder.js?mf_vitest_no_cjs_esm_shim:7:38\r\n ❯ Users/bob/notes/node_modules/.pnpm/@supabase+postgrest-js@1.16.3/node_modules/@supabase/postgrest-js/dist/cjs/PostgrestTransformBuilder.js?mf_vitest_no_cjs_esm_shim:6:44\r\n ❯ Users/bob/notes/node_modules/.pnpm/@supabase+postgrest-js@1.16.3/node_modules/@supabase/postgrest-js/dist/cjs/PostgrestFilterBuilder.js?mf_vitest_no_cjs_esm_shim:6:53\r\n ❯ Users/bob/notes/node_modules/.pnpm/@supabase+postgrest-js@1.16.3/node_modules/@supabase/postgrest-js/dist/cjs/PostgrestQueryBuilder.js?mf_vitest_no_cjs_esm_shim:6:50\r\n ❯ Users/bob/notes/node_modules/.pnpm/@supabase+postgrest-js@1.16",
+    "comments": 11,
+    "created_at": "2024-11-11T03:54:38Z",
+    "url": "https://github.com/supabase/supabase/issues/30407",
+    "labels": [
+      "bug",
+      "documentation",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 28412,
+    "title": "Phone update does not require an otp locally",
+    "body": "# Bug report\r\n\r\n<!-- \r\n\r\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\r\n\r\n- Docs: https://docs.supabase.com\r\n- Discussions: https://github.com/supabase/supabase/discussions\r\n- Discord: https://discord.supabase.com\r\n\r\nBefore opening a bug report, please verify the following: \r\n\r\n-->\r\n\r\n- [x] I confirm this is a bug with Supabase, not with my own application. \r\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\n\r\nTo update a user's phone, the following needs to be done:\r\n\r\n```ts\r\n// 1. user must be logged in\r\n// 2. update phone number\r\nawait supabase.auth.updateUser({\r\n\tphone: \"new phone\"\r\n})\r\n// 3. user inputs otp they received\r\nawait supabase.auth.verifyOtp({\r\n\tphone: \"new phone\",\r\n\ttoken: \"...\",\r\n\ttype: \"phone_change\"\r\n})\r\n```\r\n\r\nHowever locally, calling `updateUser` updates the `auth.users` row directly. I tested on a test hosted supabase instance and it worked as intended fyi.\r\n\r\n## To Reproduce\r\n\r\nSteps to reproduce the behavior, please provide code snippets or a repository:\r\n\r\n1. Have Supabase configured locally using the CLI and running\r\n2. Create a user using phone provider\r\n3. Login then call\r\n\r\n\t```ts\r\n\tawait supabase.auth.updateUser({\r\n\t\tphone: \"new phone\"\r\n\t})\r\n\t```\r\n\r\n5. Check the `auth.users` table and see `phone` is updated directly\r\n\r\n## Expected behavior\r\n\r\nLocally, `auth.users` row columns should be updated with phone change stuff and an otp should be sent.\r\n\r\n## System information\r\n\r\n- OS: Win 11\r\n- Version of supabase-js: 2.43.5\r\n- Version of Node.js: 20.11.1",
+    "comments": 10,
+    "created_at": "2024-08-06T08:01:08Z",
+    "url": "https://github.com/supabase/supabase/issues/28412",
+    "labels": [
+      "bug",
+      "auth",
+      "self-hosted",
+      "awaiting-details",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 27328,
+    "title": "Add necessary query params to POSTGRES_PRISMA_URL for Vercel integration ",
+    "body": "When integrating with Vercel, Supabase automatically adds environment variables to Vercel, however, certain params like `pgBouncer=true` and `connection_limit=1` are not automatically added.\r\n\r\nThis leads to some confusing debugging and the only place I can see these being documented is on the [Prisma integration page](https://supabase.com/partners/integrations/prisma). Seems like if these params are necessary for an application to work correctly, they should just be added automatically.\r\n\r\nIts not entirely clear to me why other params _are_ added, like `sslmode=require` and `supa=base-pooler.x` (though that could be a separate issue), but at least having everything I need in one place would be a good single source of truth.",
+    "comments": 10,
+    "created_at": "2024-06-17T19:50:48Z",
+    "url": "https://github.com/supabase/supabase/issues/27328",
+    "labels": [
+      "enhancement",
+      "database",
+      "integrations",
+      "awaiting-details"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 25350,
+    "title": "AuthApiError: Session from session_id claim in JWT does not exist",
+    "body": "# Bug report\r\n\r\n## Describe the bug\r\nGetting a  \"AuthApiError: Session from session_id claim in JWT does not exist\" when doing a \r\nclient.auth.setSession({ access_token,    refresh_token   }) with  access_token,    refresh_token  retrieved from:\r\n\r\nclient.auth.admin.generateLink( {  type: 'recovery', email, redirectTo  })\r\n\r\nUsers are unable to recover password on production site.\r\n\r\nSteps: \r\n1. client.auth.admin.generateLink( {  type: 'recovery', email, redirectTo  }), gives me: \r\n2. https://vzuflxgfykebwmisvssp.supabase.co/auth/v1/verify?token=df90ebfc4e344c0f3c60bf0b7123d738591a3bd454fce8c24db79618&type=recovery&redirect_to=http://localhost:3005. (<- sample url, slightly modified for security reasons, this is also not production site, but dev)\r\n3. opened a new incognito window of chrome\r\n4. pasted url, redirects me to:\r\n5. http://localhost:3005/set-password?access_token=eyJhbGciOiJIUzI1NiIsImtpZCI6InpCeHllYzM2SStxZm5tNUMiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzE0OTgwMzEzLCJpYXQiOjE3MTQ5NzY3MTMsImlzcyI6Imh0dHBzOi8vdnp1Zmx4Z2Z5a2Vid21pc3Zzc3Auc3VwYWJhc2UuY28vYXV0aC92MSIsInN1YiI6IjE3YmQ5MTgzLWZjYzgtNGIwOC05YTY5LWYyNzRhNDRkMzAyYSIsImVtYWlsIjoiZ2pAcWVtbWUubmwiLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIiwiZ29vZ2xlIl19LCJ1c2VyX21ldGFkYXRhIjp7IkNvbXBhbnlJZCI6IjIzYzg1NDliLTdiNmEtNGZhOS04ZTQzLWY3MDNhZDJhNDkwMyIsImF2YXRhcl91cmwiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NJRV9lRk9vZVhlOTc2MlVheHZpSFJkUXFwaG9OLXhxa0dqRWlwdUNNbU9lNXVTc3c9czk2LWMiLCJiaXJ0aGRheSI6IjIwMDEtMDEtMDEiLCJjaXR5IjoiMTExIiwiY29uZmlybV9wYXNzd29yZCI6ImdqMjM5NyIsImNyZWF0ZWRfYXQiOiIyMDIzLTExLTMwVDEzOjUyOjM5Ljk5MTI2NiswMDowMCIsImN1c3RvbV9jbGFpbXMiOnsiaGQiOiJxZW1tZS5ubCJ9LCJlbWFpbCI6ImdqQHFlbW1lLm5sIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcnN0TmFtZSI6IkpvaG4iLCJmdWxsX25hbWUiOiJHZWVydEphbiBLwZw1tZSIsImlkIjoiYmUyMTY2MWMtNGE3OC00NDM0LTg4NGMtNjA3MDM4NDYyZjE2IiwiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tIiwibGFzdE5hbWUiOiJEb2UiLCJuYW1lIj",
+    "comments": 10,
+    "created_at": "2024-05-06T06:29:29Z",
+    "url": "https://github.com/supabase/supabase/issues/25350",
+    "labels": [
+      "bug",
+      "awaiting-details"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 49931,
+    "title": "URGENT: Pro Account Locked by 2FA Loop Bug (Never Enabled) - Support Ticket 1. SU-459764 and 2. Ticket: SU-458550",
+    "body": "# Bug report\n\n<!-- \n\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\n\n- Docs: https://docs.supabase.com\n- Discussions: https://github.com/supabase/supabase/discussions\n- Discord: https://discord.supabase.com\n\nBefore opening a bug report, please verify the following: \n\n-->\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nA clear and concise description of what the bug is.\n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\n1. Go to '…'\n2. Click on '…'\n3. Scroll down to '…'\n4. See error\n\n## Expected behavior\n\nA clear and concise description of what you expected to happen.\n\n## Screenshots\n\nIf applicable, add screenshots to help explain your problem.\n\n## System information\n\n- OS: [e.g. macOS, Windows]\n- Browser (if applies) [e.g. chrome, safari]\n- Version of supabase-js: [e.g. 6.0.2]\n- Version of Node.js: [e.g. 10.10.0]\n\n## Additional context\n\nAdd any other context about the problem here.\n",
+    "comments": 9,
+    "created_at": "2026-09-02T23:51:36Z",
+    "url": "https://github.com/supabase/supabase/issues/49931",
+    "labels": [
+      "bug",
+      "external-issue",
+      "to-triage"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 49385,
+    "title": "Google OAuth DNS resolution failing (ERR_NAME_NOT_RESOLVED)",
+    "body": "- Project ID: aswljuuzbufafyhnhkki\nGoogle OAuth callback to Supabase auth endpoint is failing with ERR_NAME_NOT_RESOLVED\n  - Domain: aswljuuzbufafyhnhkki.supabase.co\n  - Happens on: Desktop & mobile, multiple networks",
+    "comments": 9,
+    "created_at": "2026-08-21T09:42:04Z",
+    "url": "https://github.com/supabase/supabase/issues/49385",
+    "labels": [
+      "bug",
+      "awaiting-details",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 47206,
+    "title": "Security Advisor flags spatial_ref_sys with \"RLS Disabled\" but users cannot enable RLS on it",
+    "body": "# Security Advisor flags `spatial_ref_sys` with \"RLS Disabled\" but users cannot enable RLS on it\n\n## Bug report\n\n- [x] I confirm this is a bug with Supabase, not with my own application.\n- [ ] I confirm I have searched the Docs, GitHub Discussions, and Discord.\n\n## Describe the bug\n\nThe Security Advisor flags `public.spatial_ref_sys` as \"RLS Disabled in Public\" (Critical). However, this table is created by the PostGIS extension and owned by `supabase_admin`. Users cannot enable RLS on it because they are not the table owner:\n\n```\nERROR: 42501: must be owner of table spatial_ref_sys\n```\n\nThis creates an unresolvable critical warning in the dashboard.\n\n## To Reproduce\n\n1. Create a Supabase project\n2. Enable the PostGIS extension\n3. Go to Security Advisor in the dashboard\n4. See critical warning: \"Table public.spatial_ref_sys is public, but RLS has not been enabled\"\n5. Attempt to run `ALTER TABLE public.spatial_ref_sys ENABLE ROW LEVEL SECURITY;` in the SQL Editor\n6. Get error: `must be owner of table spatial_ref_sys`\n\n## Expected behavior\n\nEither:\n\n- The Security Advisor should exclude known extension-managed tables (`spatial_ref_sys`, `geometry_columns`, etc.) from RLS checks, or\n- Supabase should automatically enable RLS with a public read policy on these tables during extension setup\n\n## System information\n\n- OS: Windows\n- Browser: Chrome\n- Dashboard (not supabase-js specific)\n\n## Additional context\n\nThe `spatial_ref_sys` table contains only public coordinate reference system definitions (EPSG codes). It has no user data and poses no security risk without RLS. The warning is a false positive that cannot be actioned by the user.\n",
+    "comments": 9,
+    "created_at": "2026-06-23T06:47:52Z",
+    "url": "https://github.com/supabase/supabase/issues/47206",
+    "labels": [
+      "bug",
+      "extensions",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 45024,
+    "title": "Self-hosted Studio: Auth → Sign In / Providers stuck on skeleton loaders (IS_PLATFORM + static export / platform auth API parity)",
+    "body": "### Summary\n\nOn **self-hosted** Supabase Studio, **Authentication → Sign In / Providers** (`/project/:ref/auth/providers`) can stay on **infinite skeleton loaders** indefinitely. The UI never receives auth configuration data, so \"User Signups\", provider toggles, etc. never render.\n\nThis is a **self-hosted / Studio packaging** issue, not an end-user misconfiguration.\n\n### What we observed (technical)\n\n1. **`IS_PLATFORM` gating**  \n   Auth config is loaded via a hook aligned with the cloud product (`useAuthConfigQuery` / `authKeys.authConfig`). In shipped bundles the query’s `enabled` predicate can include `… && IS_PLATFORM && …`. On self-hosted, `NEXT_PUBLIC_IS_PLATFORM` is **`false`**, so the query **never runs** and TanStack Query v5 stays pending → skeletons forever.\n\n2. **Static export / empty `router.query`**  \n   Studio is effectively served as static assets; on first paint **`router.query` may be empty**, so `projectRef` from `useParams()` is **undefined**. Some layouts also normalize with a **`\"_\"` placeholder**, which then produces requests like `GET …/platform/auth/_/config` instead of the real project ref.\n\n3. **Platform API parity**  \n   Cloud Studio calls **`GET /api/platform/auth/:ref/config`**. A typical self-hosted ingress stack (e.g. Kong + Studio) **does not implement** that route; if the request falls through to the Studio SPA, the client gets **HTML** instead of JSON, which also breaks the page.\n\n### Related upstream (similar class of bug)\n\n- #36285 — self-hosted **Edge Functions** home stuck on skeleton loaders (same “never finishes loading” symptom).\n- #33557 — intentional **`IS_PLATFORM`** checks for local/self-hosted; the pattern is easy to apply in ways that **disable** queries that are still required for core Auth UI.\n\n### Suggested direction for a proper fix\n\n1. **Auth settings reads** that power the Sign In / Providers page should have a **first-class self-hosted path**: either  \n   - relax `enabled` when `projectRef` can be derived from t",
+    "comments": 9,
+    "created_at": "2026-04-19T23:13:44Z",
+    "url": "https://github.com/supabase/supabase/issues/45024",
+    "labels": [
+      "frontend",
+      "cli",
+      "auth",
+      "self-hosted",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 41947,
+    "title": "Auth rate limit for sign-ups and sign-ins is not enforced despite configuration",
+    "body": "# Bug report\n\n- [x] I confirm this is a bug with Supabase, not with my own application.\n- [x] I confirm I have searched the Docs, GitHub Discussions, and Discord.\n\n## Describe the bug\n\nThe **“Rate limit for sign-ups and sign-ins”** setting configured via the Supabase Dashboard or `config.toml` does not appear to be enforced.\n\nEven when setting a very low limit (e.g. 5 requests per 5 minutes per IP), the Auth API allows significantly more sign-up/sign-in requests from the same IP before returning a rate limit error.\n\nEventually, requests are blocked, but only after approximately 30–50 requests, seemingly due to a different, more general rate limit.\n\n## To Reproduce\n\n1. Create a brand new Supabase project.\n2. Go to **Dashboard → Authentication → Configuration → Rate limits**.\n3. Set **Rate limit for sign-ups and sign-ins** to `5`.\n\n   Alternatively, configure it in `config.toml`:\n   ```toml\n   # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).\n   sign_in_sign_ups = 5\n   ```\n\n4. Use a simple script (e.g. Python) to repeatedly call the sign-up endpoint from the same IP address.\n5. Observe that far more than 5 requests are accepted before any rate limit is triggered.\n\nEventually, requests fail with the following response:\n```json\n{\n  \"code\": 429,\n  \"error_code\": \"over_request_rate_limit\",\n  \"msg\": \"Request rate limit reached\"\n}\n```\n\nThis error only occurs after ~30–50 requests, not after the configured limit of 5.\n\n## Expected behavior\n\nOnce the configured limit (e.g. 5 requests per 5 minutes per IP) is reached, further sign-up/sign-in requests from the same IP should immediately be rejected with a rate limit error.\n\n## Screenshots\n\nN/A — the issue is reproducible without screenshots.\n\n## System information\n\n- OS: macOS\n- Browser: N/A\n- Version of supabase-js: N/A\n- Version of Node.js: N/A\n\n## Additional context\n\nWhile investigating this issue, I noticed that this setting was previously mislabeled a",
+    "comments": 9,
+    "created_at": "2026-01-16T15:24:51Z",
+    "url": "https://github.com/supabase/supabase/issues/41947",
+    "labels": [
+      "bug",
+      "auth",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 36990,
+    "title": "[Auth]: Reset password link sent with wrong URL",
+    "body": "# Bug report\n\n<!-- \n\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\n\n- Docs: https://docs.supabase.com\n- Discussions: https://github.com/supabase/supabase/discussions\n- Discord: https://discord.supabase.com\n\nBefore opening a bug report, please verify the following: \n\n-->\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\nIn Supabase Dashboard, I have configured the URL sent in the email for Reset Password request is\n\n```html\n\n<h2>Reset Password</h2>\n<p>Follow this link to reset the password for your user:</p>\n<p><a href=\"{{ .ConfirmationURL }}/?token_hash={{ .TokenHash }}&flow=reset_password&email={{ .Email }}\">Reset Password</a></p>\n```\n\nHowever here is what I get:\n```\nkudossnap://auth/confirm/?code=694bbb26-8514-4954-8050-113a56b3d53a&token_hash=pkce_231caed315d266012cabccd638753a692b0fc1a3b4c0c3ce31bceb46\n```\n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\n1. Go to Supabase Dashboard, configure URL as screenshot below\n\n<img width=\"750\" height=\"464\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/23304611-385a-4ceb-aafa-c31f13995c40\" />\n\n2. Trigger request to send Reset Password email\n## Expected behavior\nIt should contains all query parameters as the configuration in dashboard\n\n## Screenshots\n\nIf applicable, add screenshots to help explain your problem.\n\n## System information\n\n- OS: Android\n- Browser (if applies) [e.g. chrome, safari]\n- Version of supabase-kt: 3.0.0\n\n## Additional context\nN/A",
+    "comments": 9,
+    "created_at": "2025-07-09T15:45:08Z",
+    "url": "https://github.com/supabase/supabase/issues/36990",
+    "labels": [
+      "bug",
+      "frontend",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 35195,
+    "title": "Supabase Realtime Updates Fail Only When RLS is Enabled (Despite Correct Policy/Subscription/Publication)",
+    "body": "Hi everyone,\n\nI'm stuck on a Supabase Realtime issue where updates work perfectly fine when RLS is disabled on my campaigns table, but stop arriving at the client as soon as RLS is enabled.\n\nSetup:\n\nNext.js (App Router), @supabase/auth-helpers-nextjs, Clerk auth.\nClient subscribes to postgres_changes (UPDATE) on public.campaigns filtered by id=eq.${campaignId}.\nWhat I've Confirmed:\n\nBackend updates the DB correctly.\nFrontend subscribes successfully (SUBSCRIBED status).\nThe SELECT RLS policy for authenticated role is PERMISSIVE and uses the correct USING expression (joining users table to compare clerk_id with (auth.uid())::text).\nsupabase_realtime publication includes the table and UPDATE events.\nClient uses detectSessionInUrl: false and a stable instance (useMemo).\nThe Weird Part:\nEven setting the SELECT policy to USING (true) or manually updating the row in the Supabase dashboard does not trigger the client callback when RLS is enabled. It only works when RLS is completely off for the table.\n\nIt seems like RLS enablement itself is blocking the broadcast, regardless of policy logic. Has anyone seen this specific behavior? Any ideas beyond standard RLS/Publication checks?\n\nThanks!",
+    "comments": 9,
+    "created_at": "2025-04-22T07:12:47Z",
+    "url": "https://github.com/supabase/supabase/issues/35195",
+    "labels": [
+      "bug",
+      "realtime",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 40543,
+    "title": "API Error 404 when creating Edge Functions - Self-Hosted",
+    "body": "In a self-hosted project with docker, when trying to create a new edge function, it returns a 404 error. \n \n<img width=\"1328\" height=\"824\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/3c654c1b-2024-4b83-8422-f1a7a31cc701\" />\n \n<img width=\"1328\" height=\"448\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/72d9201e-080e-4e3b-9708-68b156061736\" />\n\n<img width=\"602\" height=\"189\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/e4352b2f-a5fb-4022-9d23-71cfa64cfefc\" />\n\ntagging @kallebysantos because it can be related with some other issues.\n\nAny other question let me know\n\n _Originally posted by @mcerejo in [#40109](https://github.com/supabase/supabase/issues/40109#issuecomment-3544293381)_",
+    "comments": 8,
+    "created_at": "2025-11-17T23:48:29Z",
+    "url": "https://github.com/supabase/supabase/issues/40543",
+    "labels": [
+      "bug",
+      "self-hosted",
+      "pr-opened",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 38764,
+    "title": "Readme: fix broken links in Studio README.md",
+    "body": "# Problem\n\nThe [Supabase Studio README](https://github.com/supabase/supabase/tree/master/apps/studio) currently contains several broken or outdated references:\n\n- The Contributing section mentions a checklist that links to a non-existent file (404):  https://github.com/supabase/supabase/blob/master/apps/studio/contributing/contributing-checklists.md\n\n- The Developer Quickstart notes reference several dead links, including:\nhttps://github.com/supabase/infrastructure/blob/develop/docs/contributing.md\n\nThese dead links can create confusion and slow down onboarding for contributors.\n\n## Describe the improvement\nRestore or create the missing contributing checklist file in apps/studio/contributing/ and link to it correctly in the README.\n\nUpdate or remove dead links in the Developer Quickstart section (internal, infrastructure, repo).\n\n",
+    "comments": 8,
+    "created_at": "2025-09-16T21:53:26Z",
+    "url": "https://github.com/supabase/supabase/issues/38764",
+    "labels": [
+      "documentation",
+      "pr-opened"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 35892,
+    "title": "`updateUser()` hangs indefinitely during password reset flow",
+    "body": " ## Bug Report: updateUser() hangs indefinitely during password reset flow\n\n  ### Description\n  When attempting to update a user's password after clicking the password reset link from email, the `updateUser()` method hangs indefinitely and\n  never returns a response.\n\n  ### Environment\n  - **@supabase/supabase-js**: 2.49.8\n  - **@supabase/ssr**: 0.6.1\n  - **Next.js**: 15.1.8 (Page Router)\n  - **React**: 18.3.1\n  - **Node.js**: 22.11.0\n  - **Browser**: chrome 136.0.7103.114\n  \n  ### Supabase Client Configuration\n\n  ```typescript\n  // lib/supabase/component.ts\n  import { createBrowserClient } from '@supabase/ssr';\n\n  export function createClient() {\n    return createBrowserClient(\n      process.env.NEXT_PUBLIC_SUPABASE_URL!,\n      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!\n    );\n  }\n```\n\n###  Steps to Reproduce\n\n  1. Request password reset via resetPasswordForEmail():\n  ```\n  const supabase = createClient();\n  const { error } = await supabase.auth.resetPasswordForEmail(email, {\n    redirectTo: `${window.location.origin}/auth/reset-password-confirm`,\n  });\n  ```\n  2. User got email with content:\n  ```\n  <p><a href=\"{{ .ConfirmationURL }}\">Reset password</a></p>\n  ```\n  3. User clicks the reset link in email and is redirected to /auth/reset-password-confirm\n  4. Attempt to update password using updateUser():\n ```\n  const supabase = createClient();\n  const { error: updateError } = await supabase.auth.updateUser({\n    password: newPassword,\n  });\n  ```\n\n###  Expected Behavior\n\n  The updateUser() method should complete and return either success or error response.\n\n###  Actual Behavior\n\n  The updateUser() method hangs indefinitely. The Promise never resolves or rejects, and no response is returned.\n\n###  Code Implementation\n\n  Full Password Update Component:\n```\n  // components/auth/PasswordUpdateForm.tsx\n  import { createClient } from '@/lib/supabase/component';\n  import { FormEvent, useState } from 'react';\n\n  export default function PasswordUpdateForm({ mode }: { mode: ",
+    "comments": 8,
+    "created_at": "2025-05-24T08:14:27Z",
+    "url": "https://github.com/supabase/supabase/issues/35892",
+    "labels": [
+      "bug",
+      "pr-opened",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 29632,
+    "title": "Disabling 'Confirm Email' still blocks non-confirmed users (created with admin client) from signing in",
+    "body": "# Bug report\r\n\r\n- [x] I confirm this is a bug with Supabase, not with my own application. \r\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\n\r\nDisabling the 'Confirm Email' setting for email provider doesn't allow non-confirmed emails to sign in. I tried disabling the setting and then signing in with 3 cases, and all of them gave the same error ({\"code\":\"email_not_confirmed\",\"message\":\"Email not confirmed\"}):\r\n- Signing in with an already created account which isn't verified\r\n- Deleting an existing account, re-creating it then attempting to sign in without confirming email\r\n- Creating a new account on an email that's never been used before on my project then attempting to sign in without confirming email\r\n\r\n## To Reproduce\r\n\r\n1. Go to the Authentication tab\r\n2. Go to 'Providers'\r\n3. Expand the email section\r\n4. Disable the 'Confirm Email' setting\r\n5. Save changes\r\n6. Create a new user on your app using the admin auth API (Edge functions): supabase.auth.admin.createUser({ email, password });\r\n7. Attempt to sign in to your app with the new account client-side: supabase.auth.signInWithPassword({ email, password });\r\n8. Signing in will give {\"code\":\"email_not_confirmed\",\"message\":\"Email not confirmed\"}\r\n\r\n## Expected behavior\r\n\r\nSigning in should not be blocked due to email not being confirmed. Signing in should be allowed.\r\n\r\n## Screenshots\r\n\r\n![image](https://github.com/user-attachments/assets/6f6e99c6-bdf4-49f0-98ec-ce9b9bec9612)\r\n\r\n## System information\r\n\r\n- OS: Windows\r\n- Browser: Chrome\r\n- Version of supabase-js: 2.45.2\r\n- Version of Node.js: v20.11.0\r\n",
+    "comments": 8,
+    "created_at": "2024-10-02T00:12:28Z",
+    "url": "https://github.com/supabase/supabase/issues/29632",
+    "labels": [
+      "bug",
+      "frontend",
+      "auth",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 28820,
+    "title": "CSV Import in studio fails to assign authenticated user id",
+    "body": "# Bug report\r\n\r\n<!-- \r\n\r\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\r\n\r\n- Docs: https://docs.supabase.com\r\n- Discussions: https://github.com/supabase/supabase/discussions\r\n- Discord: https://discord.supabase.com\r\n\r\nBefore opening a bug report, please verify the following: \r\n\r\n-->\r\n\r\n- [x] I confirm this is a bug with Supabase, not with my own application. \r\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\nI created a CSV to import in an empty table. In the table editor I made sure to change from Postgres to impersonate an authenticated user.\r\n\r\nMy table user_id is defined as: `user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,`\r\n\r\nI am getting an error that user_id is null and thus violating constraint. But since I am an authenticated user, the value should be inferred.\r\n\r\n## To Reproduce\r\n\r\nImport a CSV into a table with a user_id that is sourced from auth.users(id) while impersonating a valid authenticated user.\r\n\r\n## Expected behavior\r\n\r\nImport proceeds without constraint error regarding the user\r\n\r\n",
+    "comments": 8,
+    "created_at": "2024-08-22T14:57:49Z",
+    "url": "https://github.com/supabase/supabase/issues/28820",
+    "labels": [
+      "bug",
+      "enhancement",
+      "frontend",
+      "database",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 22054,
+    "title": "Additional Information to help setup with AWS SES",
+    "body": "# Improve documentation\r\n\r\n## Link \r\n\r\nhttps://supabase.com/docs/guides/auth/auth-smtp\r\n\r\n## Describe the problem\r\n\r\nAWS SES has some additional requirements that can be confusing to those used to services like Resend or Sendgrid, such as:\r\n- being placed in a testing sandbox initially and needing to request to leave\r\n- requiring a verified domain\r\n\r\n## Describe the improvement\r\n\r\nWe can add this information as a callout when using SES, with links to AWS documentation, to catch these issues early if people run into them\r\n\r\n## Additional context\r\n\r\nAdd any other context or screenshots that help clarify your question.",
+    "comments": 8,
+    "created_at": "2024-03-16T01:22:56Z",
+    "url": "https://github.com/supabase/supabase/issues/22054",
+    "labels": [
+      "documentation",
+      "enhancement",
+      "awaiting-details"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 49739,
+    "title": "setup.sh fails for non-root sudo users: \"docker is installed but the daemon is not running\" (actually a permission error on docker.sock)",
+    "body": "## Describe the bug\n\nThe one-line installer documented at https://supabase.com/docs/guides/self-hosting/docker (`curl -fsSL https://supabase.link/setup.sh | sh`) fails when run as a regular user with sudo privileges — the default account on cloud-init provisioned VMs (Ubuntu, Debian, etc.).\n\n`setup.sh` installs and starts Docker via `$SUDO`, but every subsequent `docker` invocation runs without it, and the script never adds the invoking user to the `docker` group. Since a freshly created user has no permission to access `/var/run/docker.sock`, the first non-sudo docker call fails.\n\nThe failure surfaces in `utils/add-new-auth-keys.sh`, which is called from `setup.sh` (`sh utils/add-new-auth-keys.sh --update-env`). When Node.js >= 16 is not installed, the script falls back to Docker and runs:\n\n```sh\nif ! docker info >/dev/null 2>&1; then\n    echo \"Error: docker is installed but the daemon is not running.\"\n    exit 1\nfi\n```\n\nBecause stderr is discarded, a `permission denied` on the docker socket is reported as \"daemon is not running\", which is misleading — the daemon *is* running (`sudo systemctl is-active docker` → `active`).\n\nEven if this step passed (e.g. with Node.js present), the subsequent `docker compose pull` in `setup.sh` would fail the same way, only emit a warning, and the script would still print \"Setup complete\", deferring the failure to `sh run.sh start`.\n\n## To Reproduce\n\n1. Fresh Ubuntu 26.04 VM (cloud-init), logged in as the default sudo-enabled user (not root), no Docker and no Node.js installed.\n2. Run `curl -fsSL https://supabase.link/setup.sh | sh`\n3. Accept/fill in the URL prompts.\n\nOutput (abridged):\n\n```\n===> Enabling and starting docker service\nSynchronizing state of docker.service with SysV service script ...\n===> Sparse-cloning supabase repo at self-hosted/v0.8.0\n===> Creating project at /home/<user>/supabase-project\n...\n===> Generating secrets and legacy API keys\nUpdating .env...\n===> Generating asymmetric key pair and opaque API keys\nError:",
+    "comments": 7,
+    "created_at": "2026-08-30T20:48:03Z",
+    "url": "https://github.com/supabase/supabase/issues/49739",
+    "labels": [
+      "self-hosted",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 48883,
+    "title": "RPC calls double-counted in database",
+    "body": "[supabase-support-report.md](https://github.com/user-attachments/files/30874180/supabase-support-report.md)\n\nsee the additional md-File\n",
+    "comments": 7,
+    "created_at": "2026-08-09T13:52:18Z",
+    "url": "https://github.com/supabase/supabase/issues/48883",
+    "labels": [
+      "bug",
+      "awaiting-details",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 46846,
+    "title": "\"Last used\" indicator missing for legacy API keys",
+    "body": "The \"Last used\" indicators for API keys are not visible in the dashboard, despite being explicitly referenced in both the [API keys documentation](https://supabase.com/docs/guides/auth/signing-keys) and the in-dashboard migration guide.\n\nSee full description of the issue in this feature request: https://github.com/orgs/supabase/discussions/45807",
+    "comments": 7,
+    "created_at": "2026-06-11T11:20:09Z",
+    "url": "https://github.com/supabase/supabase/issues/46846",
+    "labels": [
+      "bug",
+      "frontend",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 44210,
+    "title": "Transaction pooler rejects password after database password reset (aws-1-us-east-1)",
+    "body": "# Bug report\n## Bug report\n\n**Describe the bug**\nAfter resetting the database password via Settings → Database → Reset database password, \nthe transaction pooler (port 6543) and session pooler (port 5432) both reject the new \npassword with `password authentication failed for user \"postgres\"`.\n\nThe password has been reset 3+ times with generated passwords (not typed manually). \nThe issue persists after waiting several minutes.\n\n**Steps to reproduce**\n1. Reset database password in Settings → Database → Reset database password\n2. Copy the generated password\n3. Connect via transaction pooler: `aws-1-us-east-1.pooler.supabase.com:6543`\n4. Error: `password authentication failed for user \"postgres\"`\n\n**Connection string used**\npostgresql://postgres.[tyqdywknzraoskydccel]:[NEW_PASSWORD]@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true\n\n**Expected behavior**\nConnection succeeds after password reset.\n\n**Environment**\n- Region: aws-1-us-east-1\n- Client: Node.js `pg` module v8.x\n- Direct connection host (db.[ref].supabase.co) does not resolve (ENOTFOUND)\n- SQL Editor in dashboard works fine\n\n\n\n\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n",
+    "comments": 7,
+    "created_at": "2026-03-26T01:42:09Z",
+    "url": "https://github.com/supabase/supabase/issues/44210",
+    "labels": [
+      "bug",
+      "supavisor",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 42810,
+    "title": "Edge Function JWT Verification Error with ES256 Tokens",
+    "body": "\n\nHi, I'm getting a 401 \"Invalid JWT\" error when calling my Edge Function, \neven though the token is valid and not expired.\n\n**Issue:**\n- Error: \"Invalid JWT\" (401)\n- Occurs at API Gateway level before my code executes\n- Using Edge Functions with ES256 JWT signing keys\n\n**Project Setup:**\n- JWT Signing Keys: Current key type is ECC (P-256) \n- Legacy key type: HS256 (Shared Secret)\n- Edge Function uses standard Supabase setup\n\n**Token Information (sanitized):**\nHeader: \n{\n  \"alg\": \"ES256\",\n  \"kid\": \"[redacted]\",\n  \"typ\": \"JWT\"\n}\n\nPayload structure:\n{\n  \"iss\": \"https://[project].supabase.co/auth/v1\",\n  \"sub\": \"[user_id]\",\n  \"aud\": \"authenticated\",\n  \"exp\": [future_timestamp],\n  \"iat\": [current_timestamp],\n  \"email\": \"[redacted]\",\n  \"role\": \"authenticated\"\n}\n\n**What I've tried:**\n\n1. Using `supabaseClient.auth.getUser()` in code:\n```typescript\nconst supabaseClient = createClient(\n  Deno.env.get('SUPABASE_URL'),\n  Deno.env.get('SUPABASE_ANON_KEY'),\n  { global: { headers: { Authorization: req.headers.get('Authorization') } } }\n)\nconst { data: { user }, error } = await supabaseClient.auth.getUser()\n// Still returns 401 before reaching this code\n```\n\n2. Setting `verify_jwt = false` in `config.toml`:\n```toml\n[functions.create-user-profile]\nverify_jwt = false\n```\n\n3. Tried both `serve` from std library and `Deno.serve`\n\n4. Deployed via both CLI and Dashboard\n\n**Question:**\nIs there a known issue with ES256 token verification in Edge Functions? \nShould I switch back to HS256 signing, or is there a configuration I'm missing?\n\nThe same tokens work fine with Supabase Auth API endpoints.\n\nThank you!\n\n",
+    "comments": 7,
+    "created_at": "2026-02-14T05:18:58Z",
+    "url": "https://github.com/supabase/supabase/issues/42810",
+    "labels": [
+      "bug",
+      "edge functions"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 42413,
+    "title": "Supabase Cron doesn't work with custom DB name when self-hosting",
+    "body": "# Bug report\n\n<!-- \n\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\n\n- Docs: https://docs.supabase.com\n- Discussions: https://github.com/supabase/supabase/discussions\n- Discord: https://discord.supabase.com\n\nBefore opening a bug report, please verify the following: \n\n-->\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nIt's not currently possible to use pg_cron when POSTGRES_DB is set to any value except the default \"postgres\". When you try activating the extension, it says that cron.database_name has to be set.\n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\n1. Set up the default Supabase deployment with docker compose.\n2. Go to the integrations tab and then Cron.\n3. Click to enable the extension.\n4. See error about wrong database name.\n\n## Expected behavior\n\nThe default postgresql.conf file specified in the db container includes the hard-coded line `cron.database_name = postgres`. This should instead use the value set in POSTGRES_DB.",
+    "comments": 7,
+    "created_at": "2026-02-03T12:46:30Z",
+    "url": "https://github.com/supabase/supabase/issues/42413",
+    "labels": [
+      "self-hosted",
+      "database",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 40394,
+    "title": "Redirect URI's isn't working",
+    "body": "# Bug report\n\n<!-- \n\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\n\n- Docs: https://docs.supabase.com\n- Discussions: https://github.com/supabase/supabase/discussions\n- Discord: https://discord.supabase.com\n\nBefore opening a bug report, please verify the following: \n\n-->\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nConfirm signup email template:\n\n<img width=\"827\" height=\"80\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/ddfb740f-62da-4f59-abc0-5bfd406d7771\" />\n\nHow i am executing signup:\n\n<img width=\"1099\" height=\"418\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/0d0231f9-5b35-4815-ad0e-abe9b07d9f53\" />\n\n\nmy use case is i want to pass dynamic search param 'redirect' to 'emailRedirectTo' link, my siteUrl is 'https://www.autonmis.com'.\n\nbut after few tries i noticed none of emailRedirectTo value works if i pass origin other than 'https://www.autonmis.com'\n\neven though i do have registered other origins as well in my URL configuration as redirect urls:\n\n<img width=\"1049\" height=\"947\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/93ea0071-9e54-4a5d-9d4b-5452b6c9cf1d\" />\n\nalso i don't have registered 'https://www.autonmis.com/invite' in redirects uris still in email i receive this perfectly.\n\nThe email i receive :\n\n1. when used 'https://www.autonmis.com' in emailRedirectTo:\n\n<img width=\"625\" height=\"96\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/bdeb9bc1-dee5-4aef-ac6b-c4b438f0d8d7\" />\n\n2. when used other origins:\n\n<img width=\"626\" height=\"98\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/d43fa991-fca4-425d-a7a5-0f2921fc6e8a\" />\n\n\nVersion:\n- OS: [ Windows]\n- @supabase/ssr: \"^0",
+    "comments": 7,
+    "created_at": "2025-11-12T18:02:13Z",
+    "url": "https://github.com/supabase/supabase/issues/40394",
+    "labels": [
+      "bug",
+      "auth",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 38984,
+    "title": "Add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY to Vercel <> Supabase Integration",
+    "body": "# Bug report\n\n<!-- \n\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\n\n- Docs: https://docs.supabase.com\n- Discussions: https://github.com/supabase/supabase/discussions\n- Discord: https://discord.supabase.com\n\nBefore opening a bug report, please verify the following: \n\n-->\n\n- [ x] I confirm this is a bug with Supabase, not with my own application. \n- [x ] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nThe Supabase / Vercel Integration does not include NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY for accounts that have migrated to using the asymmetric JWTs. \n\n## To Reproduce\n\nSteps to reproduce the behavior, please provide code snippets or a repository:\n\n1. Fire up a new Supabase project using the useClaims() method\n2. Deploy the project in Vercel\n3. Go to Vercel Settings, Click integrations, search supabase, link supabase account/Project\n4. See Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY in Vercel env vars\n\n## Expected behavior\n\nExpected to see NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY as a variable in my environment variables after I integrate\n\n## Screenshots\n\nN/A\n\n## Additional context\n\nN/A",
+    "comments": 7,
+    "created_at": "2025-09-24T15:20:14Z",
+    "url": "https://github.com/supabase/supabase/issues/38984",
+    "labels": [
+      "bug",
+      "integrations",
+      "external-issue"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 18723,
+    "title": "Ionic angular getting started doc is outdated",
+    "body": "[Build a User Management App with Ionic Angular](https://supabase.com/docs/guides/getting-started/tutorials/with-ionic-angular) is outdated in many places. I'd really love to get started with supabase but the documentation being so outdated & not linked with local development which causes me to link everything together on my own is so frustrating as I started noticing things are outdated. Very very unfriendly to new users :( ",
+    "comments": 7,
+    "created_at": "2023-11-04T16:16:35Z",
+    "url": "https://github.com/supabase/supabase/issues/18723",
+    "labels": [
+      "documentation"
+    ],
+    "milestone": null
+  },
+  {
+    "number": 49840,
+    "title": "Clicking Pricing in the nav from the homepage crashes with an uncaught ChunkLoadError",
+    "body": "Clicking **Pricing** in the top nav from the homepage takes down the whole app. The page goes black and all that is left is:\n\n> Application error: a client-side exception has occurred while loading supabase.com (see the browser console for more information).\n\nGoing to https://supabase.com/pricing directly works fine, so this only affects client-side navigation.\n\n## Repro\n\n1. Open https://supabase.com, hard reload so nothing comes from cache.\n2. Wait around ten seconds, long enough for the `<Link>` prefetches to run.\n3. Click **Pricing** in the nav.\n\nReproduced every time here, cold cache included.\n\n## Console\n\nThe homepage starts logging these on its own, before I touch anything:\n\n```\nFailed to fetch RSC payload for https://supabase.com/docs/guides/api.\nFalling back to browser navigation. ChunkLoadError: Loading chunk 4219 failed.\n(error: .../www/bf60e6cdcea1/_next/static/chunks/app/global-error-296163531e21ccae.js?dpl=dpl_2yThoLM9XXfiGovd3kDnKRrZfY6G)\n```\n\nSame for `/docs/guides/examples` and `/docs/guides/getting-started/quickstarts/reactjs`. Then clicking Pricing throws:\n\n```\nUncaught ChunkLoadError: Loading chunk 2896 failed.\n(error: https://frontend-assets.supabase.com/www/bf60e6cdcea1/_next/static/chunks/2896-242ae3b31bc244ce.js?dpl=dpl_2yThoLM9XXfiGovd3kDnKRrZfY6G)\n```\n\nTwo more requests come back 503 in the network panel:\n\n```\nGET /www/bf60e6cdcea1/_next/static/chunks/app/guides/getting-started/[[...slug]]/page-bc5b37e1b87e8a6a.js?dpl=dpl_2yTho...\nGET /www/bf60e6cdcea1/_next/static/chunks/app/guides/getting-started/layout-138c9ce90351d9f3.js?dpl=dpl_2yTho...\n```\n\n## What I found\n\nThere are two Next apps on the same origin and they are on different deployments:\n\n| | deployment | assets |\n|---|---|---|\n| www (`/`, `/pricing`) | `dpl_32HBeSJ1gP2wf4fRtd6rE336DoKu` | `/www/bf60e6cdcea1/_next/...` |\n| docs (`/docs/*`) | `dpl_2yThoLM9XXfiGovd3kDnKRrZfY6G` | `/docs/4ab1a6cbd220/_next/...` |\n\nSince they share an origin, the www router treats the `/docs/...` links in ",
+    "comments": 6,
+    "created_at": "2026-09-01T10:02:15Z",
+    "url": "https://github.com/supabase/supabase/issues/49840",
+    "labels": [
+      "supabase.com",
+      "cannot-reproduce",
+      "awaiting-details",
+      "external-issue"
+    ],
+    "milestone": null
+  }
+]

@@ -1,0 +1,1642 @@
+[
+  {
+    "number": 10924,
+    "title": "feat: add sso (enterprise login) docs under platform",
+    "body": "Adds the SSO docs for enabling SSO with Google Workspace (GSuite), Azure AD and Okta to the Platform section.",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/10924",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 44033,
+    "title": "feat(sso): add IdP-initiated login support with optional domains",
+    "body": "Implements comprehensive IdP-initiated login flow support, enabling organizations to configure SSO without email domains and support multiple SAML apps under the same domain (e.g., Dev/Staging/Prod environments).\r\n\r\n- Add \"Enable SP-initiated login\" toggle to SSOConfig.tsx\r\n  - IdP-initiated flow is now always available (default)\r\n  - SP-initiated flow is opt-in with domain requirement\r\n  - Clear in-UI documentation explaining both flows\r\n- Make domains optional (only required when SP-initiated enabled)\r\n- Add form validation: domains required only if SP-initiated is ON\r\n- Fix org-switching bug: form now resets when switching organizations\r\n  - Add organization.slug to useEffect dependencies\r\n  - Prevent stale SSO config data from previous org being displayed\r\n\r\n- **IdP-initiated flow**: Users start login from identity provider dashboard\r\n  - No domain configuration required\r\n  - Enables multiple SAML apps per domain\r\n  - Recommended default for enterprises\r\n- **SP-initiated flow**: Users start login at supabase.com (opt-in)\r\n  - Requires email domain configuration\r\n  - Maintains backward compatibility\r\n- **Both flows**: Can be enabled simultaneously for flexible access\r\n\r\n- Organizations can now create separate SSO providers for Dev/Staging/Prod\r\n  - Each environment = separate SAML app in IdP\r\n  - All using same email domain (e.g., company.com)\r\n  - Users access via different IdP app tiles\r\n  - No domain conflicts or subdomain requirements\r\n\r\n- Add 4 pages to SSO sidebar me",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44033",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 13272,
+    "title": "docs: update SSO docs with latest CLI commands",
+    "body": "Updates the SSO docs to use the CLI commands.",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/13272",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 12831,
+    "title": "docs: add early-beta guide on using sso with saml",
+    "body": "Adds a guide for the early-beta support for SSO with SAML 2.0 on projects.\r\n\r\nNote that the guide expects the audience to know a little about how SAML works. We're going to be adding a proper SAML explainer later on.",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/12831",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 13457,
+    "title": "reference-docs: add `supabase sso` CLI reference docs",
+    "body": "And cross-link to the SSO guide.",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/13457",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 46187,
+    "title": "feat(studio): Issuer field in SSO form",
+    "body": "> [!CAUTION]\r\n> This new SSO field is UI-only until `oidc_issuer` is added to the `config` object.\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nFeature\r\n\r\n## What is the current behavior?\r\n\r\nThe SAML SSO provider config form has no way to supply an OIDC Issuer URL, which is required for enterprise-managed MCP authentication.\r\n\r\n## What is the new behavior?\r\n\r\n- Adds an **OIDC Issuer URL** field to the SAML SSO provider config form (`/org/_/sso`) inside an \"Advanced settings\" collapsible.\r\n- Minor UI touch-ups to that SSO form.\r\n\r\n| After |\r\n| --- |\r\n| <img width=\"1434\" height=\"2458\" alt=\"94962\" src=\"https://github.com/user-attachments/assets/e56f83cd-6e30-4a3f-a78d-330fc053953a\" /> |\r\n\r\nThe `oidcIssuer` field is UI-only right now; it renders but does not write. Before merging:\r\n\r\n1. Add `oidc_issuer` to the SSO config API type (removes the `as any` cast in `SSOConfig.tsx:219`)\r\n2. Add `oidc_issuer: values.oidcIssuer || undefined` to the `onSubmit` payload at `SSOConfig.tsx:183`\r\n3. Wire the backend endpoint to persist and return the field\r\n\r\n\r\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\r\n## Summary by CodeRabbit\r\n\r\n* **New Features**\r\n  * SSO settings now include an \"Advanced settings\" collapsible with an OIDC issuer field.\r\n\r\n* **UX / Bug Fixes**\r\n  * Small UI/description refinements in SSO forms and attribute-mapping layouts.\r\n\r\n<!-- review_stack_entry_start -->\r\n\r\n[![Review Change Stack](https://storage.googleapis.com/coderabbit_publi",
+    "state": "closed",
+    "comments": 8,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/46187",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 43386,
+    "title": "docs(self-hosting): add SAML 2.0 SSO configuration guide",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update (new guide)\r\n\r\n## What is the current behavior?\r\n\r\nThere is currently no dedicated guide explaining how to configure SAML\r\n2.0 SSO for self-hosted Supabase using Docker.\r\n\r\nWhile SAML SSO is supported at the Auth level, there is no end-to-end\r\ndocumentation covering:\r\n\r\n-   RSA key generation\r\n-   Required environment variables\r\n-   Docker configuration\r\n-   SP metadata retrieval\r\n-   IdP registration via the admin API\r\n-   Attribute mapping\r\n-   Kong routing considerations\r\n-   Client-side integration examples\r\n\r\n## What is the new behavior?\r\n\r\nThis PR adds a comprehensive \"Configure SAML SSO\" guide under Self\r\nHosting.\r\n\r\nThe guide covers:\r\n\r\n-   Enabling SAML via environment variables\r\n-   Generating and configuring the signing key\r\n-   Registering SAML providers using the Auth admin API\r\n-   Configuring common IdPs (Okta, Azure AD / Entra ID, Google\r\n    Workspace)\r\n-   Attribute mapping configuration\r\n-   Client-side integration using `signInWithSSO`\r\n-   Troubleshooting common issues\r\n\r\nA navigation entry under Self Hosting has also been added.\r\n\r\n## Additional context\r\n\r\nThis documentation is intended to make enterprise SSO support in\r\nself-hosted environments clearer and production-ready, especially for\r\nteams deploying Supabase behind their own gateways.\r\n",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/43386",
+    "labels": [
+      "documentation",
+      "auth",
+      "self-hosted"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 44405,
+    "title": "feat(growth): filter OAuth/SSO redirect referrers from attribution",
+    "body": "## Problem\n\nGitHub OAuth redirects and Google SSO set the browser's Referer header to their domain when redirecting back to supabase.com. Our attribution pipeline treats these as genuine referral traffic, inflating the `github` channel by ~20K orgs/week. The internal referrer fix (GROWTH-647) surfaced this by reducing `unknown-internal` — it didn't cause the issue, it revealed OAuth noise that was previously hidden.\n\n## What happened\n\nWhen users sign in with GitHub, the browser sends `Referer: https://github.com/`. GitHub's login pages use `origin-when-cross-origin` Referrer-Policy, which strips the path. So OAuth redirects arrive as bare `github.com/` — indistinguishable from a direct visit to github.com. Meanwhile, genuine GitHub referrals from repos/READMEs always include the full path because those pages use `no-referrer-when-downgrade`.\n\nWe validated against `mart_marketing_organization_attribution`: 98.5% of GitHub-attributed orgs have bare `github.com/` as the referrer. Only ~250/week have specific paths (genuine referrals).\n\n## Changes\n\n- Added `isOAuthRedirectReferrer()` to `first-referrer-cookie.ts` — identifies auth provider redirects:\n  - `accounts.google.com` blocked entirely (dedicated SSO subdomain)\n  - Bare `github.com/` blocked (OAuth redirect signature)\n  - `github.com/<specific-path>` preserved (genuine repo/README referrals)\n- Wired into `shouldRefreshCookie()` so OAuth referrers never get stamped into cookies\n- Wired into `handlePageTelemetry()` referrer ",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44405",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 43615,
+    "title": "feat(sso): improve SSO management UX (safe deletion + invitation type selection)",
+    "body": "## feat(sso): improve SSO management UX (safe deletion + invitation type selection)\r\n\r\nThis PR improves the SSO management experience by introducing a safer deletion flow for SSO providers and allowing explicit control over invitation authentication type.\r\n\r\n## SSO Provider Deletion Improvements\r\n\r\nThe SSO provider deletion flow has been redesigned to better communicate the impact of the action and prevent accidental destructive operations.\r\n\r\n### UX Improvements\r\n\r\n* Replace `ConfirmationModal` with `TextConfirmModal` in `SSOConfig`\r\n* Require typing the SSO domain to confirm deletion\r\n* Display the number of organization members authenticating via SSO who will be removed\r\n* Add destructive visual styling and clear warnings about irreversible consequences\r\n* Update confirmation button label to emphasize impact:\r\n\r\n  * `I understand, delete SSO provider and members`\r\n\r\n### Warning Content\r\n\r\nThe modal now clearly communicates:\r\n\r\n* The domain being deleted\r\n* That SSO authentication will be disabled\r\n* That SSO-authenticated members will be permanently removed\r\n* That those members must be re-invited to regain access\r\n\r\nIf SSO members exist, a highlighted destructive warning box shows:\r\n\r\n```\r\nX organization member(s) who authenticate via SSO will be permanently removed\r\n```\r\n\r\n### Implementation Details\r\n\r\n* Add `useOrganizationMembersQuery` to fetch organization members\r\n* Calculate SSO members by filtering `is_sso_user === true`\r\n* Only display the member warning when the ",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/43615",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 44825,
+    "title": "Self hosted/docs saml sso auth v1",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update\r\n\r\n## What is the current behavior?\r\n\r\nThe SAML SSO documentation referenced old endpoints at `/sso/saml/*` and included `SAML_EXTERNAL_URL` configuration that is no longer needed.\r\n\r\n## What is the new behavior?\r\n\r\n- Updates all SAML endpoint URLs from `/sso/saml/acs` and `/sso/saml/metadata` to `/auth/v1/sso/saml/acs` and `/auth/v1/sso/saml/metadata`\r\n- Removes documentation for `SAML_EXTERNAL_URL` environment variable\r\n- Updates `GOTRUE_SAML_EXTERNAL_URL` in docker-compose example to use fixed value\r\n- Updates all IdP configuration examples (Okta, Azure AD, Google Workspace) with new endpoint URLs\r\n- Adds Auth0 as a new IdP option with complete setup instructions\r\n- Updates troubleshooting section to reference new Kong route paths\r\n\r\n## Additional context\r\n\r\nThis documentation update aligns with the technical changes made to move SAML endpoints under the `/auth/v1` base path. The Auth0 addition provides users with another enterprise IdP option for SAML SSO.\r\n**Files changed:**\r\n- `apps/docs/content/guides/self-hosting/self-hosted-saml-sso.mdx`\r\n**Related PR:** #44824 \n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Updated self-hosted SAML SSO configuration guide with corrected API endpoint paths for proper setup\n  * ",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44825",
+    "labels": [
+      "documentation",
+      "auth",
+      "self-hosted"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 42766,
+    "title": "chore(docs): add clarity to enabling SSO for organizations",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nAdd clarify around enabling SSO for an organization\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Added a new \"Enabling SSO for an organization\" subsection with step-by-step setup, user invitation, and re-invitation instructions to support SSO adoption.\n  * Added an admonition clarifying that SSO identities are not automatically linked to existing non-SSO accounts, showing a concrete example of potential duplicate accounts and advising which account to use when accepting invites or logging in.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/42766",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 41158,
+    "title": "chore: use platform SSO entitlement",
+    "body": "\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n* **New Features**\n  * SSO configuration now gated by entitlement-based access checks; UI shows a skeleton loader while entitlements are resolved.\n\n* **Changes**\n  * Public API surface reorganized: multiple endpoints and response shapes consolidated, renamed, or removed; a unified entitlements response introduced and adopted across platform services.\n\n<sub>✏️ Tip: You can customize this high-level summary in your review settings.</sub>\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 6,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/41158",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 46273,
+    "title": "chore(docs): Clarify identity linking for SSO",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\n- SSO accounts are not legible for any identity linking\r\n- Remove bit about choosing correct account when accepting invite as inviter specifies if invite is linked to SSO or not https://github.com/supabase/supabase/pull/43615 \r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Clarified that accounts created via SAML SSO are ineligible for identity linking to existing user accounts (manual or automatic)\n  * Updated organizational account and identity management guidance for SSO-enabled environments\n  * Enhanced documentation on properly handling non-SSO account memberships in SSO-required organizations and preventing duplicate account creation\n\n<!-- review_stack_entry_start -->\n\n[![Review Change Stack](https://storage.googleapis.com/coderabbit_public_assets/review-stack-in-coderabbit-ui.svg)](https://app.coderabbit.ai/change-stack/supabase/supabase/pull/46273?utm_source=github_walkthrough&utm_medium=github&utm_campaign=change_stack)\n\n<!-- review_stack_entry_end -->\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/46273",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 44394,
+    "title": "fix: remove plan checks from SSO Config Query",
+    "body": "`useOrgSSOConfigQuery` had an internal plan-based gate (`canSetupSSOConfig`) that permanently disabled the query for non-team/enterprise orgs. \r\n\r\nThe fix removes the redundant plan gate from the query hook, plan-based access is already controlled upstream via the entitlement check in the component.",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44394",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 44440,
+    "title": "add routes for saml sso to self-hosted proxy configs",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nFollowing the changes in PR #43386 and PR #43385 - add the SAML SSO routes to both nginx and Caddy configs.\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n  * Single Sign-On (SSO) endpoints are now available and fully integrated into the application infrastructure. SSO authentication routes have been configured and updated across the routing layer, enabling users to authenticate using single sign-on methods when accessing the platform. The application now supports SSO-based authentication through its proxy infrastructure.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44440",
+    "labels": [
+      "self-hosted"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 43385,
+    "title": "feat(self-hosting): add SAML SSO env config and open Kong routes",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nFeature (self-hosting infrastructure update)\r\n\r\n## What is the current behavior?\r\n\r\nSelf-hosted setups do not expose the following SAML endpoints through\r\nKong:\r\n\r\n-   `/sso/saml/acs`\r\n-   `/sso/saml/metadata`\r\n\r\nAs a result:\r\n\r\n-   The IdP cannot POST assertions to the ACS endpoint.\r\n-   The Service Provider metadata cannot be fetched externally.\r\n-   SAML SSO cannot function correctly behind the gateway.\r\n\r\nAdditionally, the Docker templates do not include SAML-related\r\nenvironment variables.\r\n\r\n## What is the new behavior?\r\n\r\nThis PR:\r\n\r\n1.  Adds SAML-related environment variables to:\r\n    -   `docker/.env.example`\r\n    -   `docker-compose.yml` (Auth service section)\r\n2.  Exposes the following routes in `kong.yml` as open endpoints:\r\n    -   `/sso/saml/acs`\r\n    -   `/sso/saml/metadata`\r\n\r\nBoth routes are configured with CORS enabled and without authentication\r\nplugins, since:\r\n\r\n-   The ACS endpoint must accept POSTs from external IdPs.\r\n-   The metadata endpoint must be publicly retrievable by IdPs.\r\n\r\n## Additional context\r\n\r\n### Route design decision\r\n\r\nI considered exposing the routes under:\r\n\r\n`/auth/v1/sso/saml/*`\r\n\r\ninstead of:\r\n\r\n`/sso/saml/*`\r\n\r\nHowever, GoTrue internally assumes `/sso` as the base path when\r\ngenerating the `SAMLRequest` and constructing:\r\n\r\n-   The Assertion Consumer Service (ACS",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/43385",
+    "labels": [
+      "documentation",
+      "auth",
+      "self-hosted"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 43302,
+    "title": "chore: sso entitlement check",
+    "body": "Adds the entitlement check to invite new members through SSO in the Team management page\r\n\r\n### Testing\r\n- Head to `/org/_/team` with an Org on the Free or Pro plan\r\n- Click on `Invite members`\r\n- Assert that you're shown the upgrade prompt \r\n\r\n<img width=\"896\" height=\"464\" alt=\"image\" src=\"https://github.com/user-attachments/assets/8cc152a9-d25f-48a0-b1a7-e19c6b88b16e\" />\r\n\r\n- Head to `/org/_/team` with an Org on the Team Plan\r\n- Click on `Invite members`\r\n- Assert that SSO is shown as available\r\n<img width=\"652\" height=\"463\" alt=\"image\" src=\"https://github.com/user-attachments/assets/e35e6f20-3c24-41b5-a56e-3ca44ee31877\" />\r\n\r\n",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/43302",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 44491,
+    "title": "docs(self-hosting): fix SSO endpoint path in SAML login flow example",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update\r\n\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Updated SAML single sign-on self-hosting guide with corrected API endpoint references.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44491",
+    "labels": [
+      "documentation",
+      "self-hosted"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 36082,
+    "title": "Update monthly-active-users-sso.mdx",
+    "body": "Fix formatting in docs\r\n\r\n## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\ndocs update\r\n\r\n## What is the current behavior?\r\n\r\nCode block is inlined without syntax highlighting [here](https://supabase.com/docs/guides/platform/manage-your-usage/monthly-active-users-sso):\r\n  \r\n<img width=\"953\" alt=\"image\" src=\"https://github.com/user-attachments/assets/4fd2a549-7759-4fb2-97ed-d72f69651b6c\" />\r\n\r\n\r\n## What is the new behavior?\r\n\r\nCode block is formatted the same as the others\r\n\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/36082",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 36732,
+    "title": "feat: enable Self-Service Single Sign-On (SSO) for orgs",
+    "body": "## Context\r\n\r\n[Joshen] Currently blocked on an identified issue found on staging BE\r\n\r\nIntroduces the UI for organizations to set up SSO for the organization. BE changes are already on prod so this can go through whenever ready\r\n\r\n<img width=\"1237\" height=\"576\" alt=\"image\" src=\"https://github.com/user-attachments/assets/57978581-ff44-4fe2-896d-0a5010c18820\" />\r\n",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/36732",
+    "labels": [],
+    "matched_term": "SSO"
+  },
+  {
+    "number": 27628,
+    "title": "feat: add SAML External URL field",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\nIn support of https://github.com/supabase/infrastructure/pull/18784\r\n\r\n\r\nTested against a local instance by ensuring that `GOTRUE_SAML_EXTERNAL_URL` surfaces on the underlying config.",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/27628",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 44824,
+    "title": "refactor(docker): align SAML configuration with /auth/v1 base path",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nBug fix / refactor\r\n\r\n## What is the current behavior?\r\n\r\nSAML endpoints were served at root paths (`/sso/saml/acs` and `/sso/saml/metadata`), which was inconsistent with the Auth API structure.\r\n\r\n## What is the new behavior?\r\n\r\n- Moves SAML endpoints to `/auth/v1/sso/saml/acs` and `/auth/v1/sso/saml/metadata` for consistency\r\n- Removes `SAML_EXTERNAL_URL` environment variable from `.env.example` (now automatically derived from `API_EXTERNAL_URL`)\r\n- Updates `docker-compose.yml` to use fixed value `${API_EXTERNAL_URL}/auth/v1` for `GOTRUE_SAML_EXTERNAL_URL`\r\n- Updates Kong routes to use the new `/auth/v1` base path\r\n\r\n## Additional context\r\n\r\nThis change aligns SAML configuration with the `/auth/v1` base path used by other Auth endpoints. This is a breaking change for existing SAML setups - users will need to update their IdP configurations with the new endpoints.\r\n**Files changed:**\r\n- `docker/.env.example`\r\n- `docker/docker-compose.yml`\r\n- `docker/volumes/api/kong.yml`\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Chores**\n  * Updated SAML authentication endpoint paths from `/sso/saml/*` to `/auth/v1/sso/saml/*`.\n  * Refreshed SAML configuration defaults for consistency.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 6,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44824",
+    "labels": [
+      "auth",
+      "self-hosted"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 20490,
+    "title": "Blog post: Supabase Engineering: What is SAML Authentication.",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/20490",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 41387,
+    "title": "docs: update saml attribute mapping docs",
+    "body": "Simple changes to the docs.\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Enhanced SAML SSO attribute mapping guide with support for multi-valued arrays, default values for missing attributes, and multiple alternative attribute name lookup (ordered fallback).\n  * Clarified where identity data is stored and expanded configuration examples showing resulting JWT claims and database representations.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/41387",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 42318,
+    "title": "docs: Add multi-valued attributes documentation for SAML SSO",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\ndocs update\r\n\r\n## What is the current behavior?\r\n\r\nThere is no documentation about needing to set the array property to true for multi-valued attributes. \r\nDue to which users are facing issues like https://github.com/supabase/auth/issues/2332.\r\nThis feature was added in https://github.com/supabase/auth/pull/1526 , but the documentation wasnt updated.\r\n\r\n## What is the new behavior?\r\nDocumentation includes a new section explaining multi-valued SAML attributes \r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Enhanced SAML attribute mapping guide with a new section explaining how to handle multi-valued attributes (groups, roles, custom claims) using configuration mappings with array support.\n\n<sub>✏️ Tip: You can customize this high-level summary in your review settings.</sub>\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "open",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/42318",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 41645,
+    "title": "Removed provider reassignment phrase from the saml sso docs",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update\r\n\r\n## What is the current behavior?\r\n\r\nSAML docs says\r\n\r\n> If you need to reassign those user accounts to another identity provider, contact support\r\n\r\nand this information is incorrect.\r\n\r\n## What is the new behavior?\r\n\r\nRemoved the text.\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Updated Enterprise SSO SAML setup guide by removing outdated guidance regarding account reassignment procedures.\n\n<sub>✏️ Tip: You can customize this high-level summary in your review settings.</sub>\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/41645",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 33739,
+    "title": "fix: validation and description on SAML_EXTERNAL_URL",
+    "body": "The existing config didn't do a good job of explaining when this config should be used and what valid values are supported. This fixes it for the short-term, while long term it should be a boolean toggle whether the project's custom domain is used or the project's original domain.\r\n\r\n<img width=\"1034\" alt=\"image\" src=\"https://github.com/user-attachments/assets/f392e668-04b0-46aa-b4bd-22cf24aa82f7\" />\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/33739",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 44392,
+    "title": "allow empty string in saml metadata url",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nBug fix\r\n\r\n## What is the current behavior?\r\n\r\nSAML metadata URL cannot be saved with an empty string; it works through the management API\r\n\r\n<img width=\"781\" height=\"412\" alt=\"image\" src=\"https://github.com/user-attachments/assets/586d3de2-30bc-4e8a-9d4b-b039685cb455\" />\r\n\r\n## What is the new behavior?\r\n\r\nAllow saving SAML 2.0 config with an empty SAML metadata URL \r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44392",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 40050,
+    "title": "docs: add FAQ explaining PKCE incompatibility with IdP-initiated SAML…",
+    "body": " ## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\n  YES\r\n\r\n  ## What kind of change does this PR introduce?\r\n\r\n  Docs update\r\n\r\n  ## What is the current behavior?\r\n\r\n  Documentation does not explain why IdP-initiated SAML flows are incompatible with PKCE or provide guidance on the recommended alternative approach.\r\n\r\n  ## What is the new behavior?\r\n\r\n  Adds a new FAQ section explaining PKCE's incompatibility with traditional IdP-initiated SAML flows and documents the \"bookmark app\" approach as a secure alternative that maintains the same user experience.\r\n\r\n  ## Additional context\r\n\r\n  This FAQ helps users understand why they cannot use traditional IdP-initiated flows with PKCE-enabled SAML and provides a clear path forward using SP-initiated flows with IdP bookmark applications.\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/40050",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 29636,
+    "title": "Fix filtering on SAML provider",
+    "body": "As per PR title - this is for the user management UI",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/29636",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 28996,
+    "title": "feat: add saml encrypted assertion support",
+    "body": "See: https://github.com/supabase/auth/pull/1752\r\n\r\nMerge after infra and Auth version is deployed.",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/28996",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 13211,
+    "title": "feat: add saml provider behind feature flag",
+    "body": "Adds the SAML 2.0 provider setting in the Authentication > Providers section, behind the `isSamlEnabled` feature flag.\r\n\r\nNote: I was not able to test this locally given that I'm having constant issues running the platform locally and am not able to reach this UI.",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/13211",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 33653,
+    "title": "docs: clarify saml slo alternative",
+    "body": "Provides an alternative for SLO.",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/33653",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 29133,
+    "title": "fix: ask users to use supabase.help instead when setting up SAML",
+    "body": "Switches email to link.",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/29133",
+    "labels": [],
+    "matched_term": "SAML"
+  },
+  {
+    "number": 16857,
+    "title": "Trouble with File Upload in Self-Hosted Supabase Using Docker",
+    "body": "# Bug report\r\n\r\n<!-- \r\n\r\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\r\n\r\n- Docs: https://docs.supabase.com\r\n- Discussions: https://github.com/supabase/supabase/discussions\r\n- Discord: https://discord.supabase.com\r\n\r\nBefore opening a bug report, please verify the following: \r\n\r\n-->\r\n\r\n- [x] I confirm this is a bug with Supabase, not with my own application. \r\n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\nI'm currently facing a perplexing problem while attempting to manually upload files to the Supabase bucket on my self-hosted instance using Docker. The issue arises when I initiate the upload process – the progress gets stuck at 0% and the upload never seems to commence. I've conducted this experiment on multiple computers and have tried various file types, yet regrettably, none of these attempts have proved successful.\r\n\r\n## To Reproduce\r\n1. Set up self-hosted Supabase instance using Docker.\r\n2. Open the dashboard and head to bucket\r\n3. Upload one/multiple files\r\n\r\n## Expected behavior\r\nThe manual file upload process should initiate normally, progressing from 0% to completion, allowing the files to be uploaded successfully to the Supabase bucket.\r\n\r\n## Screenshots\r\n![anydesk00000](https://github.com/supabase/supabase/assets/1",
+    "state": "closed",
+    "comments": 71,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/16857",
+    "labels": [
+      "bug",
+      "self-hosted",
+      "storage"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 12583,
+    "title": "docs: Logflare self-hosted docker-compose",
+    "body": "Self hosted logs using Logflare, Google Cloud and Vector.\r\n\r\nTo run:\r\n```\r\ncd docker\r\ndocker compose -f docker-compose.yml -f docker-compose-logging.yml up\r\n```\r\n\r\nWe kept it in separate files to ensure we do not break existing setups\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/12583",
+    "labels": [],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 48203,
+    "title": "docs(self-hosted): add a guide covering custom pg extensions",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nAdds a new self-hosting guide, **\"Build a custom Postgres extension image,\"** covering how to add a native (`.so`) PostgreSQL extension that Supabase doesn't bundle to a self-hosted stack, by layering it onto the official `supabase/postgres` image.\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n* **New Features**\n  * Added a new self-hosting guide: **Custom Postgres Extensions** for building native PostgreSQL `.so` modules and enabling them with Supabase.\n  * Includes an end-to-end Docker workflow to compile artifacts, layer them into the Postgres image, and verify installation.\n  * Documents extension enablement options, including support for extensions requiring `shared_preload_libraries`, plus guidance for re-testing after Postgres/Supabase version changes.\n  * Linked from the self-hosting “How-to Guides” navigation.\n* **Chores / Tooling**\n  * Updated MDX heading-case linting to allow `Dockerfile` and `Nix` in sentence-case headings.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/48203",
+    "labels": [
+      "documentation",
+      "self-hosted",
+      "database"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 10074,
+    "title": "Self-Hosted dashboard stuck on `Connecting to Default Project`.",
+    "body": "        I tried @karouvirae `docker-compose.yml` file and that did not work, I received errors from `auth`, `rest`, `realtime`, and `storage`\r\n\r\nI tried both the following repositories and none of them worked.\r\nhttps://github.com/supabase-community/supabase-traefik\r\nhttps://github.com/supabase/supabase/tree/master/docker\r\n\r\nFirst off, the unofficial Traefik setup that is supported by the community is outdated.\r\nThe main self-hosting guide containers all work, although the Dashboard gets stuck, and I need to get this running as soon as possible. \r\n\r\nI even found the following issue about it:\r\nhttps://github.com/supabase/supabase/issues/8721\r\n\r\nDoes this mean that self-hosting is currently not possible with the bug introduced in the above issue?\r\nI have made a `help` post  about this in the `Supabase Official` discord, and so far no one has responded.\r\n\r\nIn the `r/Supabase` Reddit, there is a similar post.\r\nhttps://www.reddit.com/r/Supabase/comments/ycwude/comment/iuwa3az/?utm_source=share&utm_medium=web2x&context=3\r\n\r\nI tried changing the following `.env` variables but no luck.\r\n```\r\nSITE_URL\r\nAPI_EXTERNAL_URL\r\nPUBLIC_REST_URL\r\n```\r\n\r\nSadly I have been working on this for over 12 hours, and this is my very first experience with Supabase, a very horrible one at that.\r\n\r\n_Originally posted by @NorkzYT in https://github.com/supabase/supabase/issues/4934#issuecomment-1302603468_\r\n      ",
+    "state": "closed",
+    "comments": 38,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/10074",
+    "labels": [
+      "self-hosted"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 33777,
+    "title": "AI Assistant doesn't work 401 - self hosted",
+    "body": "# Bug report\n\n- [X] I confirm this is a bug with Supabase, not with my own application. \n- [X] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nI have configured the OpenAI API key, and the project correctly detects it since the input panel is unlocked, allowing me to enter messages. However, every request to /api/ai/sql/generate-v3 results in a 401 Unauthorized error. Upon inspecting the logs, I noticed that the Authorization header in the request is empty.\n\n## To Reproduce\n\nSet up the OpenAI API key in the environment variables.\nStart the Supabase Studio.\nAttempt to use the AI-powered SQL generation feature.\nObserve that the request to /api/ai/sql/generate-v3 fails with a 401 Unauthorized error.\nCheck the logs and confirm that the Authorization header in the request is missing.\nExpected Behavior:\nThe request should include a valid Authorization header, allowing successful interaction with the OpenAI API.\n\nObserved Behavior:\nThe request to /api/ai/sql/generate-v3 is sent with an empty Authorization header, leading to a 401 Unauthorized response.\nRunning /api/ai/sql/check-api-key confirms that the API key is correctly set and recognized.\nThe issue appears to be specific to /generate-v3, as it does not pick up the key when making the request.\n\n## Expected behavior\nAI Assistant works after configuring OPENAI_API_KEY\n\n## Scre",
+    "state": "closed",
+    "comments": 34,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/33777",
+    "labels": [
+      "bug",
+      "self-hosted",
+      "external-issue"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 49949,
+    "title": "feat(self-hosted): runtime Auth configuration via local management API",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\n\nYES\n\n## What kind of change does this PR introduce?\n\nFeature (self-hosted only). Discussed in https://github.com/orgs/supabase/discussions/49857 - this is the first, Auth-only slice proposed there.\n\n## What is the current behavior?\n\nIn the self-hosted docker stack every Auth setting is a `GOTRUE_*` variable in `.env`: enabling an OAuth provider, changing SMTP or editing an email template means editing the file and restarting the `auth` container. Studio hides the Auth configuration pages (Providers, Emails, Sessions, MFA, URL Configuration, Hooks, ...) when `IS_PLATFORM` is false because there is no API behind them.\n\n## What is the new behavior?\n\nA small `management-api` service is added to `docker/` and Studio talks to it through the existing `/platform/auth/:ref/config` API shape, so the Auth pages work self-hosted the same way they do on the platform.\n\nHow it works:\n\n- GoTrue is started with `auth --config-dir /etc/auth`. The management API stores overrides in Postgres (`management.auth_config`, `management.email_templates`) and writes them to `/etc/auth/90-managed.env` atomically; GoTrue reloads the file, no restart needed. Values still come from `.env` until something is changed in Studio (`AUTH_DEFAULT_*` in compose pass them through as the baseline shown in the UI).\n- Only keys from an allowlist are accepted, with primitive type checks; `null` removes an overri",
+    "state": "open",
+    "comments": 9,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/49949",
+    "labels": [],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 42220,
+    "title": "fix: adjust connect dialog for cli and self-hosted",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nFix Connect dialog to try displaying connection strings properly for [local development & CLI](https://supabase.com/docs/guides/local-development) and for [self-hosted](https://supabase.com/docs/guides/self-hosting).\r\n\r\nCurrent state of Connect dialog for CLI or self-hosted is that it doesn't account for `SUPABASE_PUBLIC_URL` and Postgres port configurations - instead it shows `127.0.0.1` and port `5432`.\r\n\r\n<img width=\"1007\" height=\"435\" alt=\"Screenshot 2026-01-27 at 5 50 44 PM\" src=\"https://github.com/user-attachments/assets/8d07f8cd-c862-4c0c-aa23-7ba8b30a98fa\" />\r\n\r\nHere's what could be fixed:\r\n\r\n1. Determine if it's platform, CLI, or self-hosted - use `IS_PLATFORM`, and add additional logic to differentiate between CLI and self-hosted based on the `CURRENT_CLI_VERSION` environment variable.\r\n2. Add `PROJECT_DB_HOST` constant built from `SUPABASE_PUBLIC_URL`\r\n3. Handle `POSTGRES_PORT` properly for both CLI and self-hosted\r\n4. Add additional logic when trying to display connection strings:\r\n\r\n| **Mode** | **Direct** | **Session** | **Transaction** | **IPv4 checks** | **Badges** |\r\n| --- | --- | --- | --- | --- | --- |\r\n| Platform | yes | yes | yes | yes | yes |\r\n| CLI | yes | no | no | no | no |\r\n| Self-hosted | TBD | yes | yes | no | no |\r\n\r\nFor CLI it's feasible to display only the \"direct connection\" inf",
+    "state": "closed",
+    "comments": 6,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/42220",
+    "labels": [
+      "cli",
+      "self-hosted"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 39952,
+    "title": "docs: add a new section about mcp in self-hosted",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nThis is a new section for the self-hosted docs describing how to manually enable the MCP server.\r\n\r\n## Additional context\r\n\r\nThis is to reflect the recent change in the Kong configuration file (see #39849)",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/39952",
+    "labels": [
+      "documentation",
+      "self-hosted"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 17164,
+    "title": "\"JWSError JWSInvalidSignature\" Error on Self-hosted Supabase",
+    "body": "## Describe the bug\r\n\r\nWe're self-hosting Supabase. I'm getting \"JWS Invalid Signature\" error on requests made through an admin client instance. Service key is valid, we are using that same key with the GoTrue library in our GO server.\r\n\r\n## To Reproduce\r\n\r\n```\r\nconst supabaseAdmin = createClient(\r\n\tsupabaseUrl,\r\n\tsupabaseServiceKey,\r\n\t{\r\n\t\tauth: {\r\n\t\t\tautoRefreshToken: false,\r\n\t\t\tpersistSession: false\r\n\t\t}\r\n\t}\r\n)\r\nconst { data, error } = await supabaseAdmin.from(\"some_table\").select(\"*\").limit(50)\r\n```\r\n\r\nThat results in this error:\r\n```\r\n{\r\n  code: 'PGRST301',\r\n  details: null,\r\n  hint: null,\r\n  message: 'JWSError JWSInvalidSignature'\r\n}\r\n```\r\n\r\nAny idea why this happens? It wasn't happening with the hosted version.",
+    "state": "closed",
+    "comments": 25,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/17164",
+    "labels": [
+      "cli",
+      "self-hosted"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 10319,
+    "title": "No edge functions on self-hosted instance",
+    "body": "Hi there.\r\n\r\nI just wanted to migrate supabase to self-hosted deployment because the hosted plan is too expensive imo but I'm missing functions and database webhooks.\r\nI thought with self-hosting we would get the same featureset but it doesn't seem like it?\r\n\r\nIs there maybe a flag missing or something to enable them?\r\n\r\nThank you.",
+    "state": "closed",
+    "comments": 24,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/10319",
+    "labels": [
+      "bug",
+      "edge functions",
+      "self-hosted"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 43372,
+    "title": "docs(self-hosted): add auth hooks guide",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\ndocs\r\n\r\n## What is the new behavior?\r\n\r\nadd docs for setting up auth hooks with self-hosted supabase\r\n\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n* **New Features**\n  * Added navigation for the self-hosted Auth Hooks guide.\n\n* **Documentation**\n  * Added a comprehensive Docker Compose guide for configuring Auth Hooks, including setup, supported hook types, secrets, verification, and troubleshooting.\n  * Expanded self-hosted phone MFA guidance with supported SMS providers, SMS Send Hook documentation, and related Auth Hooks resources.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 7,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/43372",
+    "labels": [
+      "documentation",
+      "auth",
+      "self-hosted"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 38981,
+    "title": "feat: local/self-hosted support in MCP URL builder",
+    "body": "Adds a platform selector to the MCP URL builder in docs so you can install MCP for:\r\n- Hosted Supabase, (default, enables project selection)\r\n- Local / self-hosted\r\n\r\nThe MCP URL construction logic for `studio` is similar to [this API_URL logic](https://github.com/supabase/supabase/blob/57fb359434ec72a4452006867175d2994985b8d2/apps/studio/lib/constants/index.ts#L7-L18) to handle different environments.\r\n\r\nThe `docs` assumes a local MCP URL of `http://127.0.0.1:54321/mcp` as prescribed in https://github.com/supabase/cli/pull/4186\r\n\r\nResolves AI-152\r\n\r\n## Merge Instructions\r\n\r\nReview https://github.com/supabase/supabase/pull/36867 first for the initial MCP URL builder implementation. \r\n\r\nMerge this PR after that. This PR adds self-hosted/local info to the initial implementation and makes more parts of the URL construction logic configurable.\r\n",
+    "state": "closed",
+    "comments": 7,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/38981",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 8623,
+    "title": "Support storage and buckets for self hosted",
+    "body": "## What kind of change does this PR introduce?\r\nEnable storage/bucket for self-hosted supabase\r\n\r\nhttps://user-images.githubusercontent.com/15171755/186464204-6a548d95-f18d-4799-9b28-db33abaaf748.mov\r\n\r\n\r\nCloses #4440\r\n",
+    "state": "closed",
+    "comments": 18,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/8623",
+    "labels": [],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 43268,
+    "title": "add data api page to integrations for self-hosted",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\n- Add the Data API page to Integrations for self-hosted and CLI (`!IS_PLATFORM`)\r\n- Hide the enable/disable Data API switch if `!IS_PLATFORM` (PostgREST is configured manually)\r\n- Show an admonition note for `!IS_PLATFORM` about PostgREST configuration\r\n- Disable save/reset and \"Harden Data API\" for `!IS_PLATFORM`\r\n- Add `PGRST_DB_SCHEMAS`, `PGRST_DB_MAX_ROWS`, and `PGRST_DB_EXTRA_SEARCH_PATH` to `docker-compose.yml` for self-hosted Supabase (for both PostgREST and Studio)\r\n- If PostgREST settings are in the env vars, use it in the UI (instead of hard-coded values)\r\n\r\nTested:\r\n  - Data API is in the Integrations for `!IS_PLATFORM`\r\n  - Overview: API URL card visible, no enable/disable switch, admonition shown\r\n  - Settings: PostgREST config displayed in read-only mode, no save button, no \"Harden Data API\"\r\n  - Docs tab: API documentation loads correctly, generate & export types works\r\n \r\nCloses #43267\r\n\r\n(Related - PR [cli#4920](https://github.com/supabase/cli/pull/4920))\r\n",
+    "state": "closed",
+    "comments": 7,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/43268",
+    "labels": [
+      "enhancement",
+      "cli",
+      "self-hosted"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 40479,
+    "title": "Fix: Make self hosted tests more reliable locally and in CI",
+    "body": "- Blacksmith runner, giving more resources to playwright headless\r\n- Updated to run tests against a new instance of Supabase rather than the preview env\r\n- Used community playwright report PR comment\r\n- Single command in Root to run tests `pnpm run e2e`",
+    "state": "closed",
+    "comments": 6,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/40479",
+    "labels": [],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 44052,
+    "title": "self hosted - kong does not start via default docker compose",
+    "body": "# Bug report\n\n- [x] I confirm this is a bug with Supabase, not with my own application. \n- [x] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \n\n## Describe the bug\n\nWhen trying to run self hosted solution via docker it fails to run kong container.\n\n## To Reproduce\n\n1. Go through steps in https://supabase.com/docs/guides/self-hosting/docker#configuring-and-securing-supabase\n2. Run command `docker compose up -d` without changing `docker-compose.yml`\n\nAll containers are starting beside kong:\n```\n$ docker compose up -d\n[+] up 16/16\n ✔ Network supabase_default                 Created                                                                                                       0.1ss \n✔ Volume supabase_db-config                Created                                                                                                       0.0ss \n✔ Volume supabase_deno-cache               Created                                                                                                       0.0ss \n✔ Container supabase-db                    Healthy                                                                                                       53.7s \n✔ Container supabase-vector                Started                                                                                                       1.5ss \n✔ Container supabase-imgproxy ",
+    "state": "closed",
+    "comments": 20,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/44052",
+    "labels": [
+      "self-hosted",
+      "pr-opened",
+      "external-issue"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 18836,
+    "title": "Fresh self-hosted Docker instance fails due to database users' passwords not being set",
+    "body": "# Bug report\r\n\r\n<!-- \r\n\r\n⚠️ We receive a lot of bug reports which have already been solved or discussed. If you are looking for help, please try these first:\r\n\r\n- Docs: https://docs.supabase.com\r\n- Discussions: https://github.com/supabase/supabase/discussions\r\n- Discord: https://discord.supabase.com\r\n\r\nBefore opening a bug report, please verify the following: \r\n\r\n-->\r\n\r\n- [X] I confirm this is a bug with Supabase, not with my own application. \r\n- [X] I confirm I have searched the [Docs](https://docs.supabase.com), GitHub [Discussions](https://github.com/supabase/supabase/discussions), and [Discord](https://discord.supabase.com). \r\n\r\n## Describe the bug\r\n\r\nWhen running a new self-hosted instance of Supabase with docker compose, the supabase-analytics container fails to start. Examining the docker compose logs for supabase-analytics reveals:\r\n\r\n```\r\nKernel pid terminated (application_controller) ({application_start_failure,logflare,{{shutdown,{failed_to_start_child,'Elixir.Cainophile.Adapters.Postgres',invalid_password}},{'Elixir.Logflare.Application',start,[normal,[]]}}})\r\n\r\nCrash dump is being written to: erl_crash.dump...done\r\nsh: 19:50:15.648: not found\r\n** (DBConnection.ConnectionError) connection not available and request was dropped from queue after 10973ms. This means requests are coming in and your connection pool cannot serve them fast enough. You can address this by:\r\n\r\n  1. Ensuring your database is available and that you can connect to it\r\n  2. Tracking down slow q",
+    "state": "closed",
+    "comments": 20,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/18836",
+    "labels": [
+      "bug",
+      "documentation",
+      "self-hosted"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 39593,
+    "title": "Studio 2025.10.09-sha-433e578 breaks SQL queries in self-hosted deployments - Zod validation error on formattedError",
+    "body": "# Bug description\n\nAfter updating Studio from 2025.10.01-sha-8460121 to 2025.10.09-sha-433e578 in a self-hosted Supabase deployment, all SQL queries in the Studio SQL Editor fail with a ZOD validation error. This is not restricted to SQL Editor but to any query, e.g. the tables can not be listed anymore etc.\n\n# Expected behavior\n\n  SQL queries should execute successfully and return results, as they did in Studio version 2025.10.01-sha-8460121.\n\n # Actual behavior\n\n  All SQL queries (e.g., SELECT * FROM boards;) fail with the following error in the network response:\n\n```\n  [\n    {\n      \"expected\": \"string\",\n      \"code\": \"invalid_type\",\n      \"path\": [\n        \"formattedError\"\n      ],\n      \"message\": \"Invalid input: expected string, received undefined\"\n    }\n  ]\n```\n\n  Steps to reproduce\n\n  1. Run self-hosted Supabase using Docker Compose\n  2. Update Studio image from supabase/studio:2025.10.01-sha-8460121 to supabase/studio:2025.10.09-sha-433e578\n  3. Restart Studio container\n  4. Open SQL Editor in Studio\n  5. Execute any SQL query (e.g. the default one:\n\n```\nselect * from\n  (select version()) as version,\n  (select current_setting('server_version_num')) as version_number;\n```\n\n  6. Observe error in browser network tab as well as the result window in the Studio SQL Editor\n\n  Environment\n\n  - Deployment method: Self-hosted Docker Compose\n  - Studio version (broken): supabase/studio:2025.10.09-sha-433e578\n  - Studio version (working): supabase/studio:2025.10.01-sha-8460121\n ",
+    "state": "closed",
+    "comments": 20,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/39593",
+    "labels": [
+      "self-hosted",
+      "external-issue"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 4440,
+    "title": "No storage/bucket option on self-hosted supabase",
+    "body": "Just installed supabase using docker on ubuntu 18 and i am unable to see the bucket/storage option when going to the localhost:3000\r\n\r\nrunning docker ps gives the following\r\n\r\n```\r\n\r\n05637569f21b   supabase/storage-api:v0.10.0     \"/bin/sh -c \\\"./stora…\"   14 hours ago   Up 14 hours   5000/tcp                                                                                                   supabase-storage\r\nd7123b2d9044   postgrest/postgrest:v9.0.0       \"/bin/postgrest\"          14 hours ago   Up 14 hours   3000/tcp                                                                                                   supabase-rest\r\n6ba3a6501363   supabase/postgres-meta:v0.29.0   \"postgres-meta\"           14 hours ago   Up 14 hours   8080/tcp                                                                                                   supabase-meta\r\n1471f3dce836   supabase/realtime:v0.19.3        \"bash -c './prod/rel…\"    14 hours ago   Up 14 hours                                                                                                              supabase-realtime\r\n8d4fa115e08d   supabase/gotrue:v2.2.12          \"gotrue\"                  14 hours ago   Up 14 hours                                                                                                              supabase-auth\r\n00f6c1617fa4   supabase/postgres:14.1.0         \"docker-entrypoint.s…\"    14 hours ago   Up 14 hours   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp                                         ",
+    "state": "closed",
+    "comments": 20,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/4440",
+    "labels": [
+      "enhancement",
+      "frontend",
+      "self-hosted",
+      "storage"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 28934,
+    "title": "unable to see edge functions in local development studio + when doing supabase login it only goes to supabase url and not to self hosted version",
+    "body": "i dont know if both of the above are bugs or issues but i cant find anything in the docs.\r\nhow do i login to my self hosted version?\r\nhow to see edge functions in local superbase studio or in self hosted studio ?",
+    "state": "closed",
+    "comments": 19,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/28934",
+    "labels": [
+      "enhancement",
+      "cli",
+      "edge functions",
+      "self-hosted",
+      "external-issue"
+    ],
+    "matched_term": "self-hosted"
+  },
+  {
+    "number": 4792,
+    "title": "Please add new pricing tiers between FREE to 25$",
+    "body": "25$ is not a piece of cake for everyone, especially for startups where FREE Quota is not enough and 25$ are more then enough. Please add a new pricing tier for 10$. This will remove the constraints of 2 org x 2 projects, and we will be able to host our hobby projects along with professional apps in a very affordable price.",
+    "state": "closed",
+    "comments": 26,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/4792",
+    "labels": [
+      "enhancement"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 49656,
+    "title": "updated pricing, manage usage pages for upcoming logs pricing launch (do not merge yet)",
+    "body": "This needs approval by docs team, product marketing, and is embargoed until the formal pricing announcement (TBD, but at or around Sept 15, 2026).\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n- **Documentation**\n  - Added finalized Logs Ingest pricing, plan quotas, overage rates, and billing examples.\n  - Clarified that Logs Query uses an allowance based on Logs Ingest usage rather than separate billing.\n  - Documented allowance overages, potential degraded service, and migration guidance.\n  - Added Postgres logging optimization, configuration, sensitive-data warnings, and usage-monitoring recommendations.\n  - Clarified that log drains are billed separately from Logs Ingest.\n  - Reorganized usage documentation and added Logs to the navigation.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "open",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/49656",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 47873,
+    "title": "feat(etl): ETL usage insights+pricing docs",
+    "body": "Adds pipeline usage insights to summary and daily breakdowns + usage billing docs\r\n\r\n<img width=\"699\" height=\"152\" alt=\"Screenshot 2026-07-13 at 3 34 45 PM\" src=\"https://github.com/user-attachments/assets/4ee4dc09-6936-4fdc-b772-ee288fbab047\" />\r\n<img width=\"506\" height=\"218\" alt=\"Screenshot 2026-07-13 at 3 34 50 PM\" src=\"https://github.com/user-attachments/assets/e0a68d08-1bf9-44a6-9f2f-699e1fca9d28\" />\r\n<img width=\"1306\" height=\"847\" alt=\"Screenshot 2026-07-13 at 3 42 06 PM\" src=\"https://github.com/user-attachments/assets/93276c28-05ca-483f-95c9-e1b51f38b38f\" />\r\n\r\nDocs: https://docs-git-k-dog-billing-2472-implement-ui-for-tr-e592cf-supabase.vercel.app/docs//guides/platform/manage-your-usage/pipelines\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n- **New Features**\n  - Added a new **Pipelines** section to organization usage, including charts for pipeline backfill data and replicated data.\n  - Extended billing breakdown and upcoming invoice documentation links with pipelines backfill/replicated-data metrics.\n  - Updated product docs navigation and platform add-ons to include **Pipelines**.\n\n- **Documentation**\n  - Introduced a **Pipelines pricing** page (embedded in the replication guide) with GB-based rates, plan comparison, usage calculation details, and billing examples.\n  - Added **Pipelines** to “Manage your usage.”\n\n- **Bug Fixes**\n  - Adjusted SparkBar limit indicators to show only for capped, non-unlimited metri",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/47873",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 42451,
+    "title": "experiment:pricing feedback iteration on calculator",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nFeature — A/B experiment for a new pricing calculator on the `/pricing` page, gated behind a PostHog feature flag.\r\n\r\n## What is the current behavior?\r\n\r\nThe pricing page shows a single compute pricing section (`PricingComputeSection`) to all visitors with no experimentation support.\r\n\r\n## What is the new behavior?\r\n\r\n- Introduces a **pricing calculator A/B experiment** (`pricingCalculatorExperiment`) using PostHog feature flags evaluated client-side.\r\n- **Control variant**: Renders the existing `PricingComputeSection` (no change).\r\n- **Test variant**: Renders a new `NewPricingComputeSection` with:\r\n  - A plan selector toggle (Pro / Team)\r\n  - An interactive compute calculator with slider-based instance sizing\r\n  - Ability to add/remove multiple project instances\r\n  - Live monthly cost estimate breakdown (plan + compute - credits)\r\n  - Expandable compute pricing table with detailed specs\r\n- Adds `getFeatureFlag` and `onFeatureFlags` methods to the shared `PostHogClient` for client-side flag evaluation on www pages (where server-side evaluation lacks full person context).\r\n\r\n## Additional context\r\n\r\n- The experiment is scoped to the `/pricing` page only.\r\n- New components (`NewPricingComputeSection`, `NewComputePricingCalculator`) are created alongside the existing ones — the control path is completely untouche",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/42451",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 4767,
+    "title": "feat: create project with pricing plan selection",
+    "body": "## What kind of change does this PR introduce?\r\n\r\nImprove project creation page with pricing plan selection\r\n\r\n## What is the current behavior?\r\n\r\nUser can only create free project\r\n\r\n## What is the new behavior?\r\n\r\nUser can select pricing plan on project creation page\r\n\r\n![Screenshot 2022-01-03 at 2 27 17 PM](https://user-images.githubusercontent.com/689843/147907423-782888bd-436b-4ceb-8896-ea084ee46276.png)\r\n\r\nWarning box:\r\n- Free project limit reaches\r\n![Screenshot 2022-01-03 at 2 24 15 PM](https://user-images.githubusercontent.com/689843/147907355-3d350174-0623-447f-8d3c-3cc6c16f37d2.png)\r\n\r\n- No payment method on select paid plan\r\n![Screenshot 2022-01-03 at 2 25 03 PM](https://user-images.githubusercontent.com/689843/147907379-1b315fcc-5596-462f-873d-7757949e42a5.png)\r\n\r\n\r\n## Additional context\r\n\r\nrelated to https://github.com/supabase/infrastructure/issues/3229\r\n",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/4767",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 42048,
+    "title": "Prototype pricing calculator",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nNot intended for production use. Prototype for internal consideration.\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n  * Interactive pricing calculator with four guided stages to estimate project costs\n  * Real-time cost projections over 12 or 36 months\n  * Competitive cost comparison with Firebase, Auth0, Clerk, Convex, and AWS\n  * ROI analysis showing time and cost savings from managed infrastructure\n  * Shareable calculator links via copy-to-clipboard\n  * Comprehensive pricing report with detailed breakdowns and assumptions\n\n<sub>✏️ Tip: You can customize this high-level summary in your review settings.</sub>\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/42048",
+    "labels": [
+      "autofix"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 49526,
+    "title": "fix(www): replace cross-app next/link with <a> tags to prevent ChunkLoadError on /pricing and /docs navigation",
+    "body": "## Bug Report & Fix\n\n### Summary\n\nWhen navigating to the `/pricing` page on supabase.com, the page failed to load and the browser console showed a cascade of errors. The root cause was the use of Next.js `<Link>` components for cross-application navigation from the `www` app into the `docs` app, which are deployed as two separate Next.js deployments.\n\n---\n\n### What I Observed\n\nUpon opening the `/pricing` page, the page either did not render at all or rendered in a broken state. The browser console reported the following errors:\n\n```\nFailed to fetch RSC payload for https://supabase.com/docs/guides/api. Falling back to browser navigation.\nChunkLoadError: Loading chunk 4219 failed.\n(error: https://frontend-assets.supabase.com/www/310b29c37b38/_next/static/chunks/app/global-error-1746a151833cae72.js?dpl=dpl_C63RsCrpozYSjdehWn3yTrujnfig)\n```\n\nSimilar errors appeared for:\n- `https://supabase.com/docs/guides/getting-started/quickstarts/reactjs`\n- `https://supabase.com/docs/guides/examples`\n- `https://supabase.com/docs/guides/resources/examples`\n\n---\n\n### Root Cause\n\nThe `www` app (supabase.com marketing site) and the `docs` app (supabase.com/docs) are **two independent Next.js deployments**, each with their own build output, chunk IDs, and `dpl` deployment fingerprints.\n\nWhen Next.js `<Link>` is used to navigate between them, Next.js attempts a **soft client-side RSC (React Server Component) navigation** — it tries to fetch the RSC payload and JavaScript chunks from the target route",
+    "state": "open",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/49526",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 20744,
+    "title": "Pricing page update",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/20744",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 48533,
+    "title": "Fix/logs usage docs pricing",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\n docs fix/update\r\n\r\n## What is the current behavior?\r\n\r\nShows pricing information that is not accurate/approved yet\r\n\r\n## What is the new behavior?\r\n\r\nhelpful docs, which indicate pricing may be relevant and the future and already directs users to help management tools\r\n\r\n## Additional context\r\n\r\nNA\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n- **Documentation**\n  - Added a GDPR compliance guide covering data residency, EU regions, shared responsibility, and DPA support.\n  - Expanded security documentation with ISO 27001, GDPR deployment, and infrastructure protection details.\n  - Added guidance explaining how region selection affects data residency.\n  - Reorganized navigation for Monitoring, Debugging, and self-hosting resources.\n\n- **Documentation Updates**\n  - Updated Logs pricing and quota documentation to note that details remain subject to change until billing enforcement begins.\n  - Improved logs usage optimization guidance, including Postgres configuration, Logs Explorer, and Log Drains recommendations.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/48533",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 46160,
+    "title": "redirect /blog/pricing to /pricing",
+    "body": "## Summary\n\n- Adds a 301 redirect from `/blog/pricing` to `/pricing`\n- The 2021 beta pricing post has an \"Out of date\" banner but still ranks ~position 2 for pricing queries, sending users to stale plans\n- Redirect passes accumulated link equity to the canonical pricing page\n\n## Changes\n\n- `apps/www/lib/redirects.js` — one entry added at the top of the array\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n## Release Notes\n\n* **Improvements**\n  * Added permanent redirect routing to direct users from the blog pricing page to the main pricing page, ensuring seamless navigation.\n\n<!-- review_stack_entry_start -->\n\n[![Review Change Stack](https://storage.googleapis.com/coderabbit_public_assets/review-stack-in-coderabbit-ui.svg)](https://app.coderabbit.ai/change-stack/supabase/supabase/pull/46160?utm_source=github_walkthrough&utm_medium=github&utm_campaign=change_stack)\n\n<!-- review_stack_entry_end -->\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 11,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/46160",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 7069,
+    "title": "Pricing/Features Discrepancy & Extra Charges Issue",
+    "body": "\r\n## There is quite a bit of discrepancy between official pricing/tiers pages and what has been promised in blogs/forums/reddit\r\n\r\n# 1 - Log Retention:\r\n\r\nBack in March 2022 in [this blog post](https://supabase.com/blog/2022/03/30/supabase-enterprise) there was announcement of Logflare acquisition, new Log Explorer, new log retention policy, etc.:\r\n\r\n<img width=\"651\" alt=\"Screen Shot 2022-05-30 at 2 01 23 PM\" src=\"https://user-images.githubusercontent.com/2232300/171042352-02dc45fd-903c-4c63-a667-c648bb664d33.png\">\r\n\r\nBut, [pricing](https://supabase.com/pricing) page still has not been updated:\r\n\r\n<img width=\"985\" alt=\"Screen Shot 2022-05-30 at 2 07 38 PM\" src=\"https://user-images.githubusercontent.com/2232300/171042686-f7fa1329-bef4-4f76-805a-2bf979f7dc55.png\">\r\n\r\nAnd my Pro plan that I signed up for on April 19th, 2022 is still limited to 7 days of log history:\r\n\r\n<img width=\"888\" alt=\"Screen Shot 2022-05-30 at 2 09 23 PM\" src=\"https://user-images.githubusercontent.com/2232300/171042983-adac80f8-d140-441f-ad47-ed5ff796c2ed.png\">\r\n\r\n<img width=\"197\" alt=\"Screen Shot 2022-05-30 at 2 14 15 PM\" src=\"https://user-images.githubusercontent.com/2232300/171043331-72bbb109-955c-4273-a133-8e444ec17845.png\">\r\n\r\n# 2 - Number of projects on Pro Tier/Enterprise is not clearly stated anywhere on pricing page:\r\n \r\n<img width=\"985\" alt=\"Screen Shot 2022-05-30 at 2 07 38 PM\" src=\"https://user-images.githubusercontent.com/2232300/171042686-f7fa1329-bef4-4f76-805a-2bf979f7dc55.png\">\r\n\r\nNor in S",
+    "state": "closed",
+    "comments": 11,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/7069",
+    "labels": [
+      "bug"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 28942,
+    "title": "feat: upgrade via pricing page",
+    "body": "## What kind of change does this PR introduce?\r\n\r\nfeature\r\n\r\n## What is the current behavior?\r\n\r\nUsers will often accidentally create new paid orgs when they meant to upgrade an exisiting org.\r\n\r\n## What is the new behavior?\r\n\r\nIf a user is logged in, the buttons on the pricing page will show an \"Upgrade now\" button instead of \"Get started\". They will then be able to select an existing org they wish to upgrade and be redirected to the relevant page in the dashboard.",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/28942",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 15356,
+    "title": "Main site pricing page: Font size too small [a11y]",
+    "body": "## Describe the bug\r\n\r\nOn the pricing page: (https://github.com/supabase/supabase/blob/master/apps/www/pages/pricing/index.tsx) the font size is too small on each of the feature lists and in various other places.\r\n\r\n## Expected behaviour\r\n\r\nThe font size should be at least 16px equivalent (currently 12px equivalent). There is no WCAG guidance on font size, but this is the generally accepted guidance for minimum font size for accessibility.\r\n\r\n## Additional context\r\n\r\nThe fix is to change the font size from `text-xs` to `text-s` and adjust any layout issues that may occur. \r\n\r\n* note - this is a site wide issue, but I was only reviewing the Pricing page where it seemed particularly prevalent.\r\n",
+    "state": "closed",
+    "comments": 10,
+    "is_pr": false,
+    "url": "https://github.com/supabase/supabase/issues/15356",
+    "labels": [
+      "bug",
+      "supabase.com"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 48534,
+    "title": "Remove unvalidated pricing, improve direction to help users",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\n docs fix/update\r\n\r\n## What is the current behavior?\r\n\r\nShows pricing information that is not accurate/approved yet\r\n\r\n## What is the new behavior?\r\n\r\nhelpful docs, which indicate pricing may be relevant and the future and already directs users to help management tools\r\n\r\n## Additional context\r\n\r\nNA\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Updated Logs pricing and quota guidance to clarify that details may change before billing enforcement begins.\n  * Replaced preliminary pricing tables and billing examples with notices that finalized information will be published later.\n  * Expanded usage optimization guidance for log ingestion and querying, including filtering, time ranges, polling, and database logging recommendations.\n  * Directed readers to per-SKU pages for the latest pricing, quotas, billing, and optimization information.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/48534",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 40510,
+    "title": "fix: log drain pricing for self hosted",
+    "body": "Hides log drain pricing on self-hosted/cli.\r\n\r\nCloses #40502",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/40510",
+    "labels": [
+      "self-hosted"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 48241,
+    "title": "ref(pipelines): Update pricing descriptions given new egress calculation",
+    "body": "This PR updates the docs and UI as a consequence of an improved egress metric calculation in pipelines.\r\n\r\nRelated to: https://github.com/supabase/etl/pull/931\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n- **Documentation**\n  - Updated pricing and “how it’s measured” wording to bill for Postgres row data **processed** during initial sync and ongoing replication, including resynchronizations and rare crash/recovery reprocessing.  \n  - Refreshed FAQs, blog, and pipeline guides plus billing examples; clarified that destination-acknowledged success is what counts and that row filters can reduce processed volume.\n\n- **UI Updates**\n  - Renamed labels/columns to **Initial Sync Data Processed** and **Ongoing Replication Data Processed**.  \n  - Updated dialogs/tooltips and empty states for restart and cost estimates; added an inline docs link in cost views.\n\n- **Tests**\n  - Updated UI-copy expectations and improved cost-estimate dialog test coverage and mocking.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/48241",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 44309,
+    "title": "fix(www): redirect unauthenticated \"Start for Free\" pricing CTA to sign-up",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYes\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nBug fix\r\n\r\n## What is the current behavior?\r\n\r\nClicking \"Start for Free\" on the [pricing page](https://supabase.com/pricing) redirects unauthenticated users to `/dashboard/new?plan=free`, which is an authenticated route.\r\n\r\nThe page immediately triggers a 401 from platform API calls (e.g. `/platform/notifications`) and bounces the user to `/dashboard/sign-in?plan=free&returnTo=%2Fnew` — the **sign-in** page, not sign-up. New users must manually find \"Don't have an account? Sign up\" to proceed.\r\n\r\nFixes #44280\r\n\r\n## What is the new behavior?\r\n\r\nThe Free plan `href` now points to `/dashboard/sign-up?plan=free` so unauthenticated visitors land directly on the sign-up form.\r\n\r\n`packages/shared-data/plans.ts` — one line changed:\r\n\r\n```diff\r\n-    href: 'https://supabase.com/dashboard/new?plan=free',\r\n+    href: 'https://supabase.com/dashboard/sign-up?plan=free',\r\n```\r\n\r\nThe `plan` query param is preserved so downstream logic can detect which plan the user came from. This pattern is consistent with existing unauthenticated CTAs in `apps/www/components/Nav/` which already route to `/dashboard/sign-up`.",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44309",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 45330,
+    "title": "pricing: defer posthog read to useEffect instead of useState initializer",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES/NO\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nBug fix, feature, docs update, ...\r\n\r\n## What is the current behavior?\r\n\r\nPlease link any relevant issues here.\r\n\r\n## What is the new behavior?\r\n\r\nFeel free to include screenshots if it includes visual changes.\r\n\r\n## Additional context\r\n\r\nAdd any other context or screenshots.\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n* **Refactor**\n  * Moved theme enforcement into a dedicated handler component; deep dark theme and layout remain unchanged.\n  * Isolated loading of background tooling and telemetry to reduce upstream suspension/hydration impact.\n* **Chore**\n  * Removed the runtime theme sandbox controls — no interactive theme sandbox is exposed at runtime.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 7,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/45330",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 45292,
+    "title": "/pricing and /blog invisible to LLMs — fix SSR bailout",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\n\nYES\n\n## What kind of change does this PR introduce?\n\npush client directive to leaf interactive components, keep content in server shell\n\n## What is the current behavior?\n\n/pricing and blog pages are rendered it client side so crawlers don't get any content on fetch.\n\n\n\nVerifiy content with\n```bash curl -s http://localhost:3000/pricing | sed 's/<script[^>]*>.*<\\/script>//g; s/<style[^>]*>.*<\\/style>//g; s/<[^>]*>//g' | wc -w\ncurl -s http://localhost:3000/blog | sed 's/<script[^>]*>.*<\\/script>//g; s/<style[^>]*>.*<\\/style>//g; s/<[^>]*>//g' | wc -w\ncurl -s http://localhost:3000/blog/<some-slug> | sed 's/<script[^>]*>.*<\\/script>//g; s/<style[^>]*>.*<\\/style>//g; s/<[^>]*>//g' | wc -w\n```\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n  * Featured blog post now displays prominently on the blog landing page\n  * Added smooth anchor link navigation on the pricing page\n  * Improved table of contents tracking with scroll-to-anchor behavior on blog posts\n  * Enhanced pricing comparison and plans sections with better data integration\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/45292",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 28452,
+    "title": "Update log drains pricing",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/28452",
+    "labels": [],
+    "matched_term": "pricing"
+  },
+  {
+    "number": 30494,
+    "title": "feat: add project settings option to mark compliance projects",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nfeature\r\n\r\n## Additional context\r\n\r\nProjects within organizations with the HIPAA add-on can be mark as \"sensitive\". These projects will have additional security advisor checks applied and other compliance related guardrails.\r\n\r\nAPI enabled in related PR\r\n\r\n![Screenshot 2024-11-15 at 16 25 47](https://github.com/user-attachments/assets/f8ae611b-19e5-42ac-822d-b8bb4448ce99)\r\n\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/30494",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 15203,
+    "title": " Performance Boost and Standards Compliance in React JS Codebase ⚡️",
+    "body": "This pull request includes small changes in the React JS codebase to optimize performance and adhere to recommended standards. The changes are as follows:\n\n1. Changed the usage of `setState` function to improve performance and align with the advice provided by the React JS team since the release of React 18. The previous usage was `setVisibleState(!visibleState)`, and it has been modified to `setVisibleState((prevVisibleState) => !prevVisibleState)`. This change leverages automatic batching support and aids in better performance in future React versions.\n\n2. Wrapped heavy functions in `useMemo` and `useCallback` to enhance performance by preventing unnecessary re-rendering and memoizing the results. These hooks internally work as follows:\n\n- `useMemo`: The `useMemo` hook memoizes the result of a heavy function based on its dependencies. By providing a dependency array, we ensure that the function is only re-executed when the dependencies change. This prevents unnecessary recalculations and improves performance.\n\n- `useCallback`: The `useCallback` hook memoizes a function and returns a memoized version of it. This is useful when passing callbacks to child components, as it ensures that the callback reference remains stable unless the dependencies change. This prevents unnecessary re-renders in child components that depend on the callback.\n\nPlease review the changes and provide any feedback or suggestions for further optimization. If there are any missed opportunities for optim",
+    "state": "closed",
+    "comments": 6,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/15203",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 48361,
+    "title": "feat: help configure high compliance",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nFeature\r\n\r\n## What is the current behavior?\r\n\r\nToggling high compliance is on or off. No further guidance\r\n\r\n## What is the new behavior?\r\n\r\nIdentifies missing settings that high compliance environments require\r\n\r\n## Additional context\r\n<img width=\"730\" height=\"311\" alt=\"Screenshot 2026-07-27 at 16 16 47\" src=\"https://github.com/user-attachments/assets/af853480-1fb3-4f8f-8a99-2974b460e37f\" />\r\n<img width=\"733\" height=\"303\" alt=\"Screenshot 2026-07-27 at 16 19 20\" src=\"https://github.com/user-attachments/assets/ac53169c-eaa7-49b8-b04d-468f0a2a2a7a\" />\r\n<img width=\"718\" height=\"302\" alt=\"Screenshot 2026-07-27 at 16 28 36\" src=\"https://github.com/user-attachments/assets/27109aae-6053-4173-945a-933b2fce14a4\" />\r\n\r\n\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n* **New Features**\n  * Added a High Compliance Configuration checklist for SSL enforcement, network restrictions, and PITR backups.\n  * Compliance requirements now show linked labels with per-item loading and success/failure indicators.\n  * Network restrictions checks now support both IPv4 and IPv6 CIDR settings.\n* **Bug Fixes**\n  * Improved network restrictions “not allowed” handling to correctly reflect both IPv4 and IPv6 when determining compliance.\n* **Tests**\n  * Added unit tests covering complian",
+    "state": "open",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/48361",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 48329,
+    "title": "fix(auth): allow newlines in SMS OTP template for WebOTP compliance",
+    "body": "## What kind of change does this PR introduce?\n\nBug fix for issue #6435.\n\n## What is the current behavior?\n\nThe SMS OTP template field () renders as a multiline textarea, but:\n\n1. Users who type literal `\\n` characters expect line breaks — the form saves them as the two literal characters `\\n` instead of actual newlines\n2. The field description gives no indication that newlines are supported, making it unclear how to add line breaks\n\nThis prevents using the [WebOTP API](https://web.dev/web-otp/) which requires at least one newline in the SMS message for automated OTP handling on mobile PWAs.\n\n## What is the new behavior?\n\n- Literal `\\n` sequences are converted to actual newline characters before saving (so users who type `\\n` get proper line breaks)\n- Users can also press Enter in the textarea for newlines (this already worked)\n- The field description now documents newline support and links to the WebOTP specification\n\n## Steps to reproduce\n\n1. Enable Phone provider with Twilio/Messagebird/etc in Supabase Dashboard\n2. In the SMS Message field, type: `Your code is {{ .Code }}\\nDo not share`\n3. Save — the template is saved with literal `\\n` instead of an actual line break\n4. The SMS is sent as a single line without the expected line break\n\n## How to test\n\n1. Open Supabase Dashboard → Authentication → Providers → Phone\n2. Set the SMS Message template to include `\\n` (literal backslash-n)\n3. Save — verify the newline is properly applied\n4. Also test pressing Enter in the textarea",
+    "state": "open",
+    "comments": 6,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/48329",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 47970,
+    "title": "fix: allow newlines in SMS OTP template for WebOTP API compliance",
+    "body": "- Add transform to convert \\n to actual newlines in SMS_TEMPLATE validation\r\n- Update SMS_TEMPLATE description to mention WebOTP API compliance\r\n- Fixes #6435\r\n\r\n## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n## What kind of change does this PR introduce?\r\nBug fix / Feature enhancement\r\n\r\n## What is the current behavior?\r\nThe SMS OTP template does not allow newlines, which prevents developers\r\nfrom using the WebOTP API for automatic SMS OTP handling on mobile devices.\r\n\r\n## What is the new behavior?\r\nThis PR adds a transform that converts literal `\\n` characters in the SMS\r\ntemplate to actual newlines. This allows developers to create SMS templates\r\nthat conform to the WebOTP API format requirement.\r\n\r\n**Example:**\r\n- Before: `Your code is {{ .Code }}` (no newlines possible)\r\n- After: `Your code is\\n{{ .Code }}\\nhttps://example.com` (renders with actual newlines)\r\n\r\n## Additional context\r\n- Fixes #6435\r\n- The WebOTP API requires at least one newline in the SMS for automatic code detection\r\n- Updated the SMS_TEMPLATE description to document the `\\n` escape sequence for newlines\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Bug Fixes**\n  * SMS authentication templates now correctly handle escaped newline characters for improved WebOTP API compatibility.\n  * Updated template guidance to document newline formatting and the `{{ .Code }}` placeholder.\n\n",
+    "state": "open",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/47970",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 49432,
+    "title": "docs: add compliance checklist to docs-content skill",
+    "body": "# Superseded by https://github.com/supabase/supabase/pull/49089\r\n\r\n## I have read the CONTRIBUTING.md file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nThis PR adds an explicit compliance checklist to the `docs-content` skill so it re-reads `apps/docs/CONTRIBUTING.md` and `apps/docs/WORD_LIST.md` in full before handoff, instead of relying on the targeted keyword search already used during drafting.\r\n\r\n## What is the current behavior?\r\n\r\n- Source: Slack feedback from Andrey A. on a new how-to guide he authored with the `docs-content` skill\r\n- The skill already tells Claude to `Read` both guideline files up front, but its \"Writing workflow\" step 7 only calls for a targeted `Search` of `WORD_LIST.md` while drafting, and there is no step that requires re-checking the finished draft against the full guideline set\r\n- On the first pass, only a partial/targeted check was done, and the guide shipped with several real violations: prose parentheses used as asides, bold used for visual emphasis instead of its defined purposes, an imprecise word flagged by the word list, and a dash-based aside\r\n- These were only caught after being asked to redo a full read-through and self-audit against both files\r\n\r\n## What is the new behavior?\r\n\r\n- New \"Compliance checklist\" section requires a full re-read of `CONTRIBUTING.md` and `WORD_LIST.md` before handoff, with explicit checks for the violation types above\r\n- Step 7's targeted `WORD_LIST.md` search now notes that it doesn't replace ",
+    "state": "closed",
+    "comments": 6,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/49432",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 36016,
+    "title": "docs: compliance",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/36016",
+    "labels": [
+      "autofix"
+    ],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 30551,
+    "title": "chore: add linter information for compliance checks",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n## What kind of change does this PR introduce?\r\n\r\nFeature update\r\n\r\n## Additional context\r\n\r\nHigh compliance environments receive additional linter checks. Add these checks\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/30551",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 38527,
+    "title": "chore(docs): feature flag compliance content",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/38527",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 38567,
+    "title": "fix: turn compliance docs back on for main site",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/38567",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 17754,
+    "title": "Add security compliance section",
+    "body": "## What kind of change does this PR introduce?\r\n\r\nAdd security compliance section before footer.\r\n\r\n## What is the new behavior?\r\n\r\n<img width=\"1374\" alt=\"Screenshot 2023-09-27 at 10 03 31\" src=\"https://github.com/supabase/supabase/assets/25671831/57ed1e74-d9d3-4b70-ba11-f492370cad25\">\r\n<img width=\"1647\" alt=\"Screenshot 2023-09-27 at 10 04 50\" src=\"https://github.com/supabase/supabase/assets/25671831/1704cb85-ed68-405e-ae4e-ddee4c52af5d\">\r\n\r\n<img width=\"497\" alt=\"Screenshot 2023-09-27 at 10 03 39\" src=\"https://github.com/supabase/supabase/assets/25671831/66c8551d-3844-4f31-ab59-7123fd35e92c\">\r\n<img width=\"496\" alt=\"Screenshot 2023-09-27 at 10 04 55\" src=\"https://github.com/supabase/supabase/assets/25671831/4cae16ed-2f8c-4196-9374-7c199bffe3d8\">\r\n\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/17754",
+    "labels": [],
+    "matched_term": "compliance"
+  },
+  {
+    "number": 34513,
+    "title": "Prevent disabling PITR when hipaa is enabled",
+    "body": "As per PR title\r\n\r\n![image](https://github.com/user-attachments/assets/92afc360-0506-4b48-937e-f579282f285b)\r\n\r\n## Things to test:\r\n\r\nFor a Pro project with no HIPAA add-on\r\n- [ ] Can enable PITR\r\n- [ ] Can change PITR duration\r\n- [ ] Can disable PITR\r\n\r\nFor a project with HIPAA add-on (probably easiest to test locally with the logic hardcoded (`hasHipaaAddon`)\r\n- [ ] Can enable PITR (If somehow not enabled yet)\r\n- [ ] Can change PITR duration\r\n- [ ] Cannot disable PITR",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/34513",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 42787,
+    "title": "feat(assistant): detect HIPAA customers in assistant logic",
+    "body": "Detects HIPAA customers server-side in the assistant code path. Threads `isHipaaEnabled` boolean through `getOrgAIDetails` → `generate-v4` → `generateAssistantResponse`. The motivation is to support online evals down the road, where we'll want to exclude HIPAA projects from Assistant tracing.\r\n\r\nThis PR follows existing patterns for checking if HIPAA is enabled for a project (org has HIPAA addon + project is sensitive). Example [[1]](https://github.com/supabase/supabase/blob/a5dd0a96716561443778f38a518b61d6cac95c19/apps/studio/components/interfaces/Settings/Addons/Addons.tsx#L75), [[2]](https://github.com/supabase/supabase/blob/6858d4e18d9359d573fe3dff73bc4e5fa1cfe219/apps/studio/hooks/misc/useOrgOptedIntoAi.ts#L69).\r\n\r\n```ts\r\nconst hasHipaaAddon = subscriptionHasHipaaAddon(subscription) && settings?.is_sensitive\r\n```\r\n\r\n(I call it `isHipaaEnabled` in this PR to avoid it being misunderstood as just the org-level addon, rather it's a combo of that addon being present AND high compliance being enabled on the project). \r\n\r\n### Verification steps\r\n\r\n<details><summary>Click to view the steps I followed to sanity check it works with the local stack</summary>\r\n\r\nTested locally with `mise fullstack`:\r\n\r\n1. Found my org's subscription ID:\r\n\r\n   ```sh\r\n   docker exec platform-db-1 psql -U postgres -c \"SELECT id, customer_id, status FROM orb.subscriptions;\"\r\n   ```\r\n\r\n2. Added HIPAA addon to it:\r\n\r\n   ```sh\r\n   docker exec platform-db-1 psql -U postgres -c \"\r\n     UPDATE orb.subscriptio",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/42787",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 33996,
+    "title": "chore: hipaa responsibilities doc",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update\r\n\r\n## Additional context\r\n\r\nProvides additional information regarding shared responsibility and the roles customers and Supabase have according to HIPAA.",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/33996",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 35925,
+    "title": "chore: move HIPAA checks from org to project level",
+    "body": "HIPAA orgs can mark specific projects as sensitive. Those projects will have HIPAA restrictions applied to them. This opens non-HIPAA projects in the same Organization up to use previously disabled features.\r\n\r\n## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nFeature update\r\n\r\n## What is the current behavior?\r\n\r\nHIPAA restrictions apply at the Org level for some features, but at the project level for others.\r\n\r\n## What is the new behavior?\r\n\r\nHIPAA restrictions are now at the project level\r\n\r\n## Additional context\r\n\r\nhttps://supabase.com/docs/guides/platform/hipaa-projects\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/35925",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 31045,
+    "title": "chore: add documentation for HIPAA projects",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\ndocs update\r\n\r\n\r\n## Additional context\r\n\r\nAdds docs to go with #30494 ",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/31045",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 29285,
+    "title": "chore: additional information for HIPAA regarding SRM",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update\r\n\r\n## Additional context\r\n\r\nClarify which AI features should be disabled/opted-out for HIPAA orgs.\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/29285",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 27805,
+    "title": "docs: update HIPAA shared responsibility",
+    "body": "\r\n\r\n## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update: Highlight some additional restrictions on HIPAA enabled orgs",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/27805",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 19650,
+    "title": "Hide RLS assistant features for orgs with HIPAA",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/19650",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 16377,
+    "title": "fix: check for hipaa addons",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/16377",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 40084,
+    "title": "chore: Update shared responsibility model (edge function is hipaa com…",
+    "body": "…pliant)\r\n\r\nRemoved a guideline regarding the use of Edge functions for processing PHI.\r\n\r\n## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES/NO\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nBug fix, feature, docs update, ...\r\n\r\n## What is the current behavior?\r\n\r\nPlease link any relevant issues here.\r\n\r\n## What is the new behavior?\r\n\r\nFeel free to include screenshots if it includes visual changes.\r\n\r\n## Additional context\r\n\r\nAdd any other context or screenshots.\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/40084",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 36485,
+    "title": "docs: self-hosted and HIPAA",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update\r\n\r\n## Additional context\r\n\r\nSelf-hosted instances are not covered by Supabase's hosted platform HIPAA controls\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/36485",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 35880,
+    "title": "fix: non-hipaa projects can disable PITR",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nBug fix\r\n\r\n## What is the current behavior?\r\n\r\nProjects in an org with the HIPAA add-on cannot disable PITR, regardless of the project being a HIPAA project or not.\r\n\r\n## What is the new behavior?\r\n\r\nIf a project  has not been marked as a \"sensitive/HIPAA\", PITR can be disabled\r\n\r\n\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/35880",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 17383,
+    "title": "fix/ correct hipaa description in pricing page",
+    "body": "## What kind of change does this PR introduce?\r\n\r\nEnsure it is clearer in the pricing page that HIPAA is a paid add on. ",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/17383",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 26231,
+    "title": "docs: clarify fly postgres usage for hipaa",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/26231",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 17382,
+    "title": "chore: indicate that HIPAA is a paid add-on",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/17382",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 20416,
+    "title": "chore: block PITR addon changes with HIPAA addon",
+    "body": "To avoid customers accidentally booking a $400 PITR add-on or disable PITR, we shouldn't let customers edit PITR at all.",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/20416",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 16333,
+    "title": "chore: pricing page adjustments for hipaa/storage/byoc",
+    "body": "- HIPAA\r\n- Bring your own storage provider\r\n- Bring your own cloud deployment options",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/16333",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 19408,
+    "title": "docs: clarify pitr requires small compute in hipaa",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/19408",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 18630,
+    "title": "fix: clarify hipaa plan",
+    "body": "",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/18630",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 18672,
+    "title": "fix: update encryption requirements for hipaa",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/18672",
+    "labels": [],
+    "matched_term": "HIPAA"
+  },
+  {
+    "number": 44980,
+    "title": "fix(www): clarify SOC 2 row in pricing compare-plans",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\ndocs update\r\n\r\n## What is the current behavior?\r\n\r\nThe [SOC 2 compliance docs](https://supabase.com/docs/guides/security/soc-2-compliance) state that \"Supabase makes the SOC 2 Type 2 report available to Enterprise and Team Plan customers.\"\r\n\r\nHowever, the [pricing compare-plans table](https://supabase.com/pricing#compare-plans) currently labels this row simply as \"SOC2\", which does not make it clear that the platform itself is SOC 2 Type 2 compliant on all plans and that only the **report** is gated to Team/Enterprise.\r\n\r\n## What is the new behavior?\r\n\r\nThe SOC 2 row in the compare-plans table now clearly communicates that the Supabase platform is SOC 2 Type 2\r\ncompliant on every plan, and that it is specifically the SOC 2 Type 2 report that is available only to Team and\r\nEnterprise customers. A link to the docs is provided for readers who want the full details.\r\n\r\n<img width=\"303\" height=\"132\" alt=\"SCR-20260417-ugvz\" src=\"https://github.com/user-attachments/assets/54a35270-bb66-4527-8c8b-0d5af9e904c7\" />\r\n\r\n## Additional context\r\n\r\nAdd any other context or screenshots.\r\n\r\n\r\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\r\n\r\n## Summary by CodeRabbit\r\n\r\n* **New Features**\r\n  * Added interactive SOC 2 Type 2 compliance tooltip to the pricing table with a direct link to compliance docum",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/44980",
+    "labels": [],
+    "matched_term": "SOC 2"
+  },
+  {
+    "number": 33965,
+    "title": "feat: SOC 2 docs page",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update\r\n\r\n\r\n\r\n## Additional context\r\n\r\nIntroduces SOC 2 documentation and the start of guides to compliance.\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/33965",
+    "labels": [
+      "autofix"
+    ],
+    "matched_term": "SOC 2"
+  },
+  {
+    "number": 34659,
+    "title": "chore: add SOC 2 data residency info",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nDocs update\r\n\r\n## Additional context\r\n\r\nSOC 2 doesn't mandate data residency requirements. However customers may still have other regulatory framework requirements. It is the customer's responsibility to ensure the chosen region for projects is in the required geographic location.\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/34659",
+    "labels": [],
+    "matched_term": "SOC 2"
+  },
+  {
+    "number": 47691,
+    "title": "feat(docs): add enterprise managed MCP auth",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nAdded docs for enterprise managed MCP auth\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Added guidance for Enterprise-Managed Authentication for MCP.\n  * Documented setup requirements, authorization flow, configuration steps, and security considerations.\n  * Expanded the SSO guide and navigation with links to the new MCP authentication documentation.\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/47691",
+    "labels": [
+      "documentation"
+    ],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 45937,
+    "title": "feat(unified-logs): show feature preview for flag or team/enterprise plan",
+    "body": "## Problem\n\nThe unified logs feature preview was only shown to users with the \\`unifiedLogs\\` LaunchDarkly flag enabled AND who were either on an enterprise plan or on staging/local. Team plan users were excluded, and the staging escape hatch added noise.\n\n## Fix\n\nUpdated the eligibility check to use an OR condition: show the feature preview if the \\`unifiedLogs\\` flag is on OR the org is on a team or enterprise plan. Also added \\`team\\` to the \\`useIsEnterpriseOrSupabaseOrg\\` hook and removed the \\`IS_STAGING_OR_LOCAL\\` bypass.\n\n## How to test\n\n- Log in as a user on a team plan and verify the \"New Logs interface\" option appears in the Feature Previews modal\n- Log in as a user on an enterprise plan and verify the same\n- Log in as a user on a free or pro plan without the \\`unifiedLogs\\` flag enabled and verify the option does not appear\n- Enable the \\`unifiedLogs\\` LaunchDarkly flag for a free/pro user and verify the option appears\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n  * Unified logs preview is now more accessible for enterprise and Supabase organizations without requiring additional staging conditions.\n\n<!-- review_stack_entry_start -->\n\n[![Review Change Stack](https://storage.googleapis.com/coderabbit_public_assets/review-stack-in-coderabbit-ui.svg)](https://app.coderabbit.ai/change-stack/supabase/supabase/pull/45937)\n\n<!-- review_stack_entry_end -->\n\n<!-- end of auto-generated comment: rel",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/45937",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 32967,
+    "title": "feat: localize enterprise page",
+    "body": "Hi Supa team!\r\n\r\nIn this PR, we’re adding Replexica and localizing the Supabase Enterprise webpage to Japanese. Once i18n is rolled out across the entire Supabase repo, no manual translation management will be required: Replexica integration will handle all translation updates automatically.\r\n\r\n## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES ❤️ \r\n\r\n## What kind of change does this PR introduce?\r\n\r\nLocalized [enterprise page](https://supabase.com/enterprise).\r\n\r\n## What is the current behavior?\r\n\r\nThe page is available in English language only.\r\n\r\n## What is the new behavior?\r\n\r\nThe page is available in English and Japanese language. Language selector is available in page footer.\r\n\r\n![Screenshot 2025-01-21 at 18 02 03](https://github.com/user-attachments/assets/873d5ab5-421b-4c5c-bb9f-c1ac8292ec9b)\r\n![Screenshot 2025-01-21 at 18 02 44](https://github.com/user-attachments/assets/e81c07df-3684-4be5-ba61-0ee4ed20953a)\r\n\r\n\r\n\r\n\r\n## Additional context\r\n\r\n- Read locale from pathname\r\n- Dynamically load messages (both server-side and client-side)\r\n- Add language selector to the footer for translated pages\r\n- Reverse first/last name order in Japanese for natural feel\r\n- Use rewrite instead of Next.js i18n routing since only one page is translated\r\n\r\n:zap: :zap: :zap:\r\n",
+    "state": "closed",
+    "comments": 6,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/32967",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 23418,
+    "title": "feat: add advanced teams / enterprise auth settings",
+    "body": "Adds the ability to configure advanced Auth settings on teams / enterprise:\r\n\r\n- Max number of direct connections\r\n- Max request duration\r\n\r\n<img width=\"983\" alt=\"image\" src=\"https://github.com/supabase/supabase/assets/295870/177e76c1-0d46-45ef-ab9e-b02fb0783a53\">\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/23418",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 42230,
+    "title": "Implement new enterprise innovation solution page",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **New Features**\n  * AI Builder Ecosystem section showcasing integrated partners and tools.\n  * Customer Evidence section featuring customer testimonials and success stories.\n  * Innovation Enablement section with implementation resources and strategic options.\n  * Customer testimonial and quote components throughout the page.\n  * Enhanced Innovation Teams page positioning focused on AI development.\n\n<sub>✏️ Tip: You can customize this high-level summary in your review settings.</sub>\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/42230",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 49493,
+    "title": "Add blog post: Enterprise-managed auth for the Supabase MCP server",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nNew blog post announcing enterprise-managed auth for the Supabase MCP server, built with Anthropic and Okta.\r\n\r\n## What is the current behavior?\r\n\r\nNo blog post exists for this launch.\r\n\r\n## What is the new behavior?\r\n\r\nAdds `/blog/enterprise-managed-auth-for-the-supabase-mcp-server` dated 2026-08-24, authored by Cemal Kılıç and Greg Richardson, with the OG and thumbnail images.\r\n\r\nSupersedes #49492 (closed by a branch rename).\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Announced general availability of enterprise-managed authentication for the Supabase MCP server.\n  * Added details on Okta-based administration through Claude, user-specific roles and permissions, and centralized onboarding, offboarding, and access reviews.\n  * Included plan availability requirements and setup guidance.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/49493",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 49492,
+    "title": "Add blog post: Enterprise-managed auth for the Supabase MCP server",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nNew blog post announcing enterprise-managed auth for the Supabase MCP server, built with Anthropic and Okta.\r\n\r\n## What is the current behavior?\r\n\r\nNo blog post exists for this launch. \r\n\r\n## What is the new behavior?\r\n\r\nAdds `/blog/enterprise-managed-auth-for-the-supabase-mcp-server` dated 2026-08-24, authored by Cemal Kılıç and Greg Richardson, with the OG and thumbnail images.",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/49492",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 47211,
+    "title": "fix(studio): remove Enterprise-only notice from unified logs preview",
+    "body": "## Problem\n\nThe unified logs feature preview displayed a message saying the interface was only available for Enterprise plan organizations. The feature is now available to all plans, making this notice inaccurate and potentially confusing.\n\n## Fix\n\nRemoved the paragraph containing the Enterprise-only restriction notice from the unified logs preview component.\n\n## How to test\n\n1. Open Studio and navigate to any project\n2. Open the Feature Previews panel\n3. Find the \"Unified Logs\" preview entry\n4. Confirm the Enterprise restriction notice is no longer shown\n5. Expected result: only the description and screenshot are visible, with no plan restriction text\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Refreshed Unified Logs interface description to emphasize enhanced capabilities including improved filtering, real-time updates, and a unified view across services.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/47211",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 28970,
+    "title": "fix: update teams and enterprise plan",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nChange Hooks to be allowed on teams plan as well, as per [pricing page](https://supabase.com/pricing)",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/28970",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 16810,
+    "title": "Restore enterprise pricing col",
+    "body": "## What kind of change does this PR introduce?\r\n\r\nRestore Enterprise pricing column.\r\n\r\n## Before\r\n\r\n<img width=\"1724\" alt=\"Screenshot 2023-08-25 at 14 50 15\" src=\"https://github.com/supabase/supabase/assets/25671831/20ebc347-7b85-445a-aa20-f83bf99fbc81\">\r\n\r\n## After\r\n\r\n<img width=\"1721\" alt=\"Screenshot 2023-08-25 at 14 50 02\" src=\"https://github.com/supabase/supabase/assets/25671831/98a3b6e7-f582-46db-b947-4e8d027c6d2f\">\r\n",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/16810",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 49475,
+    "title": "feat: add learn more link for enterprise mcp auth",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nadd \"Learn more\" link for enterprise mcp auth\r\n\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Added a link to enterprise MCP authentication guidance in the advanced SSO settings.\n  * Clarified the field label and description by updating “IDJAG” to “ID-JAG” terminology.\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/49475",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 37401,
+    "title": "Fix visibility of edge fn charts for enterprise",
+    "body": "## Context\r\n\r\nNoticed that edge function reports charts were incorrectly showing a disabled state for an organization on the enterprise plan as such:\r\n<img width=\"1446\" height=\"510\" alt=\"image\" src=\"https://github.com/user-attachments/assets/ef27c445-e61f-48fb-ae4c-afc3105b18b7\" />\r\n\r\nWas just missing the values in `availableIn` under `edgefn-charts.ts`\r\n\r\n## Changes involved\r\n\r\n- Add `enterprise` to all charts within `edgefn-charts.ts`\r\n- Refactor `ReportChart.tsx`\r\n  - Removed param `availableIn`, seems duplicated and unnecessary as the chart already has that parameter\r\n    - There was also some inconsistency of using `availableIn` from the parent props, and `chart.availableIn`\r\n  - Removed param `orgPlanId`, can be obtained via the `useCurrentOrgPlan` hook, doesn't need to be passed as a prop\r\n- Removed unused `isFreePlan` param from `getAuthReportAttributes` in `auth-charts.ts`\r\n- The other changes are all import statement sorting by prettier",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/37401",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 32612,
+    "title": "fix: do not block project/replica creation with due invoices on team/enterprise",
+    "body": "Just setting `enabled` flag on react-query is not sufficient, as the data may be preloaded already. To ensure we're not blocking team/enterprise customers with outstanding invoices from launching new projects or replicas, we have to add an additional check.\r\n\r\nBackend is already validating this properly, only a frontend issue.\r\n",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/32612",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 19858,
+    "title": "chore: make enterprise pricing clickable",
+    "body": "Small change, making this \"Contact us\" text clickable:\r\n\r\n<img width=\"348\" alt=\"Screenshot 2023-12-19 12 20 37@2x\" src=\"https://github.com/supabase/supabase/assets/1732217/9db59565-1c6b-4077-bf54-bc71d2b1a4f0\">\r\n",
+    "state": "closed",
+    "comments": 4,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/19858",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 15846,
+    "title": "fix: disallow self-serve downgrade from Enterprise",
+    "body": "It was possibly to downgrade from Enterprise -> Teams as self-serve by using the panel query param. This PR ensures downgrade to from enterprise -> team is not self-serve.",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/15846",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 6744,
+    "title": "feat: adds enterprise and partner contacts directly into hubspot",
+    "body": "This adds a supabase function to add enterprise and partner contact form submissions directly into hubspot.\r\nIt also changes the enterprise contact form to split the name into first and last, as that's what hubspot wants.",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/6744",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 29555,
+    "title": "feat: enterprise page",
+    "body": "New Enterprise page:\r\nhttps://zone-www-dot-com-git-feat-enterprise-page-supabase.vercel.app/enterprise",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/29555",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 28006,
+    "title": "Add flag to check for enterprise plan in invite member modal",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/28006",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 15665,
+    "title": "docs: explain teams and enterprise tiers for azure sso",
+    "body": "",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/15665",
+    "labels": [],
+    "matched_term": "enterprise"
+  },
+  {
+    "number": 19572,
+    "title": "chore: add support sla of plans and non abuse copy",
+    "body": "## What kind of change does this PR introduce?\r\n\r\n- reword the SLA description of the popup to cover all paid plans\r\n- add support sla shown in support form based on plan\r\n- default expand support sla shown in support form\r\n- add non-abuse copy if user tries to submit high or urgent severity tickets\r\n<img width=\"767\" alt=\"Screenshot 2023-12-14 at 2 05 52 AM\" src=\"https://github.com/supabase/supabase/assets/26612111/f7c95a5b-2979-4a83-ae4d-1ed735dc0cc7\">\r\n\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/19572",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 45397,
+    "title": "Clarify SLA types and eligible plans",
+    "body": "## I have read the [CONTRIBUTING.md](https://github.com/supabase/supabase/blob/master/CONTRIBUTING.md) file.\r\n\r\nYES\r\n\r\n## What kind of change does this PR introduce?\r\n\r\nSupport policy update with current offerings for Uptime and Support SLA for Teams and Enterprise customers.\r\nApplies latest prettier config formatting.\n\n<!-- This is an auto-generated comment: release notes by coderabbit.ai -->\n\n## Summary by CodeRabbit\n\n* **Documentation**\n  * Clarified Service Level Agreement details to distinguish between \"Uptime\" SLAs (Enterprise-only) and \"Support\" SLAs (Teams and Enterprise).\n\n<!-- end of auto-generated comment: release notes by coderabbit.ai -->",
+    "state": "closed",
+    "comments": 5,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/45397",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 19446,
+    "title": "Added SLAs for teams plan, reordered SLA exclusions",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/19446",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 21102,
+    "title": "chore: adjust copy around SLAs",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/21102",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 18690,
+    "title": "chore: remove critical severity option as not documented in sla",
+    "body": "our [sla](https://supabase.com/sla) does not mention critical as a severity level. will remove this and only add back once it's properly documented",
+    "state": "closed",
+    "comments": 3,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/18690",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 36495,
+    "title": "SLA Revamp with product-specific definitions",
+    "body": "## SLA Revamp\r\n\r\n**Structural Changes**\r\n\r\n**Definitions**\r\n\r\n- Added **Availability Metrics** section defining Scheduled Availability, Scheduled Downtime/Maintenance Windows, Unscheduled Downtime, and Actual Availability\r\n- Introduced **Release Maturity Levels** (GA, Beta, Alpha) with SLA coverage rules\r\n- Added **SLA Scope** definitions (Global, Regional, Project) to clarify impact thresholds\r\n\r\n**Product-Specific SLA Sections:**\r\n\r\n- **New Services Added:** Data APIs (PostgREST), Pooler (PgBouncer & Supavisor), Branching, Studio, and Logging\r\n- **Existing Services Extended:** Postgres, Auth, Storage, Management API, Realtime, Functions\r\n- Each service now includes: SLA Scope, Dependencies, Downtime Definition, and specific Exclusions\r\n\r\n**Dependency Mapping:**\r\n\r\n- Dependency chains (e.g., Auth depends on Postgres, Storage depends on Postgres & Pooler)\r\n- Upstream service outages properly excluded from dependent service SLAs\r\n\r\n**Credit System**\r\n\r\n**Request Process:**\r\n\r\n- Added specific requirements: organization/service/region/project identification\r\n- Required 5-minute interval precision for downtime reporting\r\n- Request supporting logs or monitoring data\r\n\r\n**Financial Protections:**\r\n\r\n- **20% Annual Cap:** Total service credits capped at 20% of prior 12-month fees\r\n- Denial criteria for unsupported/inaccurate claims\r\n\r\n**Exclusions Restructure**\r\n\r\n**Categorized General Exclusions:**\r\n\r\n- **Third-Party Vendors:** AWS, Cloudflare, GCP, Azure, GitHub\r\n- **Integration ",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/36495",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 18782,
+    "title": "Chore: sla exclusions",
+    "body": "",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/18782",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 6989,
+    "title": "Update sla.md",
+    "body": "updates to correct response target times\r\n",
+    "state": "closed",
+    "comments": 2,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/6989",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 12732,
+    "title": "chore: update SLA",
+    "body": "\r\n<img width=\"866\" alt=\"CleanShot 2023-03-01 at 11 28 50@2x\" src=\"https://user-images.githubusercontent.com/8011761/222037732-478e8ddf-1378-4a4a-affe-a3796c13b648.png\">\r\nchange 1 business hour -> 1 hour as per growth team request",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/12732",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 7112,
+    "title": "Update sla.md",
+    "body": "spelling error\r\n",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/7112",
+    "labels": [],
+    "matched_term": "SLA"
+  },
+  {
+    "number": 5855,
+    "title": "Docs/sla",
+    "body": "",
+    "state": "closed",
+    "comments": 1,
+    "is_pr": true,
+    "url": "https://github.com/supabase/supabase/pull/5855",
+    "labels": [],
+    "matched_term": "SLA"
+  }
+]
