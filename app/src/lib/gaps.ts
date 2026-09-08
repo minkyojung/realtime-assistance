@@ -6,7 +6,8 @@
  * "이 12개에 답해 주세요. 각각 3회, 5회 물어봤습니다."
  */
 import { query, queryOne } from '@/lib/db'
-import { searchChunks, type ChunkHit } from '@/lib/search'
+import { type ChunkHit } from '@/lib/search'
+import { hypotheticalDocument } from '@/lib/hyde'
 import { embedOne, toVector } from '@/lib/embed'
 
 export type GapSummary = {
@@ -115,11 +116,15 @@ export async function getGap(id: string): Promise<GapDetail | null> {
 
 /**
  * 공백 상세의 근거 후보.
- * intent=when 이면 미확정 자료(열린 이슈·마일스톤)가 오히려 핵심 근거이므로
- * audience_level 을 제한하지 않는다. 발화자 화면과 달리 승인자 화면이다.
+ *
+ * 발화자 화면과 두 가지가 다르다.
+ *  1. audience_level 을 제한하지 않는다. intent=when 이면 미확정 자료
+ *     (열린 이슈·마일스톤)가 오히려 핵심 근거이고, 승인자는 열람 권한이 있다.
+ *  2. HyDE 로 어휘 불일치를 보정한다. 실시간이 아니므로 생성 1초를 감당할 수 있다.
  */
 async function searchGapEvidence(question: string, intent: string): Promise<ChunkHit[]> {
-  const vec = toVector(await embedOne(question))
+  const hypothetical = await hypotheticalDocument(question)
+  const vec = toVector(await embedOne(hypothetical ?? question))
   const preferInternal = intent === 'when'
   return query<ChunkHit>(
     `select id, source_type, source_url, external_ref, heading_path,
