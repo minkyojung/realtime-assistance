@@ -12,3 +12,4 @@
 # Go 빌드 산출물
 spikes/**/hangul-spike
 *.test
+tui/amcli

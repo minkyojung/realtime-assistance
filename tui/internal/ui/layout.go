@@ -1,0 +1,89 @@
+package ui
+
+import (
+	"fmt"
+	"strings"
+
+	"charm.land/lipgloss/v2"
+)
+
+// 화면이 6개로 늘어나도 이 뼈대는 바뀌지 않는다.
+// 헤더 · 본문 · 입력창 · 상태줄 중 본문만 갈아끼운다. docs/03 6절.
+
+const maxContentWidth = 84
+
+func contentWidth(termWidth int) int {
+	w := termWidth - 2
+	if w > maxContentWidth {
+		w = maxContentWidth
+	}
+	if w < 30 {
+		w = 30
+	}
+	return w
+}
+
+// row 는 왼쪽과 오른쪽을 폭 안에서 양끝으로 벌린다.
+// lipgloss.Width 를 쓰므로 한글(폭 2)도 정확히 맞는다.
+func row(left, right string, width int) string {
+	gap := width - lipgloss.Width(left) - lipgloss.Width(right)
+	if gap < 1 {
+		return truncate(left, width)
+	}
+	return left + strings.Repeat(" ", gap) + right
+}
+
+// truncate 는 표시폭 기준으로 자른다. 한글 한 글자는 2칸을 먹는다.
+func truncate(sTxt string, width int) string {
+	if lipgloss.Width(sTxt) <= width {
+		return sTxt
+	}
+	if width <= 1 {
+		return ""
+	}
+	var b strings.Builder
+	for _, r := range sTxt {
+		if lipgloss.Width(b.String()+string(r)) > width-1 {
+			break
+		}
+		b.WriteRune(r)
+	}
+	return b.String() + "…"
+}
+
+func rule(width int) string {
+	return stRule.Render(strings.Repeat("─", width))
+}
+
+// progress 는 재생 위치 막대다. 머리(●)가 현재 위치를 가리킨다.
+func progress(width int, ratio float64) string {
+	if width < 4 {
+		return ""
+	}
+	if ratio < 0 {
+		ratio = 0
+	}
+	if ratio > 1 {
+		ratio = 1
+	}
+	filled := int(float64(width-1) * ratio)
+	return stAccent.Render(strings.Repeat("━", filled)+"●") +
+		stFaint.Render(strings.Repeat("─", width-1-filled))
+}
+
+func mmss(ms int) string {
+	total := ms / 1000
+	return fmt.Sprintf("%d:%02d", total/60, total%60)
+}
+
+func humanMinutes(ms int) string {
+	return fmt.Sprintf("%d분", ms/60000)
+}
+
+// tokens 는 1240 을 1.2k 로 줄인다. 상태줄이 좁기 때문이다.
+func tokens(n int) string {
+	if n < 1000 {
+		return fmt.Sprint(n)
+	}
+	return fmt.Sprintf("%.1fk", float64(n)/1000)
+}
