@@ -1373,7 +1373,10 @@ components:
 
     QueueItemOrigin:
       type: string
-      enum: [generation, revive, recognition, manual]
+      description: |
+        누가 이 곡을 큐에 넣었는지. `agent` 는 AI 에이전트가 API 로 직접
+        투입한 경우이며, 사람이 고른 것과 구분해 측정하기 위해 남긴다.
+      enum: [generation, revive, recognition, manual, agent]
 
     QueueItem:
       type: object

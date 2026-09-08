@@ -77,6 +77,7 @@ Enum queue_item_origin {
   revive       [note: 'F7 묘비에서 되살림']
   recognition  [note: 'F11 인식 결과에서 투입']
   manual       [note: '사용자 직접 추가']
+  agent        [note: 'AI 에이전트가 API 로 직접 투입. 사람이 고른 것과 구분해 측정한다']
 }
 
 Enum reaction_type {

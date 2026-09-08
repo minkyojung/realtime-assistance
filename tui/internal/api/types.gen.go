@@ -59,6 +59,7 @@ func (e ErrorCode) Valid() bool {
 
 // Defines values for QueueItemOrigin.
 const (
+	QueueItemOriginAgent       QueueItemOrigin = "agent"
 	QueueItemOriginGeneration  QueueItemOrigin = "generation"
 	QueueItemOriginManual      QueueItemOrigin = "manual"
 	QueueItemOriginRecognition QueueItemOrigin = "recognition"
@@ -68,6 +69,8 @@ const (
 // Valid indicates whether the value is a known member of the QueueItemOrigin enum.
 func (e QueueItemOrigin) Valid() bool {
 	switch e {
+	case QueueItemOriginAgent:
+		return true
 	case QueueItemOriginGeneration:
 		return true
 	case QueueItemOriginManual:
@@ -390,6 +393,8 @@ type CreatePlaylistRequest struct {
 
 // CreateQueueItemRequest defines model for CreateQueueItemRequest.
 type CreateQueueItemRequest struct {
+	// Origin 누가 이 곡을 큐에 넣었는지. `agent` 는 AI 에이전트가 API 로 직접
+	// 투입한 경우이며, 사람이 고른 것과 구분해 측정하기 위해 남긴다.
 	Origin *QueueItemOrigin `json:"origin,omitempty"`
 
 	// Position 생략하면 큐 끝에 붙인다
@@ -506,10 +511,13 @@ type Playlist struct {
 
 // QueueItem defines model for QueueItem.
 type QueueItem struct {
-	CreatedAt *time.Time      `json:"createdAt,omitempty"`
-	Id        int64           `json:"id"`
-	Origin    QueueItemOrigin `json:"origin"`
-	Position  int             `json:"position"`
+	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	Id        int64      `json:"id"`
+
+	// Origin 누가 이 곡을 큐에 넣었는지. `agent` 는 AI 에이전트가 API 로 직접
+	// 투입한 경우이며, 사람이 고른 것과 구분해 측정하기 위해 남긴다.
+	Origin   QueueItemOrigin `json:"origin"`
+	Position int             `json:"position"`
 
 	// Reason ★ F2 선정 근거 한 줄. L4 실패 시 `null` 이며 재생은 계속된다
 	//
@@ -520,7 +528,8 @@ type QueueItem struct {
 	Track     Track          `json:"track"`
 }
 
-// QueueItemOrigin defines model for QueueItemOrigin.
+// QueueItemOrigin 누가 이 곡을 큐에 넣었는지. `agent` 는 AI 에이전트가 API 로 직접
+// 투입한 경우이며, 사람이 고른 것과 구분해 측정하기 위해 남긴다.
 type QueueItemOrigin string
 
 // QueueItemState defines model for QueueItemState.
