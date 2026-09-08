@@ -1,8 +1,14 @@
 # Relay — 화면 1 Swift 마이그레이션 계획
 
-> 2026-09-08 작성. **과제 제출(09-10 14:00) 이후** 착수 전제.
+> 2026-09-08 작성 · 같은 날 3단계 개편 반영.
 > 범위: 실시간 어시스트 패널(화면 1)만 SwiftUI로 옮긴다. 백엔드·화면 2·3은 그대로.
 > 견적: SwiftUI 숙련자 기준 **3.5일** (버퍼 포함 4일).
+>
+> **개편 반영 사항** — 패널에 아래가 추가됐다. 계획의 단계 구성은 그대로다.
+> - 상단 **pill** (Liquid Glass, 정보 3개 이하)
+> - **목표 트레이** — `session_goal` 체크 상태. SSE `goal.covered` 로 갱신
+> - **제안을 하단 고정**으로 (대화 흐름 안 인라인이 아님)
+> 상세는 `05-화면-필드.md` 화면 1 참조.
 
 ---
 
@@ -44,13 +50,12 @@
 │                               │ ─────▶ │                               │
 │  NSPanel(.nonactivating)      │  SSE   │  /api/sessions  (기존)         │
 │   └ NSHostingView             │ ◀───── │  /api/sessions/{id}/stream    │
-│      └ PanelView (SwiftUI)    │        │  /api/deferrals (화면 2가 씀)  │
+│      └ PanelView (SwiftUI)    │        │  /api/action-items (화면 2)   │
 │         .glassEffect()        │        │                               │
 │                               │        │  lib/pipeline → Postgres      │
 │  RelayCore (SwiftPM)          │        │               → OpenAI        │
 │   ├ SSEClient                 │        └──────────────────────────────┘
 │   ├ Event (Codable enum)      │                    ▲
-│   └ FeedStore (@Observable)   │        브라우저 ── /gaps (화면 2, 그대로)
 └──────────────────────────────┘
 ```
 
@@ -82,7 +87,7 @@ Electron과 Swift 앱은 **같은 서버에 동시에 붙을 수 있다.** 전�
 | `question.verdict` | `questionId, responseMode, headline, condition, evidence[], latencyMs` | 카드 판정 채움 |
 | `question.delta` | `questionId, delta` | `script += delta` |
 | `question.done` | `questionId, script, totalMs` | `done = true`, 최종 script로 덮어씀 |
-| `gap.created` | `questionId, gapId, reason` | 카드에 공백 표시 |
+| `goal.covered` | `goalId, utteranceId` | 목표 트레이의 해당 항목 체크 |
 | `script.done` | — | 스트림 종료, `running = false` |
 | `error` | `message` | 에러 표시 |
 | `utterance` | (서버 내부, 스트림에는 안 나감) | 무시 |
