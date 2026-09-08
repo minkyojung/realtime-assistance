@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -12,7 +12,7 @@
     "db:apply": "psql \"$DATABASE_URL\" -f ../db/schema.sql",
     "db:psql": "psql \"$DATABASE_URL\"",
     "electron": "electron .",
-    "dev:desktop": "concurrently -k -n next,electron -c cyan,magenta \"pnpm dev\" \"wait-on http://localhost:3000/panel && electron .\""
+    "dev:desktop": "concurrently -k -n next,electron -c cyan,magenta \"pnpm dev\" \"wait-on -t 60000 http://localhost:3000/panel && electron .\""
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
