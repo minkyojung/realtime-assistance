@@ -1,0 +1,384 @@
+// =============================================================
+//  Relay — 실시간 답변 어시스턴트
+//  DB 다이어그램 (DBML)
+//
+//  판교 3반 / 프로젝트 Relay
+//  작성 2026-09-08
+//
+//  근거 문서: docs/05-화면-필드.md
+//  규칙: 화면 필드 명세에 있는 필드만 존재하고, 있는 것은 모두 존재한다.
+// =============================================================
+
+Project Relay {
+  database_type: 'PostgreSQL'
+  Note: '''
+    개발팀의 GitHub 정보를 세일즈·PM이 고객 앞에서 바로 말할 수 있는
+    문장으로 바꿔 실시간 제공하는 어시스턴트.
+
+    핵심 구조
+      1. 지식(사실)과 답변 규칙(말하는 방식)을 분리한다
+      2. 접근 통제는 LLM이 아니라 WHERE 절이 한다 (audience_level, intent)
+      3. 답하지 못한 질문(knowledge_gap)은 일급 엔티티이며,
+         해소되면 response_rule이 되어 다음부터 즉답이 된다
+  '''
+}
+
+
+// =============================================================
+//  ENUM
+// =============================================================
+
+Enum domain_type {
+  sales      [note: '세일즈']
+  recruiting [note: '채용 — 스키마 변경 없이 도메인 교체 검증용']
+}
+
+Enum session_status {
+  active
+  ended
+}
+
+Enum participant_role {
+  host        [note: '나 (담당자). 질문 감지 대상이 아니다']
+  counterpart [note: '상대 (고객·지원자). 질문 감지 대상']
+}
+
+Enum question_intent {
+  exists [note: '지원 여부 — 확정 답변 매칭 허용']
+  status [note: '현재 상태 — 확정 답변 매칭 허용']
+  when   [note: '시점·계획 — 확정 답변 매칭 금지. 항상 승인 경로']
+  price  [note: '가격 — 승인된 규칙만']
+  how    [note: '방법 — 문서 안내 허용']
+  other
+}
+
+Enum response_mode {
+  direct      [note: '즉답 가능 (초록)']
+  conditional [note: '조건부 (노랑)']
+  escalate    [note: '담당자 확인 필요 (빨강)']
+}
+
+Enum audience_level {
+  public   [note: '누구에게나 — 릴리즈, 머지된 PR']
+  nda      [note: 'NDA 체결 후']
+  internal [note: '대외 비공개 — 열린 이슈, 마일스톤']
+}
+
+Enum detection_method {
+  rule  [note: '1차 규칙 (물음표·어미). 0ms']
+  model [note: '2차 소형모델']
+}
+
+Enum gap_reason {
+  no_rule              [note: '답변 규칙 없음']
+  no_knowledge         [note: '근거 지식 자체가 없음']
+  condition_unmet      [note: '규칙은 있으나 조건 미충족']
+  unconfirmed_timeline [note: 'intent=when 차단 — 미확정 일정']
+  user_rejected        [note: '사용자가 답변이 틀렸다고 신고']
+}
+
+Enum gap_status {
+  open
+  resolved
+  rejected
+}
+
+Enum source_type {
+  release    [note: '릴리즈·태그 → public']
+  changelog  [note: 'CHANGELOG → public']
+  merged_pr  [note: '머지된 PR → public']
+  open_issue [note: '열린 이슈 → internal']
+  milestone  [note: '마일스톤·로드맵 → internal']
+}
+
+Enum index_job_status {
+  idle
+  running
+  failed
+}
+
+
+// =============================================================
+//  1. 대화
+// =============================================================
+
+Table session {
+  id                uuid           [pk, default: `gen_random_uuid()`]
+  domain            domain_type    [not null, note: '도메인. 채용으로 바꿔도 스키마 불변']
+  counterpart_org   varchar(200)   [not null, note: '상대 조직명']
+  context           jsonb          [not null, default: '{}', note: '''
+    도메인별 상황 변수. 컬럼이 아니라 jsonb인 것이 핵심 설계.
+      세일즈 {"nda_signed": false, "stage": "discovery"}
+      채용   {"interview_round": 2, "position_level": "senior"}
+    컬럼으로 고정하면 도메인 추가 시 마이그레이션이 발생하여
+    "스키마 변경 없는 도메인 교체" 검증 조건이 깨진다.
+  ''']
+  status            session_status [not null, default: 'active']
+  started_at        timestamptz    [not null, default: `now()`]
+  ended_at          timestamptz    [null]
+  created_at        timestamptz    [not null, default: `now()`]
+
+  Indexes {
+    (domain, started_at) [name: 'idx_session_domain_time']
+    status
+  }
+  Note: '미팅 한 건. 화면 1-① 세션 헤더의 원천.'
+}
+
+Table participant {
+  id            uuid             [pk, default: `gen_random_uuid()`]
+  session_id    uuid             [not null, ref: > session.id]
+  role          participant_role [not null]
+  display_name  varchar(100)     [null, note: '화면 표시용']
+  speaker_label varchar(10)      [null, note: '''
+    1:N 확장용. MVP(1:1)에서는 항상 NULL.
+    상대가 여러 명이면 A, B, C 가 들어간다.
+    컬럼을 지금 만들어 두는 것이 "스키마 변경 없는 확장"의 근거다.
+  ''']
+  voice_profile_id varchar(100)  [null, note: '대면 환경에서 host 식별용 음성 등록 ID']
+  created_at    timestamptz      [not null, default: `now()`]
+
+  Indexes {
+    (session_id, role) [name: 'idx_participant_session_role']
+  }
+  Note: '''
+    화자를 enum이 아니라 테이블로 둔 이유.
+    session 1건에 participant N건이므로 상대가 늘어나도 행만 늘고 스키마는 불변이다.
+    질문 감지 조건은 role != host 이므로 코드도 변하지 않는다.
+  '''
+}
+
+Table utterance {
+  id             uuid        [pk, default: `gen_random_uuid()`]
+  session_id     uuid        [not null, ref: > session.id]
+  participant_id uuid        [not null, ref: > participant.id]
+  text           text        [not null, note: 'STT 전사. 어휘 프롬프트 주입 후 결과']
+  is_final       boolean     [not null, default: false, note: 'STT 인터림/최종 구분']
+  has_question_mark boolean  [not null, default: false, note: '''
+    STT가 예측한 물음표 유무. 질문 감지 1차 신호.
+    한국어 종결어미 모호성을 STT가 대신 해석해 준 결과이며
+    스모크 테스트에서 질문/비질문 5/5 정확히 분리됨.
+  ''']
+  started_at     timestamptz [not null]
+  ended_at       timestamptz [not null, note: '턴 종료 시각. 지연 측정 기준점']
+  created_at     timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (session_id, ended_at) [name: 'idx_utterance_session_time']
+    participant_id
+  }
+  Note: '발화 한 마디. 화면 1-④ 전사 스트림. 대명사 해소를 위해 host 발화도 저장한다.'
+}
+
+
+// =============================================================
+//  2. 질문과 판정
+// =============================================================
+
+Table question {
+  id              uuid             [pk, default: `gen_random_uuid()`]
+  session_id      uuid             [not null, ref: > session.id]
+  utterance_id    uuid             [not null, unique, ref: - utterance.id, note: '''
+    1:0..1 관계. 모든 발화가 질문은 아니며,
+    질문으로 감지된 발화에만 이 행이 생긴다.
+  ''']
+  raw_text        text             [not null, note: '발화 원문']
+  normalized_text text             [not null, note: '''
+    대명사·생략 해소 후 정규화된 질문.
+    "그거 되나요?" -> "Edge Functions 셀프호스팅 지원 여부"
+  ''']
+  intent          question_intent  [not null, note: '''
+    스파이크 1에서 추가된 컬럼.
+    임베딩 유사도만으로는 "지원되나요"(0.86)와 "언제 지원되나요"를 구분할 수 없어
+    (하드네거티브 최대 유사도 0.859, margin -0.53) 의도를 별도 축으로 분리했다.
+    검색 시 WHERE intent = :intent 로 걸러진다.
+  ''']
+  detected_by     detection_method [not null]
+  response_mode   response_mode    [not null]
+  headline        text             [null, note: 'AI 생성 한 줄 답변. 스트리밍 우선 출력']
+  matched_rule_id uuid             [null, ref: > response_rule.id, note: '매칭된 규칙. 없으면 gap 생성']
+  latency_ms      integer          [null, note: '턴 종료 -> 첫 토큰. 목표 1500ms']
+  detected_at     timestamptz      [not null, default: `now()`]
+
+  Indexes {
+    (session_id, detected_at) [name: 'idx_question_session_time']
+    matched_rule_id
+    intent
+    normalized_text [name: 'idx_question_normalized', note: '공백 빈도 집계용']
+  }
+  Note: '''
+    감지된 질문과 판정 결과. 화면 1-② 판정 카드, 1-③ 히스토리의 원천.
+    커버리지 지표는 이 테이블 건수와 knowledge_gap 건수로 계산되므로
+    별도 집계 테이블이 필요하지 않다.
+  '''
+}
+
+
+// =============================================================
+//  3. 지식 (Layer 1 — 원본 사실)
+// =============================================================
+
+Table knowledge_source {
+  id              uuid             [pk, default: `gen_random_uuid()`]
+  provider        varchar(50)      [not null, default: 'github']
+  repo            varchar(200)     [not null, note: '예: supabase/supabase']
+  last_indexed_at timestamptz      [null]
+  job_status      index_job_status [not null, default: 'idle']
+  vocabulary      jsonb            [not null, default: '[]', note: '''
+    레포에서 추출한 고유명사 사전. STT 프롬프트로 주입된다.
+    ["SAML", "SSO", "SOC 2", "Edge Functions", ...]
+    스모크 테스트에서 이 주입 없이는 SOC 2 -> "사기", SAML -> "생리수혜수" 로 전사되어
+    BM25 검색이 전면 실패했다. 지식 소스가 인식 정확도를 올리는 구조.
+  ''']
+  created_at      timestamptz      [not null, default: `now()`]
+
+  Indexes {
+    (provider, repo) [unique, name: 'uq_source_repo']
+  }
+  Note: '연결된 GitHub 레포. 화면 3-④ 소스 관리.'
+}
+
+Table knowledge_chunk {
+  id             uuid           [pk, default: `gen_random_uuid()`]
+  source_id      uuid           [not null, ref: > knowledge_source.id]
+  source_type    source_type    [not null, note: '인입 시점에 audience_level을 강제 결정한다']
+  source_url     varchar(500)   [not null, note: 'GitHub 원문 링크. 화면에 근거로 노출']
+  external_ref   varchar(100)   [not null, note: '이슈/PR 번호, 릴리즈 태그']
+  heading_path   varchar(500)   [null, note: '''
+    문서 구조 경로. "Self-Hosting > Auth > SAML"
+    검색 정확도에 결정적이므로 청킹 시 반드시 보존한다.
+  ''']
+  content        text           [not null, note: '본문 조각. 200~400 토큰']
+  embedding      vector(3072)   [null, note: '''
+    OpenAI text-embedding-3-large.
+    스파이크 1 실측에서 3-small 대비 top1 정확도 66% -> 86%.
+  ''']
+  audience_level audience_level [not null, note: '''
+    source_type 에서 파생되어 인입 파이프라인이 강제 지정한다.
+    LLM 프롬프트가 아니라 검색 WHERE 절에서 사용된다.
+      release/changelog/merged_pr -> public
+      open_issue/milestone        -> internal
+  ''']
+  valid_from     date           [not null]
+  valid_until    date           [null]
+  indexed_at     timestamptz    [not null, default: `now()`]
+
+  Indexes {
+    source_id
+    audience_level
+    source_type
+    (valid_from, valid_until) [name: 'idx_chunk_validity']
+    embedding [name: 'idx_chunk_embedding', note: 'pgvector HNSW (vector_cosine_ops)']
+  }
+  Note: 'Layer 1 — 출처이지 답이 아니다. 화면 1-②-1 근거 펼침, 2-③ 근거 후보.'
+}
+
+
+// =============================================================
+//  4. 답변 규칙 (Layer 2 — 승인된 답)
+// =============================================================
+
+Table response_rule {
+  id                uuid           [pk, default: `gen_random_uuid()`]
+  domain            domain_type    [not null]
+  question_pattern  text           [not null, note: '매칭 기준 질문 패턴. 임베딩됨']
+  pattern_embedding vector(3072)   [null]
+  intent            question_intent [not null, note: '이 규칙이 답할 수 있는 의도. WHERE 절 필터']
+  response_mode     response_mode  [not null]
+  audience_level    audience_level [not null]
+  headline_template text           [not null, note: '한 줄 답변 템플릿']
+  suggested_script  text           [not null, note: '''
+    실제로 입에 낼 문구. 이 제품이 파는 것.
+    "Enterprise 플랜에서 온프레미스를 지원합니다."
+  ''']
+  condition         text           [null, note: 'conditional 일 때 충족되어야 하는 조건']
+  fallback_script   text           [null, note: '조건 미충족 시 대신 할 말']
+  authority_role    varchar(100)   [null, note: '승인권자. 세일즈=영업팀장 / 채용=인사팀']
+  created_from      uuid           [null, unique, ref: - knowledge_gap.id, note: '''
+    이 규칙이 태어난 공백. knowledge_gap.resolved_by 와 양방향을 이룬다.
+    "쓸수록 좋아진다"는 주장의 데이터 증거이므로 반드시 유지한다.
+  ''']
+  is_active         boolean        [not null, default: true]
+  valid_from        date           [not null]
+  valid_until       date           [null, note: '만료 임박 알림의 기준. 화면 3-②']
+  created_at        timestamptz    [not null, default: `now()`]
+  updated_at        timestamptz    [not null, default: `now()`]
+
+  Indexes {
+    (domain, intent, audience_level) [name: 'idx_rule_search', note: '검색 WHERE 절 복합 인덱스']
+    is_active
+    valid_until
+    created_from
+    pattern_embedding [name: 'idx_rule_embedding', note: 'pgvector HNSW (vector_cosine_ops)']
+  }
+  Note: '''
+    Layer 2 — 사람이 승인한 확정 답변과 말하는 방식.
+    화면 1-② 판정 카드, 2-④ 작성 폼, 3-③ 규칙 리스트.
+  '''
+}
+
+Table response_rule_chunk {
+  rule_id  uuid [ref: > response_rule.id]
+  chunk_id uuid [ref: > knowledge_chunk.id]
+  note     text [null, note: '이 근거를 채택한 이유']
+
+  Indexes {
+    (rule_id, chunk_id) [pk]
+    chunk_id
+  }
+  Note: '규칙과 근거 청크의 M:N. 한 규칙이 여러 GitHub 근거를 인용할 수 있다.'
+}
+
+
+// =============================================================
+//  5. 지식 공백 (학습 루프)
+// =============================================================
+
+Table knowledge_gap {
+  id                  uuid        [pk, default: `gen_random_uuid()`]
+  question_id         uuid        [not null, unique, ref: - question.id]
+  session_id          uuid        [not null, ref: > session.id]
+  domain              domain_type [not null]
+  question_normalized text        [not null, note: '빈도 집계 키. 동일 질문 반복을 묶는다']
+  intent              question_intent [not null]
+  reason              gap_reason  [not null]
+  status              gap_status  [not null, default: 'open']
+  resolved_by         uuid        [null, unique, ref: - response_rule.id, note: '''
+    이 공백을 해소한 규칙. response_rule.created_from 과 양방향.
+  ''']
+  resolved_at         timestamptz [null]
+  rejection_reason    text        [null, note: '기각 사유']
+  created_at          timestamptz [not null, default: `now()`]
+
+  Indexes {
+    (status, created_at)       [name: 'idx_gap_queue', note: '화면 2-② 큐 리스트']
+    (question_normalized, domain) [name: 'idx_gap_frequency', note: '발생 빈도 집계']
+    reason
+    resolved_by
+  }
+  Note: '''
+    답하지 못한 질문. 일급 엔티티다.
+
+    빈도순으로 정렬되어 담당팀에게 노출되는 것이 핵심이다.
+    전통적 사내 위키는 "무엇을 써야 할지 모른다"는 이유로 비어 있지만
+    Relay는 대화가 우선순위를 정해 준다.
+    "이 12개에 답해 주세요. 각각 3회, 5회 물어봤습니다."
+
+    화면 2-② 큐 리스트, 2-③ 상세.
+  '''
+}
+
+
+// =============================================================
+//  참고 — 지표는 테이블 없이 계산된다
+// =============================================================
+//
+//   커버리지        = 1 - (knowledge_gap 생성수 / question 총수)
+//   평균 해소 시간   = avg(resolved_at - created_at)
+//   규칙 사용 횟수   = count(question.matched_rule_id)
+//   공백 발생 빈도   = count(*) group by question_normalized
+//
+//   화면 3-① 대시보드의 모든 값이 위 4개 쿼리로 나오므로
+//   집계 테이블을 두지 않는다.
+//
+// =============================================================
