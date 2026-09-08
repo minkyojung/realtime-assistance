@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"amcli/tui/internal/data"
+	"amcli/tui/internal/music"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -94,5 +96,53 @@ func TestSearchModeFiltersList(t *testing.T) {
 	}
 	if !strings.Contains(out, "Oasis") {
 		t.Error("검색 결과에 Oasis 곡이 없다")
+	}
+}
+
+// Music.app 폴링 결과가 화면에 반영되는지.
+func TestStatusUpdatesPlayer(t *testing.T) {
+	var m tea.Model = New()
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+
+	// library.json 에 실재하는 곡의 persistent ID 로 상태를 흘려보낸다.
+	track := data.Lib().Tracks[0]
+	m, _ = m.Update(statusMsg{state: music.PlayerState{
+		Playing:      true,
+		PersistentID: *track.PersistentId,
+		PositionMs:   30_000,
+		DurationMs:   track.DurationMs,
+	}})
+
+	out := m.View().Content
+	if !strings.Contains(out, track.Title) {
+		t.Errorf("재생 바에 %q 가 없다", track.Title)
+	}
+	if !strings.Contains(out, "0:30") {
+		t.Error("재생 위치가 반영되지 않았다")
+	}
+}
+
+// 첫 실행 관문 — 로그인이 아니라 권한과 앱 실행 여부다.
+func TestFirstRunGates(t *testing.T) {
+	cases := []struct {
+		err      error
+		badge    string
+		hintPart string
+	}{
+		{music.ErrPermissionDenied, "PERMISSION", "System Settings"},
+		{music.ErrNotRunning, "MUSIC APP", "open -a Music"},
+	}
+	for _, c := range cases {
+		var m tea.Model = New()
+		m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+		m, _ = m.Update(statusMsg{err: c.err})
+
+		out := m.View().Content
+		if !strings.Contains(out, c.badge) {
+			t.Errorf("%v: 배지 %q 가 없다", c.err, c.badge)
+		}
+		if !strings.Contains(out, c.hintPart) {
+			t.Errorf("%v: 안내에 %q 가 없다", c.err, c.hintPart)
+		}
 	}
 }

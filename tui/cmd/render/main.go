@@ -18,6 +18,12 @@ func main() {
 		}
 	}
 	var m tea.Model = ui.New()
-	m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 40})
+	m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 26})
+	// 실제 Music.app 상태를 한 번 읽어 반영한다.
+	if cmd := m.Init(); cmd != nil {
+		if msg := cmd(); msg != nil {
+			m, _ = m.Update(msg)
+		}
+	}
 	fmt.Println(m.View().Content)
 }

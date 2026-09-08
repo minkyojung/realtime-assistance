@@ -49,6 +49,17 @@ func Lib() *Library {
 	return lib
 }
 
+// ByPersistentID — Music.app 이 알려주는 식별자로 우리 곡을 찾는다.
+// 이 값이 두 세계를 잇는 유일한 키다.
+func (l *Library) ByPersistentID(pid string) (api.Track, bool) {
+	for _, t := range l.Tracks {
+		if t.PersistentId != nil && *t.PersistentId == pid {
+			return t, true
+		}
+	}
+	return api.Track{}, false
+}
+
 func (l *Library) Track(id int64) (api.Track, bool) {
 	t, ok := l.byID[id]
 	return t, ok

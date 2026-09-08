@@ -29,6 +29,18 @@ Bubble Tea v2 기반 터미널 클라이언트.
 Recently Added · Artists · Albums · Songs · 플레이리스트 · Queue 가 전부
 같은 패널이므로 화면이 늘어나지 않는다.
 
+## 첫 실행 — 로그인은 없다
+
+Music.app 이 이미 사용자 Apple ID 로 로그인되어 있으므로 **별도 로그인이 없다.**
+대신 관문이 둘이다.
+
+| 관문 | 화면 | 해결 |
+|---|---|---|
+| **macOS 자동화 권한** (E1) | `PERMISSION` 배지 | `ctrl+g` 로 시스템 설정 열기 |
+| **Music.app 미실행** (E2) | `MUSIC APP` 배지 | `open -a Music` |
+
+둘 다 통과하면 그 줄은 다시 보이지 않는다.
+
 ## 실행
 
 ```
@@ -58,6 +70,8 @@ go test ./...             폭 계산 · 필수 요소 검증
 |---|---|
 | 아무 글자 | 입력창에 들어간다 (프롬프트) |
 | `ctrl+f` | 검색 모드 |
+| `shift+←` `shift+→` | 이전 / 다음 곡 |
+| `ctrl+g` | (권한 막혔을 때) 시스템 설정 열기 |
 | `↑` `↓` (`ctrl+p` `ctrl+n`) | 목록 이동 |
 | `tab` / `shift+tab` | 사이드바 섹션 이동 |
 | `enter` | 모드에 따라 (위 표) |
@@ -73,6 +87,7 @@ go test ./...             폭 계산 · 필수 요소 검증
 main.go                    진입점
 cmd/render/                헤드리스 렌더
 internal/api/types.gen.go  ★ api/openapi.yml 에서 자동 생성 (oapi-codegen)
+internal/music/music.go    ★ Music.app 제어 (AppleScript)
 internal/data/
   library.json             ★ 실제 Music.app 라이브러리 157곡
   library.go               조회 · 정렬 · 검색
@@ -82,6 +97,7 @@ internal/ui/
   sidebar.go   사이드바
   list.go      목록 패널 (곡 · 아티스트 · 앨범 공용)
   player.go    재생 바 · 선정 근거
+  poll.go      1초 폴링 · 재생 명령
   layout.go    폭 계산 · 진행 바 · 시간 포맷
   theme.go     팔레트
 ```
@@ -106,7 +122,8 @@ go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest \
 | Artists · Albums · Playlists | ✅ |
 | Queue | ✅ |
 | 검색 (입력창 타이핑) | ✅ |
-| 재생 제어 실연동 (AppleScript) | — |
+| 재생 제어 실연동 (AppleScript) | ✅ |
+| 첫 실행 관문 (권한 · 앱 실행) | ✅ |
 | 자연어 의도 → 선곡 (서버) | — |
 | 취향 규칙 화면 | — |
 

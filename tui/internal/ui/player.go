@@ -4,16 +4,51 @@ import (
 	"fmt"
 
 	"amcli/tui/internal/api"
+	"amcli/tui/internal/music"
 	"charm.land/lipgloss/v2"
 )
 
 // 하단 재생 바. 어떤 목록을 보고 있든 항상 같은 자리에 있다.
 // 화면에서 유일하게 절대 바뀌지 않는 요소이므로 여기가 기준점이 된다.
 
+// 첫 실행 관문. 로그인이 아니라 권한과 앱 실행 여부다.
+// 둘 다 통과하면 이 줄은 다시는 보이지 않는다.
+func (m Model) viewGate(w int) (string, bool) {
+	switch m.playerErr {
+	case music.ErrPermissionDenied:
+		return stErrorBadge.Render("PERMISSION") + " " +
+			stBody.Render(truncate("Allow Terminal to control Music, then it just works", w-14)), true
+	case music.ErrNotRunning:
+		return stErrorBadge.Render("MUSIC APP") + " " +
+			stBody.Render(truncate("Music is not running. Open it to start playback", w-13)), true
+	case nil:
+		return "", false
+	default:
+		return stWarn.Render("! ") + stDim.Render(truncate(m.playerErr.Error(), w-2)), true
+	}
+}
+
+// 관문 아래 한 줄로 다음에 뭘 하면 되는지 알려준다.
+func (m Model) viewGateHint(w int) (string, bool) {
+	switch m.playerErr {
+	case music.ErrPermissionDenied:
+		return stFaint.Render(truncate("ctrl+g  open System Settings › Privacy & Security › Automation", w)), true
+	case music.ErrNotRunning:
+		return stFaint.Render(truncate("open -a Music     · no sign-in needed, it uses the app you already use", w)), true
+	}
+	return "", false
+}
+
 func (m Model) viewPlayer(w int) string {
+	if gate, ok := m.viewGate(w); ok {
+		return gate
+	}
 	t, ok := m.nowPlaying()
 	if !ok {
-		return stFaint.Render(truncate("Nothing playing · type what you want to hear below", w))
+		if !m.polled {
+			return stFaint.Render("Connecting to Music…")
+		}
+		return stFaint.Render(truncate("Nothing playing · pick a track and press enter", w))
 	}
 
 	icon := stBrand.Render("▶")

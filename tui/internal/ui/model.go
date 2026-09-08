@@ -5,6 +5,7 @@ import (
 
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/data"
+	"amcli/tui/internal/music"
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -44,11 +45,15 @@ type Model struct {
 
 	input textarea.Model
 
-	// 재생 상태. 서버 연동 전까지는 로컬 상태다.
+	// 재생 상태는 Music.app 폴링으로 채운다. DB 에 없는 값이다.
 	queue        []api.QueueItem
 	nowPlayingID int64
 	positionMs   int
 	playing      bool
+
+	// 첫 실행 관문 — 로그인이 아니라 권한과 앱 실행 여부다.
+	playerErr error
+	polled    bool
 
 	usage api.Usage
 	w, h  int
@@ -73,19 +78,12 @@ func New() Model {
 	}
 
 	(&m).applyMode()
-	// 시작 상태는 사람이 목록에서 직접 고른 것과 같다 — 근거가 없다.
-	// 근거 줄은 의도 층(자연어 요청)이 만들어낸 곡에서만 나타난다.
-	if songs := l.RecentlyAdded(); len(songs) > 0 {
-		m.listIdx = 0
-		m = m.playSelected()
-		// 재생 위치는 곡 길이에 비례해 잡는다. 고정값을 쓰면
-		// 짧은 곡에서 남은 시간이 음수가 된다.
-		m.positionMs = songs[0].DurationMs * 2 / 5
-	}
 	return m
 }
 
-func (m Model) Init() tea.Cmd { return textarea.Blink }
+func (m Model) Init() tea.Cmd {
+	return tea.Batch(textarea.Blink, fetchStatus, tick())
+}
 
 // searching — 입력창이 `/` 로 시작하지 않는 글자로 채워져 있고 포커스가
 // 입력창에 있으면 목록을 즉시 걸러 보여준다. 별도 검색 화면을 두지 않는 이유다.
@@ -106,6 +104,26 @@ func (m *Model) applyMode() {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tickMsg:
+		return m, tea.Batch(fetchStatus, tick())
+
+	case statusMsg:
+		m.polled = true
+		m.playerErr = msg.err
+		if msg.err == nil && !msg.state.Stopped {
+			m.playing = msg.state.Playing
+			m.positionMs = msg.state.PositionMs
+			// Music.app 이 실제로 틀고 있는 곡을 화면의 기준으로 삼는다.
+			// 다른 데서 곡을 바꿔도 화면이 따라간다.
+			if id := msg.state.PersistentID; id != "" {
+				if t, ok := data.Lib().ByPersistentID(id); ok {
+					m.nowPlayingID = t.Id
+					m.ensureQueued(t)
+				}
+			}
+		}
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
 		m.input.SetWidth(contentWidth(m.w))
@@ -117,6 +135,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "ctrl+g":
+			// 권한이 막혀 있을 때 시스템 설정을 연다.
+			if m.playerErr == music.ErrPermissionDenied {
+				return m, cmdOpenSettings()
+			}
+			return m, nil
+
 		case "ctrl+f":
 			m.mode = modeSearch
 			m.input.Reset()
@@ -158,17 +183,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.listIdx, m.listTop = 0, 0
 			return m, nil
 
+		case "shift+right":
+			return m, cmdNext()
+		case "shift+left":
+			return m, cmdPrevious()
+
 		case "enter":
 			// 검색 중에는 고른 곡을 튼다. 프롬프트일 때만 요청으로 보낸다.
 			if m.mode == modeSearch {
-				return m.playSelected(), nil
+				mm, cmd := m.playSelected()
+				return mm, cmd
 			}
 			if strings.TrimSpace(m.input.Value()) != "" {
 				m.input.Reset()
 				m.clampList()
 				return m, nil
 			}
-			return m.playSelected(), nil
+			mm, cmd := m.playSelected()
+			return mm, cmd
 		}
 	}
 
@@ -178,31 +210,35 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// 목록에서 고른 곡을 재생 중으로 만든다. 서버 연동 전까지는 로컬 상태만 바꾼다.
-func (m Model) playSelected() Model {
+// 목록에서 고른 곡을 튼다. 실제 재생은 Music.app 이 하고, 화면은 폴링으로 따라간다.
+func (m Model) playSelected() (Model, tea.Cmd) {
 	rows := m.rows()
 	if m.listIdx < 0 || m.listIdx >= len(rows) || rows[m.listIdx].track == nil {
-		return m
+		return m, nil
 	}
 	t := *rows[m.listIdx].track
 	m.nowPlayingID = t.Id
 	m.positionMs = 0
 	m.playing = true
-	// 큐에 없는 곡이면 근거 없이 들어간다 — 사람이 직접 고른 것이다.
-	found := false
+	m.ensureQueued(t)
+
+	if t.PersistentId != nil {
+		return m, cmdPlayTrack(*t.PersistentId)
+	}
+	return m, nil
+}
+
+// 큐에 없는 곡이면 근거 없이 넣는다 — 사람이 직접 고른 것이므로 근거가 없다.
+func (m *Model) ensureQueued(t api.Track) {
 	for _, it := range m.queue {
 		if it.Track.Id == t.Id {
-			found = true
-			break
+			return
 		}
 	}
-	if !found {
-		m.queue = append([]api.QueueItem{{
-			Id: t.Id, SessionId: 1, Position: 0, Track: t,
-			State: api.Playing, Origin: api.QueueItemOriginManual,
-		}}, m.queue...)
-	}
-	return m
+	m.queue = append([]api.QueueItem{{
+		Id: t.Id, SessionId: 1, Position: 0, Track: t,
+		State: api.Playing, Origin: api.QueueItemOriginManual,
+	}}, m.queue...)
 }
 
 // clampList — 선택 행이 늘 보이도록 스크롤 위치를 맞춘다.
@@ -226,7 +262,9 @@ const maxListRows = 14
 // 세로 예산: 재생바1 + 룰1 + 목록 + 룰1 + 근거(0|1) + 입력1 + 여백2
 func (m Model) listHeight() int {
 	reserved := 6
-	if _, ok := m.viewReason(10); ok {
+	if _, ok := m.viewGateHint(10); ok {
+		reserved++
+	} else if _, ok := m.viewReason(10); ok {
 		reserved++
 	}
 	h := maxInt(m.h-reserved, 3)
@@ -258,7 +296,11 @@ func (m Model) View() tea.View {
 	b.WriteString(rule(w))
 	b.WriteString("\n")
 
-	if reason, ok := m.viewReason(w); ok {
+	// 관문 안내가 있으면 근거 자리를 그것이 쓴다. 둘 다 뜨는 일은 없다.
+	if hint, ok := m.viewGateHint(w); ok {
+		b.WriteString(hint)
+		b.WriteString("\n")
+	} else if reason, ok := m.viewReason(w); ok {
 		b.WriteString(reason)
 		b.WriteString("\n")
 	}
