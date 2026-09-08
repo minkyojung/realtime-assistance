@@ -10,7 +10,9 @@
     "db:up": "docker compose -f ../docker-compose.yml up -d",
     "db:gen": "node ../scripts/dbml2sql.mjs",
     "db:apply": "psql \"$DATABASE_URL\" -f ../db/schema.sql",
-    "db:psql": "psql \"$DATABASE_URL\""
+    "db:psql": "psql \"$DATABASE_URL\"",
+    "electron": "electron .",
+    "dev:desktop": "concurrently -k -n next,electron -c cyan,magenta \"pnpm dev\" \"wait-on http://localhost:3000/panel && electron .\""
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -31,10 +33,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^10.0.5",
+    "electron": "^44.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^9.1.0"
   },
-  "packageManager": "pnpm@10.17.1"
+  "packageManager": "pnpm@10.17.1",
+  "main": "electron/main.js"
 }
