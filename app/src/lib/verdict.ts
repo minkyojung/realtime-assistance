@@ -91,21 +91,7 @@ export async function decide(
   // 각각 호출하면 실측에서 판정 단계가 700ms를 넘었다.
   const vector = await embedOne(normalized)
 
-  // 1. 의도 자체가 확정 답변 금지면 규칙 검색조차 하지 않는다.
-  //    "언제 되나요"에 확정 답변을 매칭하지 않는 것이 이 시스템의 핵심 안전장치다.
-  if (!policy.allowDirect) {
-    const evidence = await searchChunks(normalized, ctx, 3, vector)
-    return {
-      responseMode: 'escalate',
-      condition: null,
-      matchedRuleId: null,
-      evidence,
-      gapReason: intent === 'when' ? 'unconfirmed_timeline' : 'no_rule',
-      rule: null,
-    }
-  }
-
-  // 2. 규칙 검색 + 근거 검색을 병렬로. 1.5초 예산에서 순차는 불가능하다.
+  // 1. 규칙 검색 + 근거 검색을 병렬로. 1.5초 예산에서 순차는 불가능하다.
   const [rules, evidence] = await Promise.all([
     searchRules(normalized, intent, ctx, 3, vector),
     searchChunks(normalized, ctx, 3, vector),
@@ -113,14 +99,22 @@ export async function decide(
 
   const rule = rules[0] && rules[0].distance <= RULE_MAX_DISTANCE ? rules[0] : null
 
-  // 3. 규칙 없음 -> 근거만으로 초안. 공백 기록.
+  // 2. 규칙이 없을 때만 의도 정책이 작동한다.
+  //
+  //    intent 정책의 의미는 "승인된 규칙을 쓰지 말라"가 아니라
+  //    "규칙 없이 지식 청크만으로 확정처럼 답하지 말라"이다.
+  //    승인자가 명시적으로 확정한 답변은 미확정 정보가 아니므로 사용한다.
+  //    이 구분이 없으면 when 질문은 아무리 답을 채워도 영원히 🔴에 머물러
+  //    학습 루프가 닫히지 않는다. when 이야말로 가장 자주 나오는 질문이다.
   if (!rule) {
     return {
       responseMode: 'escalate',
       condition: null,
       matchedRuleId: null,
       evidence,
-      gapReason: evidence.length === 0 ? 'no_knowledge' : 'no_rule',
+      gapReason: !policy.allowDirect
+        ? (intent === 'when' ? 'unconfirmed_timeline' : 'no_rule')
+        : (evidence.length === 0 ? 'no_knowledge' : 'no_rule'),
       rule: null,
     }
   }

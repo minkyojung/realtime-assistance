@@ -39,8 +39,14 @@ export function extractIntent(text: string): Intent {
 
 /**
  * 의도별 기본 정책.
- * when 은 본질적으로 미확정이므로 확정 답변을 매칭하지 않는다.
- * 이 한 줄이 미확정 로드맵 유출을 구조적으로 막는다.
+ *
+ * allowDirect 의 의미는 "승인된 규칙을 쓸 수 있는가"가 아니라
+ * **"규칙이 없을 때 지식 청크만으로 확정처럼 답해도 되는가"** 이다.
+ *
+ * when 질문에 GitHub 원문(열린 이슈·마일스톤)을 근거로 자동 답변하면
+ * 미확정 로드맵이 확정처럼 나간다. 그래서 규칙이 없으면 항상 승인 경로로 보낸다.
+ * 반대로 승인자가 확정한 규칙이 있다면 그것은 이미 미확정 정보가 아니므로
+ * intent 와 무관하게 사용한다. 그래야 학습 루프가 when 질문에서도 닫힌다.
  */
 export const INTENT_POLICY: Record<Intent, { allowDirect: boolean; note: string }> = {
   exists: { allowDirect: true,  note: '머지된 PR·릴리즈는 확정 사실' },

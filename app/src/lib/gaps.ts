@@ -5,7 +5,7 @@
  * 모른다"는 이유로 비어 있는 반면, Relay는 대화가 우선순위를 정해 준다.
  * "이 12개에 답해 주세요. 각각 3회, 5회 물어봤습니다."
  */
-import { query, queryOne } from '@/lib/db'
+import { query, queryOne, transaction } from '@/lib/db'
 import { type ChunkHit } from '@/lib/search'
 import { hypotheticalDocument } from '@/lib/hyde'
 import { embedOne, toVector } from '@/lib/embed'
@@ -173,39 +173,45 @@ export async function resolveGap(gapId: string, input: ResolveInput) {
 
   const vec = toVector(await embedOne(input.question_pattern))
 
-  const rule = await queryOne<{ id: string }>(
-    `insert into response_rule
-       (domain, question_pattern, pattern_embedding, intent, response_mode,
-        audience_level, headline_template, suggested_script, condition,
-        fallback_script, authority_role, created_from, valid_from, valid_until)
-     values ($1::domain_type,$2,$3::vector,$4::question_intent,$5::response_mode,
-             $6::audience_level,$7,$8,$9,$10,$11,$12,
-             coalesce($13::date, current_date), $14::date)
-     returning id`,
-    [input.domain, input.question_pattern, vec, input.intent, input.response_mode,
-     input.audience_level, input.headline_template, input.suggested_script,
-     input.condition ?? null, input.fallback_script ?? null, input.authority_role ?? null,
-     gapId, input.valid_from ?? null, input.valid_until ?? null],
-  )
-
-  if (input.chunk_ids?.length) {
-    await query(
-      `insert into response_rule_chunk (rule_id, chunk_id, note)
-       select $1, unnest($2::uuid[]), '승인자가 선택한 근거'`,
-      [rule!.id, input.chunk_ids],
+  // 규칙 생성 · 근거 연결 · 공백 해소가 전부 성립하거나 전부 취소되어야 한다.
+  // 중간 실패 시 어느 공백도 가리키지 않는 고아 규칙이 남기 때문이다.
+  return transaction(async (q) => {
+    const [rule] = await q<{ id: string }>(
+      `insert into response_rule
+         (domain, question_pattern, pattern_embedding, intent, response_mode,
+          audience_level, headline_template, suggested_script, condition,
+          fallback_script, authority_role, created_from, valid_from, valid_until)
+       values ($1::domain_type,$2,$3::vector,$4::question_intent,$5::response_mode,
+               $6::audience_level,$7,$8,$9,$10,$11,$12,
+               coalesce($13::date, current_date), $14::date)
+       returning id`,
+      [input.domain, input.question_pattern, vec, input.intent, input.response_mode,
+       input.audience_level, input.headline_template, input.suggested_script,
+       input.condition ?? null, input.fallback_script ?? null, input.authority_role ?? null,
+       gapId, input.valid_from ?? null, input.valid_until ?? null],
     )
-  }
 
-  // 같은 질문의 공백을 모두 함께 해소한다. 5회 물어본 질문이면 5건이 정리된다.
-  const resolved = await query<{ id: string }>(
-    `update knowledge_gap
-        set status='resolved', resolved_by=$1, resolved_at=now()
-      where question_normalized=$2 and domain=$3::domain_type and status='open'
-      returning id`,
-    [rule!.id, gap.question_normalized, gap.domain],
-  )
+    if (input.chunk_ids?.length) {
+      await q(
+        `insert into response_rule_chunk (rule_id, chunk_id, note)
+         select $1, unnest($2::uuid[]), '승인자가 선택한 근거'
+         on conflict do nothing`,
+        [rule.id, input.chunk_ids],
+      )
+    }
 
-  return { ruleId: rule!.id, resolvedCount: resolved.length }
+    // 같은 질문의 공백을 모두 함께 해소한다.
+    // resolved_by 는 N:1 이므로 여러 행이 같은 규칙을 가리킬 수 있다.
+    const resolved = await q<{ id: string }>(
+      `update knowledge_gap
+          set status='resolved', resolved_by=$1, resolved_at=now()
+        where question_normalized=$2 and domain=$3::domain_type and status='open'
+        returning id`,
+      [rule.id, gap.question_normalized, gap.domain],
+    )
+
+    return { ruleId: rule.id, resolvedCount: resolved.length }
+  })
 }
 
 export async function rejectGap(gapId: string, reason: string) {

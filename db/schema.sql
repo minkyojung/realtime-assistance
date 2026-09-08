@@ -190,7 +190,7 @@ CREATE TABLE "knowledge_gap" (
   "intent" question_intent NOT NULL,
   "reason" gap_reason NOT NULL,
   "status" gap_status NOT NULL DEFAULT 'open',
-  "resolved_by" uuid UNIQUE,
+  "resolved_by" uuid,
   "resolved_at" timestamptz,
   "rejection_reason" text,
   "created_at" timestamptz NOT NULL DEFAULT (now())
@@ -387,7 +387,15 @@ Relay는 대화가 우선순위를 정해 준다.
 
 COMMENT ON COLUMN "knowledge_gap"."question_normalized" IS '빈도 집계 키. 동일 질문 반복을 묶는다';
 
-COMMENT ON COLUMN "knowledge_gap"."resolved_by" IS '이 공백을 해소한 규칙. response_rule.created_from 과 양방향.
+COMMENT ON COLUMN "knowledge_gap"."resolved_by" IS '이 공백을 해소한 규칙. response_rule.created_from 과 양방향을 이룬다.
+
+관계가 방향에 따라 다르다는 점이 중요하다.
+  created_from  1:1  한 규칙은 하나의 공백에서 태어난다
+  resolved_by   N:1  여러 공백이 하나의 규칙으로 함께 해소된다
+
+같은 질문이 6회 반복돼 공백이 6건 쌓였다면, 승인자가 규칙 하나를
+만드는 순간 6건이 모두 그 규칙을 가리키며 해소된다.
+이것이 "한 번 답하면 반복 질문이 한꺼번에 사라진다"는 동작의 근거다.
 ';
 
 COMMENT ON COLUMN "knowledge_gap"."rejection_reason" IS '기각 사유';
