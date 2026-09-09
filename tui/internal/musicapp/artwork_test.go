@@ -3,9 +3,14 @@ package musicapp
 import (
 	"image"
 	"image/color"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	"amcli/tui/internal/api"
+	"amcli/tui/internal/data"
+	"amcli/tui/internal/lyrics"
 	"amcli/tui/internal/music"
 	"charm.land/lipgloss/v2"
 )
@@ -109,3 +114,92 @@ func TestListShrinksUnderArtwork(t *testing.T) {
 		t.Error("커버를 그렸는데 화면이 안 커졌다")
 	}
 }
+
+// ── 가사 ────────────────────────────────────────────────────────────
+
+func synced() *lyrics.Lyrics {
+	return &lyrics.Lyrics{Lines: lyrics.ParseLRC(
+		"[00:10.00] one\n[00:20.00] two\n[00:30.00] three\n[00:40.00] four\n[00:50.00] five\n")}
+}
+
+// 지금 줄 하나만 밝고, 그 줄이 창의 가운데에 온다.
+func TestLyricsHighlightsCurrentLine(t *testing.T) {
+	m := playingModel()
+	m.lyrics, m.lyricsPID = synced(), "ABC"
+	m.positionMs, m.polledAt = 35_000, time.Now()
+
+	rows := m.viewLyrics(40, 5)
+	if len(rows) != 5 {
+		t.Fatalf("줄 수 %d", len(rows))
+	}
+	var marked []int
+	for i, r := range rows {
+		if strings.Contains(r, "▸") {
+			marked = append(marked, i)
+		}
+	}
+	if len(marked) != 1 {
+		t.Fatalf("표시된 줄이 %d개다 — 하나여야 한다", len(marked))
+	}
+	if marked[0] != 2 {
+		t.Errorf("표시된 줄이 %d번째다 — 가운데(2)여야 한다", marked[0])
+	}
+	if !strings.Contains(rows[2], "three") {
+		t.Errorf("35초에 짚은 줄이 %q 다 — three 여야 한다", plain(rows[2]))
+	}
+}
+
+// 폴링 사이를 메운다. 안 그러면 가사가 최대 1초 늦게 넘어간다.
+func TestPositionInterpolates(t *testing.T) {
+	m := playingModel()
+	m.positionMs = 10_000
+	m.polledAt = time.Now().Add(-800 * time.Millisecond)
+	if got := m.nowMs(); got < 10_700 || got > 10_900 {
+		t.Errorf("보간한 위치 %d — 10800 근처여야 한다", got)
+	}
+	// 멈춰 있으면 흐르지 않는다.
+	m.playing = false
+	if got := m.nowMs(); got != 10_000 {
+		t.Errorf("멈췄는데 위치가 %d 로 흘렀다", got)
+	}
+}
+
+// 시각이 없는 가사는 흐르게 할 근거가 없다. 그냥 보여준다.
+func TestPlainLyricsDoNotScroll(t *testing.T) {
+	m := playingModel()
+	m.lyrics = &lyrics.Lyrics{Plain: []string{"alpha", "beta"}}
+	rows := m.viewLyrics(40, 4)
+	if !strings.Contains(rows[0], "alpha") || !strings.Contains(rows[1], "beta") {
+		t.Errorf("줄글이 안 보인다: %q", rows)
+	}
+	for _, r := range rows {
+		if strings.Contains(r, "▸") {
+			t.Error("시각이 없는데 줄을 짚었다")
+		}
+	}
+}
+
+// 가사가 없으면 그 자리를 곡 이력이 쓴다. 비워 두면 고장으로 보인다.
+func TestNoLyricsShowsFacts(t *testing.T) {
+	m := playingModel()
+	l := data.Lib()
+	if len(l.Tracks) == 0 {
+		t.Skip("라이브러리가 비었다")
+	}
+	// 한 번도 안 튼 곡을 찾아 세운다 — 이 서비스가 주장하는 문제다.
+	for _, tr := range l.Tracks {
+		if tr.LastPlayedAt == nil {
+			m.queue = []api.QueueItem{{Track: tr}}
+			m.nowPlayingID = tr.Id
+			break
+		}
+	}
+	out := strings.Join(m.viewLyrics(40, 6), "\n")
+	if !strings.Contains(out, "never played") {
+		t.Errorf("한 번도 안 튼 곡인데 그 말이 없다:\n%s", plain(out))
+	}
+}
+
+var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func plain(s string) string { return ansi.ReplaceAllString(s, "") }

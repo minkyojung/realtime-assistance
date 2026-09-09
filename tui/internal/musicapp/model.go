@@ -17,6 +17,7 @@ import (
 	"amcli/tui/internal/applemusic"
 	"amcli/tui/internal/data"
 	"amcli/tui/internal/intent"
+	"amcli/tui/internal/lyrics"
 	"amcli/tui/internal/music"
 	"amcli/tui/internal/style"
 	"charm.land/bubbles/v2/spinner"
@@ -94,6 +95,13 @@ type Model struct {
 	// 앨범 커버. 곡이 바뀔 때만 다시 읽는다 — artwork.go
 	art    image.Image
 	artPID string
+
+	// 가사. 커버와 같은 규칙으로 곡이 바뀔 때만 받는다 — lyrics.go
+	lyrics    *lyrics.Lyrics
+	lyricsPID string
+
+	// 마지막 폴링 시각. 폴링 사이를 메워 가사가 제때 넘어가게 한다.
+	polledAt time.Time
 
 	// 검색어가 마지막으로 바뀐 때. 타이핑이 멎었는지 재는 데만 쓴다.
 	filterAt time.Time
@@ -304,6 +312,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 
 	case statusMsg:
 		m.polled = true
+		m.polledAt = time.Now()
 		m.playerErr = msg.err
 		if msg.err == nil {
 			m.live = msg.state
@@ -318,15 +327,29 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 					m.ensureQueued(t)
 				}
 			}
-			// 곡이 바뀌었으면 커버를 새로 읽는다. 폴링마다 읽으면
-			// Music.app 이 1초에 한 번씩 1200×1200 을 퍼낸다.
+			// 곡이 바뀌었으면 커버와 가사를 새로 받는다. 폴링마다 하면
+			// Music.app 이 1초에 한 번씩 1200×1200 을 퍼내고, 남의 무료
+			// 서버를 1초에 한 번씩 두드리게 된다.
 			if id := msg.state.PersistentID; id != m.artPID {
 				m.artPID, m.art = id, nil
+				m.lyricsPID, m.lyrics = id, nil
 				if id != "" {
-					return m, cmdArtwork(id)
+					title, artist, album, dur := m.nowPlayingMeta()
+					return m, tea.Batch(
+						cmdArtwork(id),
+						cmdLyrics(id, artist, title, album, dur),
+					)
 				}
 			}
 		}
+		return m, nil
+
+	case lyricsMsg:
+		if msg.pid != m.lyricsPID {
+			return m, nil // 받는 사이에 곡이 바뀌었다
+		}
+		// 없는 것도 답이다. 그때는 곡 이력이 그 자리를 쓴다(lyrics.go).
+		m.lyrics = msg.l
 		return m, nil
 
 	case artMsg:

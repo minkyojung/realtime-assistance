@@ -95,7 +95,7 @@ func (m Model) nowPlayingInfo(w, rows int, title, artist, album string, duration
 		icon = style.Faint.Render("❚❚")
 	}
 
-	pos := style.Clamp(m.positionMs, 0, durationMs)
+	pos := style.Clamp(m.nowMs(), 0, durationMs)
 	timeLabel := style.MMSS(pos) + " / " + style.MMSS(durationMs)
 	ratio := 0.0
 	if durationMs > 0 {
@@ -116,7 +116,18 @@ func (m Model) nowPlayingInfo(w, rows int, title, artist, album string, duration
 	}
 	out = append(out, "", bar)
 
-	// 남는 줄은 비워 둔다. 가사가 들어올 자리다.
+	// 남는 자리는 가사가 쓴다. 가사가 없으면 곡 이력이 쓴다 — lyrics.go
+	//
+	// 두 줄은 띄운다. 진행바에 가사가 붙으면 한 덩어리로 읽혀서, 어디까지가
+	// 재생 정보이고 어디부터가 노래인지 눈이 구별하지 못한다.
+	const breathe = 1
+	if room := rows - len(out) - breathe; room >= 2 {
+		for i := 0; i < breathe; i++ {
+			out = append(out, "")
+		}
+		out = append(out, m.viewLyrics(w, room)...)
+	}
+
 	for len(out) < rows {
 		out = append(out, "")
 	}
