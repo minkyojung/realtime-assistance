@@ -108,6 +108,10 @@ type Model struct {
 	art    image.Image
 	artPID string
 
+	// 무대 — 커버 오른쪽 자리에 무엇이 서 있나. stage.go
+	stage stage
+	talk  talk
+
 	// 가사. 커버와 같은 규칙으로 곡이 바뀔 때만 받는다 — lyrics.go
 	lyrics    *lyrics.Lyrics
 	lyricsPID string
@@ -285,7 +289,10 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		if strings.TrimSpace(note) == "" {
 			note = msg.res.Title
 		}
-		return mm.(Model).remember(note), tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
+		// 답이 왔으니 대화 무대가 선다. 무엇을 왜 골랐는지가 그냥 보인다 —
+		// 자리가 있는데 ctrl+o 로 열어 보게 할 이유가 없다(stage.go).
+		next := mm.(Model).remember(note).rememberTalk(m.talk.prompt, note, msg.res)
+		return next, tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
 
 	case libraryMsg:
 		return m.applyLibrary(msg)
@@ -347,6 +354,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 
 	case app.AskMsg:
 		// 호스트가 넘긴 자연어 요청. 기다린다는 표시는 호스트가 한다.
+		//
+		// 무대를 지금 세운다. 답을 기다리는 7초 동안 내가 무엇을 물었는지
+		// 화면에 남아 있어야 한다 — 스피너만 도는 것은 불안하기만 하다.
+		m.stage = stageTalk
+		m.talk = talk{prompt: msg.Prompt}
 		return m.startAsk(msg.Prompt)
 
 	case queueWrittenMsg:
@@ -372,6 +384,10 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		m.queuePID = ""
 		m.queueTitle, m.note, m.notice = "", "", ""
 		m.jumpTo(secRecent, "")
+		return m, nil
+
+	case stageMsg:
+		m.stage = msg.to
 		return m, nil
 
 	case jumpMsg:
@@ -620,6 +636,12 @@ func (m Model) enterGroup(g data.Group) (app.App, tea.Cmd) {
 // 나온 자리에 커서를 되돌린다. 훑던 중이었으므로 목록 맨 위로 튕기면
 // 어디를 보고 있었는지 잃는다.
 func (m Model) Back() (app.App, bool) {
+	// 대화를 보고 있었으면 그것이 첫 칸이다. 파고든 목록보다 먼저인 이유는
+	// 방금 세워진 무대가 방금 한 일이기 때문이다 — 가장 최근 것부터 물러난다.
+	if m.stage != stageNowPlaying {
+		m.stage = stageNowPlaying
+		return m, true
+	}
 	if m.drill == nil {
 		return m, false
 	}

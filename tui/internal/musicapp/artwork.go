@@ -116,16 +116,20 @@ func (m Model) nowPlayingInfo(w, rows int, title, artist, album string, duration
 	}
 	out = append(out, "", bar)
 
-	// 남는 자리는 가사가 쓴다. 가사가 없으면 곡 이력이 쓴다 — lyrics.go
+	// 남는 자리는 무대가 쓴다 — 가사·이력·대화 중 하나(stage.go).
 	//
-	// 두 줄은 띄운다. 진행바에 가사가 붙으면 한 덩어리로 읽혀서, 어디까지가
-	// 재생 정보이고 어디부터가 노래인지 눈이 구별하지 못한다.
-	const breathe = 1
-	if room := rows - len(out) - breathe; room >= 2 {
-		for i := 0; i < breathe; i++ {
-			out = append(out, "")
+	// 그 위에 지금 어느 무대인지를 한 줄로 적는다. 무대가 바뀌는데 표시가
+	// 없으면 화면이 왜 달라졌는지 알 방법이 없다. 그 줄이 진행바와 무대를
+	// 갈라 주기도 한다 — 붙여 놓으면 한 덩어리로 읽힌다.
+	const header = 3 // 위 빈 줄 + 무대 이름 + 아래 빈 줄
+	if room := rows - len(out) - header; room >= 2 {
+		out = append(out, "", m.viewStageTabs(w), "")
+		switch m.stage {
+		case stageTalk:
+			out = append(out, m.viewTalk(w, room)...)
+		default:
+			out = append(out, m.viewLyrics(w, room)...)
 		}
-		out = append(out, m.viewLyrics(w, room)...)
 	}
 
 	for len(out) < rows {
