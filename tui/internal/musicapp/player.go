@@ -1,8 +1,11 @@
 package musicapp
 
 import (
-	"amcli/tui/internal/style"
+	"errors"
 	"fmt"
+
+	"amcli/tui/internal/applemusic"
+	"amcli/tui/internal/style"
 
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/music"
@@ -191,11 +194,25 @@ func (m Model) viewCatalogHint(w int) (string, bool) {
 	// 찾는 일이므로, 바깥이 닫혀 있으면 그때만 말해준다.
 	if m.searching() && m.cat == nil {
 		return style.Faint.Render(style.Truncate(
-			"Apple Music search is off  ·  needs AM_P8, AM_KEY_ID, AM_TEAM_ID", w)), true
+			"Apple Music search is off  ·  "+m.setupHint(), w)), true
 	}
 	if m.sectionIdx >= len(m.sections) || m.sections[m.sectionIdx].kind != secCatalog {
 		return "", false
 	}
 	return style.Faint.Render(style.Truncate(
 		"Not in your library yet · enter adds it and plays", w)), true
+}
+
+// setupHint — 무엇을 하면 되는지 한 마디.
+//
+// 환경변수 이름을 대는 것은 구현 사정이다. 화면은 **다음 행동**을 말해야
+// 한다 — 키를 놓으라는 것과 Team ID 를 적으라는 것은 사람이 할 일이 다르다.
+func (m Model) setupHint() string {
+	if errors.Is(m.catErr, applemusic.ErrNoTeamID) {
+		return "/setup <team ID> to finish"
+	}
+	if m.catErr != nil {
+		return m.catErr.Error()
+	}
+	return "/setup to connect"
 }

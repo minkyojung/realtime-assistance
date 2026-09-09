@@ -1,12 +1,14 @@
 package musicapp
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"unicode"
 
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/app"
+	"amcli/tui/internal/applemusic"
 	"amcli/tui/internal/data"
 	tea "charm.land/bubbletea/v2"
 )
@@ -35,6 +37,8 @@ func (m Model) Commands() []app.Command {
 			Run: func(string) tea.Cmd { return send(clearQueueMsg{}) }},
 		{Name: "/reload", Help: "read your library from Music.app again",
 			Run: m.reloadCmd},
+		{Name: "/setup", Arg: "<team ID>", Help: "connect Apple Music · your Apple Developer team ID",
+			Run: m.setupCmd},
 		{Name: "/login", Help: "connect your Apple Music account (opens a browser)",
 			Run: m.loginCmd},
 	}
@@ -50,7 +54,7 @@ func (m Model) Commands() []app.Command {
 }
 
 // 액션 명령의 이름. 섹션 이름이 여기에 겹치지 않게 하는 데 쓴다.
-var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam"}
+var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam", "/setup"}
 
 // jumpCommands — 섹션마다 곧장 가는 명령을 하나씩 낸다.
 //
@@ -234,3 +238,28 @@ func (m Model) loginCmd(string) tea.Cmd {
 		cmdCatalogLogin(m.cat),
 	)
 }
+
+// setupCmd — Team ID 를 설정 파일에 적고 카탈로그를 다시 켠다.
+//
+// 사람이 적어야 하는 유일한 값이다. p8 경로와 Key ID 는 설정 폴더에서
+// 저절로 찾는다 — 애플이 키 파일을 AuthKey_<KEYID>.p8 로 내려주기 때문이다.
+//
+// 환경변수로 하지 않는 이유는 그것이 셸에만 살기 때문이다. 터미널을 새로
+// 열거나 셸을 안 거치고 띄우면 사라진다.
+func (m Model) setupCmd(arg string) tea.Cmd {
+	arg = strings.TrimSpace(arg)
+	if arg == "" {
+		return send(errMsg{errNoTeamID})
+	}
+	if err := applemusic.SaveTeamID(arg); err != nil {
+		return send(errMsg{err})
+	}
+	// 적었으니 다시 읽는다. 앱을 껐다 켜게 하지 않는다.
+	return tea.Batch(
+		app.Say(m.Name(), "Saved. Connecting to Apple Music…"),
+		func() tea.Msg { return cmdCatalogInit() },
+	)
+}
+
+var errNoTeamID = errors.New(
+	"which team? · /setup <team ID> — developer.apple.com › Membership")

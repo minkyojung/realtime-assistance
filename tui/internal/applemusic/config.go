@@ -6,7 +6,6 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -32,35 +31,69 @@ const (
 // 비어 있으면 개발 빌드다. 그때는 지금까지처럼 p8 로 직접 서명한다.
 var EmbeddedToken string
 
-// Config 는 p8 과 두 개의 ID 다. 환경변수로 받는다.
+// Config 는 p8 과 두 개의 ID 다. settings.go 의 3단 폴백이 채운다.
 type Config struct {
-	P8Path string // AM_P8
-	KeyID  string // AM_KEY_ID
-	TeamID string // AM_TEAM_ID
+	P8Path string // AM_P8      · config.json p8Path · 자동 탐색
+	KeyID  string // AM_KEY_ID  · config.json keyID  · 파일명에서
+	TeamID string // AM_TEAM_ID · config.json teamID
 }
 
+// ErrNoTeamID — 나머지는 다 찾았는데 Team ID 만 없다.
+//
+// 다른 실패와 구별하는 이유는 **사람이 할 일이 다르기 때문이다.** 이건
+// 값 하나를 적으면 끝나고, 화면은 그 다음 행동만 말하면 된다.
+var ErrNoTeamID = errors.New(
+	`team ID is missing — write {"teamID":"..."} to ~/.config/amcli/config.json` +
+		"  (developer.apple.com › Membership)")
+
 func LoadConfig() (Config, error) {
-	c := Config{
-		P8Path: os.Getenv("AM_P8"),
-		KeyID:  os.Getenv("AM_KEY_ID"),
-		TeamID: os.Getenv("AM_TEAM_ID"),
-	}
 	// 박아 넣은 토큰이 있으면 p8 이 필요 없다. 배포판 사용자에게
 	// 없는 파일을 내놓으라고 할 수는 없다.
 	if EmbeddedToken != "" {
-		return c, nil
+		return Config{}, nil
 	}
-	if c.P8Path == "" || c.KeyID == "" || c.TeamID == "" {
-		return c, errors.New("set AM_P8, AM_KEY_ID and AM_TEAM_ID")
+
+	file := readSettings()
+	c := Config{
+		P8Path: firstOf(os.Getenv("AM_P8"), file.P8Path),
+		KeyID:  firstOf(os.Getenv("AM_KEY_ID"), file.KeyID),
+		TeamID: firstOf(os.Getenv("AM_TEAM_ID"), file.TeamID),
 	}
-	if strings.HasPrefix(c.P8Path, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return c, err
+	// ③ 자동 탐색 — 설정 폴더에 AuthKey_<KEYID>.p8 이 하나뿐이면 그것을
+	// 쓰고 이름에서 Key ID 를 읽는다. 사람이 적을 것이 하나로 준다.
+	if c.P8Path == "" || c.KeyID == "" {
+		if path, id := discoverP8(); path != "" {
+			c.P8Path = firstOf(c.P8Path, path)
+			c.KeyID = firstOf(c.KeyID, id)
 		}
-		c.P8Path = filepath.Join(home, c.P8Path[2:])
+	}
+	c.P8Path = expandHome(c.P8Path)
+
+	if c.P8Path == "" || c.KeyID == "" {
+		return c, errors.New("put AuthKey_<KEYID>.p8 in " + configDirForMessage())
+	}
+	if c.TeamID == "" {
+		return c, ErrNoTeamID
 	}
 	return c, nil
+}
+
+// firstOf — 앞에서부터 비어 있지 않은 첫 값. 우선순위가 곧 순서다.
+func firstOf(vs ...string) string {
+	for _, v := range vs {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func configDirForMessage() string {
+	dir, err := ConfigDir()
+	if err != nil {
+		return "~/.config/amcli"
+	}
+	return dir
 }
 
 // NewClient 는 개발자 토큰을 만들고, 저장된 사용자 토큰이 있으면 함께 싣는다.

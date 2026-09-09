@@ -425,3 +425,50 @@ func TestSectionHeadersStandOut(t *testing.T) {
 		}
 	}
 }
+
+// ── 설정 안내 ────────────────────────────────────────────────────────
+
+// 화면은 환경변수 이름이 아니라 **다음 행동**을 말한다.
+//
+// 키를 놓으라는 것과 Team ID 를 적으라는 것은 사람이 할 일이 다르므로,
+// 문구도 달라야 한다.
+func TestSetupHintSaysNextStep(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"아무것도 없음", nil, "/setup to connect"},
+		{"Team ID 만 없음", applemusic.ErrNoTeamID, "/setup <team ID> to finish"},
+	} {
+		m := New()
+		m.synced, m.bodyH = true, 26
+		m.catErr = c.err
+		mm := m.Filter("oasis").(Model)
+		out := ansiOff(mm.View(78, 26))
+		if !strings.Contains(out, c.want) {
+			t.Errorf("%s — 화면에 %q 가 없다", c.name, c.want)
+		}
+		// 환경변수 이름을 화면에 대지 않는다. 그것은 구현 사정이다.
+		if strings.Contains(out, "AM_P8") {
+			t.Errorf("%s — 화면이 환경변수 이름을 댄다", c.name)
+		}
+	}
+}
+
+// /setup 은 인자가 없으면 무엇을 달라는지 말한다.
+func TestSetupNeedsTeamID(t *testing.T) {
+	var found bool
+	for _, c := range New().Commands() {
+		if c.Name != "/setup" {
+			continue
+		}
+		found = true
+		if c.Arg == "" {
+			t.Error("/setup 이 인자를 요구하지 않는다")
+		}
+	}
+	if !found {
+		t.Fatal("/setup 명령이 없다")
+	}
+}

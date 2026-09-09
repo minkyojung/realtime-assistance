@@ -107,6 +107,7 @@ type Model struct {
 	catSeq   int
 	catBusy  bool
 	catLogin bool
+	catErr   error // 카탈로그가 왜 안 되는가. 다음 행동을 말하는 데 쓴다
 
 	// 인식 — 방 안에서 들린 곡. 한 번도 안 알아맞혔으면 섹션 자체가 없다.
 	// shazam.go

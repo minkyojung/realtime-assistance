@@ -33,7 +33,7 @@ const (
 
 var (
 	errCatalogNotConfigured = errors.New(
-		"Apple Music needs AM_P8, AM_KEY_ID and AM_TEAM_ID")
+		"Apple Music is not connected  ·  /setup")
 	errLoginRequired = errors.New(
 		"Sign in to add this to your library  ·  /login")
 )
@@ -235,6 +235,10 @@ func (m Model) applyCatalog(msg tea.Msg) (app.App, tea.Cmd, bool) {
 
 	case catalogReadyMsg:
 		m.cat = msg.client
+		// 왜 안 되는지 기억해 둔다. "안 된다"만 알면 화면이 다음 행동을
+		// 말할 수 없다 — 키를 놓으라는 것과 Team ID 를 적으라는 것은
+		// 사람이 할 일이 다르다.
+		m.catErr = msg.err
 		if m.cat == nil {
 			// 설정이 없는 것은 정상 상태다. 첫 화면에서 안 쓸 기능의
 			// 실패를 읽게 할 이유가 없다.
