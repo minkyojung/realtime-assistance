@@ -3,6 +3,9 @@ package musicapp
 import (
 	"strings"
 	"testing"
+
+	"amcli/tui/internal/style"
+	"charm.land/lipgloss/v2"
 )
 
 // 커서는 언제나 화면 안에 있어야 한다.
@@ -15,8 +18,16 @@ import (
 // 원인이 무엇이든 커서가 안 보이면 걸린다.
 
 // selectedIsVisible 은 지금 크기로 목록을 그려 선택 표시를 찾는다.
+//
+// 표시가 무엇인지(레일이든 배경이든) 테스트가 알 필요는 없다. 지금 쓰는
+// 색을 그대로 찍어 보고 그 조각이 화면에 있는지만 본다.
 func selectedIsVisible(m Model) bool {
-	return strings.Contains(m.viewList(m.bodyW-2, m.listWindow()), "▌")
+	return strings.Contains(m.viewList(m.bodyW-2, m.listWindow()), selectionSeq())
+}
+
+func selectionSeq() string {
+	probe := lipgloss.NewStyle().Background(style.ColRowSel).Render("x")
+	return probe[:strings.Index(probe, "m")+1]
 }
 
 func TestCursorFollowsWhenMovingDown(t *testing.T) {
@@ -82,5 +93,46 @@ func TestDrawAndScrollAgreeOnTheWindow(t *testing.T) {
 	drawn := m.listHeight(m.bodyH - headHeight(m.headView(m.bodyW, m.bodyH)) + 1)
 	if got := m.listWindow(); got != drawn {
 		t.Errorf("그릴 때는 %d줄, 커서를 옮길 때는 %d줄", drawn, got)
+	}
+}
+
+// 선택은 줄 전체를 밝힌다.
+//
+// 한 칸짜리 레일은 스크롤이 어긋나 줄이 잘리면 그 칸부터 가려져, 고른 것이
+// 어디 있는지를 잃었다. 줄 전체면 어디가 잘려도 남는다.
+func TestSelectionSpansTheWholeLine(t *testing.T) {
+	m := playingModel()
+	m.bodyW, m.bodyH = 100, 30
+	m.clampList()
+
+	w := m.bodyW - 2
+	lines := strings.Split(m.viewList(w, m.listWindow()), "\n")
+
+	var picked string
+	for _, l := range lines {
+		if strings.Contains(l, selectionSeq()) {
+			picked = l
+			break
+		}
+	}
+	if picked == "" {
+		t.Fatal("선택된 줄이 없다")
+	}
+	if got := lipgloss.Width(picked); got != w {
+		t.Errorf("선택한 줄이 %d칸이다 — 줄 끝까지 %d칸이어야 한다", got, w)
+	}
+	// 옛 레일이 남아 있으면 표시가 두 종류가 된다.
+	if strings.Contains(picked, "▌") {
+		t.Error("줄을 밝히면서 왼쪽 레일도 그린다")
+	}
+}
+
+// 고를 수 없는 줄(구역 머리글)은 밝히지 않는다.
+func TestHeadersAreNeverHighlighted(t *testing.T) {
+	m := playingModel()
+	m.bodyW, m.bodyH = 100, 30
+	got := m.renderRow(listRow{header: "Apple Music"}, true, m.bodyW-2, []int{20, 10, 3, 4}, new(string))
+	if strings.Contains(got, selectionSeq()) {
+		t.Errorf("머리글을 밝혔다: %q", got)
 	}
 }

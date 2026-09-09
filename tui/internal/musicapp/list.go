@@ -109,7 +109,19 @@ func (m Model) viewList(w, h int) string {
 		return lipgloss.NewStyle().Width(w).Height(h).Render(style.Faint.Render(msg))
 	}
 
-	start := style.Clamp(m.listTop, 0, style.Max(len(rows)-h, 0))
+	// 창 크기의 진짜 근거는 **그릴 때의 h** 다.
+	//
+	// 커서를 옮길 때 쓰는 값(clampList)은 로그 줄이나 팔레트가 뜨고 지는
+	// 만큼 어긋난다 — 호스트는 창이 바뀔 때만 크기를 알려주기 때문이다.
+	// 그래서 여기서 한 번 더 맞춘다. 커서가 창 밖이면 창을 옮긴다.
+	start := m.listTop
+	if m.listIdx < start {
+		start = m.listIdx
+	}
+	if m.listIdx >= start+h {
+		start = m.listIdx - h + 1
+	}
+	start = style.Clamp(start, 0, style.Max(len(rows)-h, 0))
 	end := style.Min(start+h, len(rows))
 
 	// 이름이 이어지는 동안에는 아티스트를 다시 쓰지 않는다.
@@ -135,26 +147,49 @@ func (m Model) viewList(w, h int) string {
 }
 
 func (m Model) renderRow(r listRow, selected bool, w int, widths []int, prevArtist *string) string {
-	// 선택 표시는 왼쪽 레일이다. 배경을 채우면 "채워진 빨강은 오류" 규칙과 부딪힌다.
-	rail := "  "
-	if selected {
-		rail = style.Brand.Render("▌ ")
+	// 선택은 **줄 전체를 밝혀** 표시한다.
+	//
+	// 한때 왼쪽에 한 칸짜리 레일(▌)을 세웠다. 한 칸이라 눈에 덜 걸리고,
+	// 스크롤이 어긋나 줄이 잘리면 그 칸부터 가려져 "고른 것이 어디 있는지"를
+	// 잃었다. 줄 전체면 어디가 잘려도 남는다.
+	//
+	// 채워진 빨강은 쓰지 않는다 — 이 화면에서 그것은 오류라는 뜻이다(theme.go).
+	//
+	// 배경은 **칸마다** 입힌다. 줄을 다 만든 뒤 감싸면 안 되는데, 칸마다 붙는
+	// 색 끝내기(ESC[m)가 배경까지 함께 지워 첫 칸 뒤로는 배경이 사라진다.
+	paint := func(st lipgloss.Style) lipgloss.Style {
+		if selected {
+			return st.Background(style.ColRowSel)
+		}
+		return st
 	}
+	plain := paint(lipgloss.NewStyle())
+	// 남는 칸을 배경으로 채워 줄 끝까지 이어지게 한다.
+	fill := func(row string) string {
+		if !selected {
+			return row
+		}
+		if d := w - lipgloss.Width(row); d > 0 {
+			row += plain.Render(strings.Repeat(" ", d))
+		}
+		return row
+	}
+	rail := plain.Render("  ")
 
 	if g := r.group; g != nil {
 		*prevArtist = ""
-		left := style.Body.Render(style.Truncate(g.Name, style.Max(w-30, 12)))
-		right := style.Faint.Render(fmt.Sprintf("%d tracks · %s", g.TrackCount, g.Subtitle))
-		return rail + style.Row(left, right, w-2)
+		left := paint(style.Body).Render(style.Truncate(g.Name, style.Max(w-30, 12)))
+		right := paint(style.Faint).Render(fmt.Sprintf("%d tracks · %s", g.TrackCount, g.Subtitle))
+		return fill(rail + style.Row(left, right, w-2))
 	}
 
-	// 구역 머리글 — 레일 자리를 비워 곡 줄과 구분한다.
+	// 구역 머리글 — 고를 수 없는 줄이라 밝히지 않는다.
 	if r.header != "" {
 		return "  " + style.Faint.Render(style.Truncate(r.header, w-2))
 	}
 
 	if ct := r.catalog; ct != nil {
-		return rail + m.catalogCells(*ct, widths, prevArtist)
+		return fill(rail + m.catalogCells(*ct, widths, prevArtist, paint))
 	}
 
 	t := r.track
@@ -184,11 +219,11 @@ func (m Model) renderRow(r listRow, selected bool, w int, widths []int, prevArti
 	title := pad(t.Title, widths[0])
 	switch {
 	case m.nowPlayingID != 0 && t.Id == m.nowPlayingID:
-		title = style.BrandBold.Render(title)
+		title = paint(style.BrandBold).Render(title)
 	case t.PlayCount == 0:
-		title = style.Dim.Render(title)
+		title = paint(style.Dim).Render(title)
 	default:
-		title = style.Body.Render(title)
+		title = paint(style.Body).Render(title)
 	}
 	cells = append(cells, title)
 
@@ -197,7 +232,7 @@ func (m Model) renderRow(r listRow, selected bool, w int, widths []int, prevArti
 		if name == *prevArtist {
 			name = "" // 이어지는 같은 아티스트는 비워 둔다
 		}
-		cells = append(cells, style.Faint.Render(pad(name, widths[1])))
+		cells = append(cells, paint(style.Faint).Render(pad(name, widths[1])))
 	}
 	*prevArtist = t.Artist.Name
 
@@ -206,13 +241,13 @@ func (m Model) renderRow(r listRow, selected bool, w int, widths []int, prevArti
 		if t.PlayCount == 0 {
 			plays = "·"
 		}
-		cells = append(cells, style.Faint.Render(rpad(plays, widths[2])))
+		cells = append(cells, paint(style.Faint).Render(rpad(plays, widths[2])))
 	}
 	if widths[3] > 0 {
-		cells = append(cells, style.Faint.Render(rpad(style.MMSS(t.DurationMs), widths[3])))
+		cells = append(cells, paint(style.Faint).Render(rpad(style.MMSS(t.DurationMs), widths[3])))
 	}
 
-	return rail + strings.Join(cells, strings.Repeat(" ", colGap))
+	return fill(rail + strings.Join(cells, plain.Render(strings.Repeat(" ", colGap))))
 }
 
 // catalogCells — 카탈로그 곡 한 줄.
@@ -220,7 +255,7 @@ func (m Model) renderRow(r listRow, selected bool, w int, widths []int, prevArti
 // 칸은 라이브러리 곡과 같은 것을 쓴다. 따로 정의하면 숫자 넷이 두 벌이 되고,
 // tab 으로 오갈 때 제목 열이 튄다. 같은 격자에 다른 내용을 넣는다:
 // 재생수 자리에는 소속 표시를, 길이 자리에는 연도를.
-func (m Model) catalogCells(ct api.CatalogTrack, widths []int, prevArtist *string) string {
+func (m Model) catalogCells(ct api.CatalogTrack, widths []int, prevArtist *string, paint func(lipgloss.Style) lipgloss.Style) string {
 	pad := func(s string, width int) string {
 		if width <= 0 {
 			return ""
@@ -243,13 +278,13 @@ func (m Model) catalogCells(ct api.CatalogTrack, widths []int, prevArtist *strin
 	}
 
 	// 아직 내 것이 아닌 곡은 흐리다. 담긴 곡은 라이브러리 곡과 같은 밝기가 된다.
-	titleStyle, mark := style.Dim, style.Faint.Render(rpad("+", widths[2]))
+	titleStyle, mark := paint(style.Dim), paint(style.Faint).Render(rpad("+", widths[2]))
 	if inLibrary(ct) {
-		titleStyle = style.Body
-		mark = style.Brand.Render(rpad("✓", widths[2]))
+		titleStyle = paint(style.Body)
+		mark = paint(style.Brand).Render(rpad("✓", widths[2]))
 	}
 	if m.adding != nil && m.adding.track.AppleMusicId == ct.AppleMusicId {
-		mark = style.Brand.Render(rpad("⋯", widths[2]))
+		mark = paint(style.Brand).Render(rpad("⋯", widths[2]))
 	}
 
 	cells := []string{titleStyle.Render(pad(ct.Title, widths[0]))}
@@ -259,7 +294,7 @@ func (m Model) catalogCells(ct api.CatalogTrack, widths []int, prevArtist *strin
 			name = ""
 		}
 		*prevArtist = ct.ArtistName
-		cells = append(cells, style.Faint.Render(pad(name, widths[1])))
+		cells = append(cells, paint(style.Faint).Render(pad(name, widths[1])))
 	}
 	if widths[2] > 0 {
 		cells = append(cells, mark)
@@ -269,9 +304,9 @@ func (m Model) catalogCells(ct api.CatalogTrack, widths []int, prevArtist *strin
 		if ct.Year != nil {
 			year = fmt.Sprint(*ct.Year)
 		}
-		cells = append(cells, style.Faint.Render(rpad(year, widths[3])))
+		cells = append(cells, paint(style.Faint).Render(rpad(year, widths[3])))
 	}
-	return strings.Join(cells, "  ")
+	return strings.Join(cells, paint(lipgloss.NewStyle()).Render("  "))
 }
 
 // searchRows — 한 번의 검색이 두 곳을 보여준다.
