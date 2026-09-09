@@ -70,14 +70,27 @@ func replaceQueueScript(prevPID string, persistentIDs []string) string {
 
 	fmt.Fprintf(&b, "\tset pl to (make new user playlist with properties {name:%q})\n", QueuePlaylistName)
 
-	// 담는 방식은 CreatePlaylist 와 같다 — 라이브러리에 없고 플레이리스트에만
-	// 있는 곡이 실제로 있어서, 라이브러리를 먼저 보고 없으면 나머지를 뒤진다.
+	writeAppend(&b, persistentIDs)
+	b.WriteString("\treturn persistent ID of pl\nend tell")
+	return b.String()
+}
+
+// writeAppend 는 곡들을 pl 의 **맨 뒤에** 붙이는 블록을 적는다.
+//
+// duplicate 는 언제나 뒤에 붙는다. 가운데에 끼우는 명령이 없다 — Music.app
+// 의 AppleScript 사전에 playlist 안의 곡을 옮기는 길이 아예 없다(move 는
+// 플레이리스트를 폴더로 옮기는 것이고, track 에는 자리번호 속성이 없다).
+// 순서를 바꾸려면 뒤를 지웠다가 다시 붙이는 수밖에 없는 이유다.
+//
+// 라이브러리를 먼저 보고 없으면 나머지를 뒤진다 — 라이브러리에 없고
+// 플레이리스트에만 있는 곡이 실제로 있다.
+func writeAppend(b *strings.Builder, persistentIDs []string) {
 	b.WriteString("\trepeat with pid in {")
 	for i, id := range persistentIDs {
 		if i > 0 {
 			b.WriteString(", ")
 		}
-		fmt.Fprintf(&b, "%q", id)
+		fmt.Fprintf(b, "%q", id)
 	}
 	b.WriteString("}\n")
 	b.WriteString(`		set found to false
@@ -94,9 +107,7 @@ func replaceQueueScript(prevPID string, persistentIDs []string) string {
 			end repeat
 		end if
 	end repeat
-	return persistent ID of pl
-end tell`)
-	return b.String()
+`)
 }
 
 // PlayQueueAt 는 큐 플레이리스트를 n번째 곡부터 재생한다 (1부터 센다).
@@ -198,6 +209,47 @@ func removeQueueTrackScript(pid string, n int, advance bool) string {
 		b.WriteString("\tnext track\n")
 	}
 	fmt.Fprintf(&b, "\tdelete track %d of pl\n", n)
+	b.WriteString("end tell")
+	return b.String()
+}
+
+// RewriteQueueTail 은 큐의 from 번째부터 끝까지를 지우고 새 목록으로 다시 쓴다.
+// (from 은 1부터 센다)
+//
+// **이것이 순서를 바꾸고 가운데에 끼우는 유일한 길이다.** AppleScript 에는
+// 플레이리스트 안의 곡을 옮기는 명령이 없어서(writeAppend 의 주석), 바꿀
+// 자리부터 뒤를 통째로 다시 쌓는 수밖에 없다.
+//
+// 앞은 건드리지 않는다. **지금 나오는 곡이 앞에 남아 있으면 음악이 안 끊긴다** —
+// 플레이리스트 객체도 그대로이고 재생 중인 곡도 그 안에 그대로 있기 때문이다.
+// 통째로 갈아끼우는 ReplaceQueue 가 소리를 끊는 것과 갈리는 지점이 여기다.
+// 그래서 부르는 쪽은 from 이 지금 나오는 곡보다 뒤인지를 먼저 확인해야 한다.
+//
+// 지우는 대상은 언제나 **우리 플레이리스트의 곡**이다. RemoveQueueTrack 과
+// 같은 규칙이다 — 라이브러리 쪽으로 새면 파일이 사라지고 되돌릴 수 없다.
+func RewriteQueueTail(pid string, from int, persistentIDs []string) error {
+	if !Running() {
+		return ErrNotRunning
+	}
+	if pid == "" || from < 1 {
+		return errNoPlaylist
+	}
+	_, err := run(rewriteQueueTailScript(pid, from, persistentIDs))
+	return err
+}
+
+func rewriteQueueTailScript(pid string, from int, persistentIDs []string) string {
+	var b strings.Builder
+	b.WriteString("tell application \"Music\"\n")
+	fmt.Fprintf(&b, "\tset pl to (first user playlist whose persistent ID is %q)\n", pid)
+	// 뒤에서부터 지운다. 앞에서 지우면 그 뒤 곡들의 자리번호가 밀려 다음
+	// 한 바퀴가 엉뚱한 줄을 가리킨다 — removeTracks 가 뒤에서부터 빼는 것과
+	// 같은 이유다.
+	fmt.Fprintf(&b, "\trepeat with i from (count of tracks of pl) to %d by -1\n", from)
+	b.WriteString("\t\tdelete track i of pl\n\tend repeat\n")
+	if len(persistentIDs) > 0 {
+		writeAppend(&b, persistentIDs)
+	}
 	b.WriteString("end tell")
 	return b.String()
 }

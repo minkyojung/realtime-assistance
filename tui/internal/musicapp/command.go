@@ -32,7 +32,8 @@ import (
 //
 // 여기 없는 이름은 이 뒤에 원래 순서대로 붙는다 — 섹션, 그다음 플레이리스트.
 var paletteOrder = []string{
-	"/remove", "/love", "/shuffle", "/save", "/shazam", "/clear", "/repeat", "/rate",
+	"/next", "/later", "/remove", "/up", "/down",
+	"/love", "/shuffle", "/save", "/shazam", "/clear", "/repeat", "/rate",
 	"/volume", "/pause", "/reload", "/setup", "/login",
 }
 
@@ -54,8 +55,16 @@ func (m Model) Commands() []app.Command {
 			Run: m.saveCmd},
 		{Name: "/pause", Help: "play or pause — same as shift+↓",
 			Run: func(string) tea.Cmd { return cmdPlayPause() }},
+		{Name: "/next", Help: "play the selected track right after this one",
+			Run: func(string) tea.Cmd { return send(reorderMsg{kind: putNext}) }},
+		{Name: "/later", Help: "add the selected track to the end of the queue",
+			Run: func(string) tea.Cmd { return send(reorderMsg{kind: putLater}) }},
 		{Name: "/remove", Help: "drop the selected track from the queue",
 			Run: func(string) tea.Cmd { return send(removeSelectedMsg{}) }},
+		{Name: "/up", Help: "move the selected track one place earlier",
+			Run: func(string) tea.Cmd { return send(reorderMsg{kind: moveUp}) }},
+		{Name: "/down", Help: "move the selected track one place later",
+			Run: func(string) tea.Cmd { return send(reorderMsg{kind: moveDown}) }},
 		{Name: "/clear", Help: "empty the queue",
 			Run: func(string) tea.Cmd { return send(clearQueueMsg{}) }},
 		{Name: "/reload", Help: "read your library from Music.app again",
@@ -84,7 +93,8 @@ func (m Model) Commands() []app.Command {
 }
 
 // 액션 명령의 이름. 섹션 이름이 여기에 겹치지 않게 하는 데 쓴다.
-var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam", "/setup", "/ai"}
+var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam", "/setup", "/ai",
+	"/next", "/later", "/up", "/down"}
 
 // jumpCommands — 섹션마다 곧장 가는 명령을 하나씩 낸다.
 //
@@ -193,7 +203,11 @@ type (
 	// 명령이 곡을 직접 지목하지 않는 이유는, 목록에서 보고 고른 것이
 	// 이미 지목이기 때문이다. 이름을 다시 치게 하면 두 번 고르는 셈이다.
 	removeSelectedMsg struct{}
-	jumpMsg           struct {
+
+	// reorderMsg — 큐를 만든 뒤에 손대는 일들. removeSelectedMsg 와 같이
+	// 커서가 곧 지목이다 (reorder.go).
+	reorderMsg struct{ kind reorderKind }
+	jumpMsg    struct {
 		kind sectionKind
 		// 플레이리스트는 종류가 같고 이름만 다르다. 이름 없이 옮기면
 		// 언제나 첫 플레이리스트로 간다.

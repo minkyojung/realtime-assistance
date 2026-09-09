@@ -404,6 +404,9 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		}
 		return m.removeFromQueue(rows[m.listIdx].track.Id)
 
+	case reorderMsg:
+		return m.reorder(msg.kind)
+
 	case clearQueueMsg:
 		m.queue = nil
 		m.queuePID = ""
