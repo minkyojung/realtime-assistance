@@ -111,16 +111,60 @@ func PlayQueueAt(pid string, n int, positionSec int) error {
 	if pid == "" || n < 1 {
 		return errNoPlaylist
 	}
+	_, err := runFor(queueTimeout, playQueueAtScript(pid, n, positionSec))
+	return err
+}
+
+// playQueueAtScript 는 스크립트를 조립한다. 나눠 둔 이유는 replaceQueueScript 와 같다.
+//
+// **첫 곡부터일 때는 `play pl` 이어야 한다.** `play (track 1 of pl)` 은 그 곡
+// 하나만 틀고 멈춘다 — Music.app 이 큐 맥락을 잡지 않는다. 실측으로 확인했다:
+//
+//	play (track 1 of pl) → 1번 재생 후 정지
+//	play pl              → 1번 재생 후 2번으로 이어짐
+//
+// 큐를 새로 만들 때는 언제나 n=1 이므로, 이 한 줄이 "고른 곡들이 끝까지
+// 이어진다"의 전부다.
+//
+// n > 1 은 아직 이어지지 않는다. `next track` 으로 건너뛰는 방법은 실측에서
+// 못 쓸 것으로 판명됐다 — 곡마다 로딩을 기다려야 해서 두 칸을 요청하면 한 칸만
+// 먹고, 지연을 늘리면 엉뚱한 곡으로 샜다. **틀린 곡을 트느니 그 곡만 트는 편이
+// 낫다.** 되는 방법은 확인해 뒀다(플레이리스트를 회전시켜 그 곡을 1번으로
+// 올린다). 다만 그러면 화면의 큐 순서도 같이 돌려야 해서 호출부가 바뀐다.
+func playQueueAtScript(pid string, n, positionSec int) string {
 	var b strings.Builder
 	b.WriteString("tell application \"Music\"\n")
+	// 순서가 이 큐의 전부다(intent 의 시스템 프롬프트).
+	// 섞기가 켜져 있으면 우리가 정한 순서가 무의미해진다.
+	b.WriteString("\tset shuffle enabled to false\n")
 	fmt.Fprintf(&b, "\tset pl to (first user playlist whose persistent ID is %q)\n", pid)
-	fmt.Fprintf(&b, "\tplay (track %d of pl)\n", n)
+	if n == 1 {
+		b.WriteString("\tplay pl\n")
+	} else {
+		fmt.Fprintf(&b, "\tplay (track %d of pl)\n", n)
+	}
+	// 스트리밍 곡은 버퍼링 전에는 seek 가 먹지 않는다. 한 번 찔러보고 마는
+	// 코드는 조용히 실패한다 — 실측으로 25.9초가 0.08초로 떨어졌다.
+	// 자리를 잡을 때까지 되짚는다.
+	//
+	// 읽는 쪽은 get 으로 값을 끌어내고 try 로 감싼다. 곡이 아직 안 물렸을 때
+	// player position 은 값이 아니라 참조로 평가되어(class 가 property 로 나온다)
+	// 수와 비교하는 순간 -1700 으로 죽는다. 실측으로 봤다.
 	if positionSec > 0 {
-		fmt.Fprintf(&b, "\tset player position to %d\n", positionSec)
+		fmt.Fprintf(&b, `	repeat 20 times
+		try
+			set player position to %d
+		end try
+		delay 0.3
+		try
+			set p to (get player position)
+			if p > %d then exit repeat
+		end try
+	end repeat
+`, positionSec, positionSec-3)
 	}
 	b.WriteString("end tell")
-	_, err := run(b.String())
-	return err
+	return b.String()
 }
 
 // RemoveQueueTrack 은 큐에서 곡 하나를 뺀다 (n 은 1부터 센다).

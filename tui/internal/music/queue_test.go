@@ -78,7 +78,66 @@ func TestQueueScriptCarriesEveryTrackInOrder(t *testing.T) {
 	}
 }
 
-// 곡 빼기는 통째로 다시 쓰지 않는다. 다시 쓰면 듣던 곡까지 사라져 음악이 끊긴다.
+// 새 큐는 언제나 첫 곡부터 시작한다. 그때 **플레이리스트 자체**를 틀어야 한다.
+//
+// `play (track 1 of pl)` 은 그 곡 하나만 틀고 멈춘다 — Music.app 이 큐 맥락을
+// 잡지 않는다. 실기로 확인한 회귀다:
+//
+//	play (track 1 of pl) → 1번 재생 후 정지
+//	play pl              → 1번 재생 후 2번으로 이어짐
+//
+// 이 줄이 되돌아가면 "고른 곡들이 끝까지 이어진다"가 통째로 무너진다.
+func TestNewQueuePlaysThePlaylistNotOneTrack(t *testing.T) {
+	s := playQueueAtScript("BBBB2222", 1, 0)
+	if !strings.Contains(s, "play pl") {
+		t.Errorf("플레이리스트를 틀지 않는다:\n%s", s)
+	}
+	if strings.Contains(s, "play (track") {
+		t.Errorf("play (track 1 of pl) 로 되돌아갔다 — 한 곡만 틀고 멈춘다:\n%s", s)
+	}
+}
+
+// n번째부터는 next track 으로 건너뛰지 않는다.
+//
+// 실측: 곡마다 로딩을 기다려야 해서 두 칸을 요청하면 한 칸만 먹고, 지연을
+// 늘리면 플레이리스트 밖의 곡으로 샜다. **틀린 곡을 트는 것이 제일 나쁘다.**
+func TestQueueNeverSkipsWithNextTrack(t *testing.T) {
+	for _, n := range []int{2, 5, 20} {
+		if s := playQueueAtScript("BBBB2222", n, 0); strings.Contains(s, "next track") {
+			t.Errorf("n=%d: next track 으로 건너뛴다 — 엉뚱한 곡이 나온다:\n%s", n, s)
+		}
+	}
+}
+
+// 이어 듣기는 한 번 찔러서는 안 된다.
+//
+// 스트리밍 곡은 버퍼링 전에 seek 가 먹지 않아 조용히 0초로 떨어진다
+// (실측 25.9초 → 0.08초). 자리를 잡을 때까지 되짚어야 한다.
+//
+// 읽는 쪽은 get 으로 값을 끌어내야 한다. 참조로 평가되면 비교가 -1700 으로 죽는다.
+func TestQueueResumeRetriesTheSeek(t *testing.T) {
+	if s := playQueueAtScript("BBBB2222", 1, 0); strings.Contains(s, "player position") {
+		t.Errorf("이어 들을 위치가 없는데 seek 한다:\n%s", s)
+	}
+	s := playQueueAtScript("BBBB2222", 1, 90)
+	if !strings.Contains(s, "set player position to 90") {
+		t.Errorf("이어 들을 위치로 안 간다:\n%s", s)
+	}
+	if !strings.Contains(s, "repeat 20 times") {
+		t.Errorf("한 번만 찔러본다 — 스트리밍 곡에서 조용히 실패한다:\n%s", s)
+	}
+	if !strings.Contains(s, "get player position") {
+		t.Errorf("get 없이 읽는다 — 곡이 안 물렸을 때 -1700 으로 죽는다:\n%s", s)
+	}
+}
+
+// 섞기가 켜져 있으면 우리가 정한 순서가 무너진다.
+func TestQueueTurnsShuffleOff(t *testing.T) {
+	if !strings.Contains(playQueueAtScript("BBBB2222", 1, 0), "set shuffle enabled to false") {
+		t.Error("섞기를 끄지 않는다 — 큐 순서가 지켜지지 않는다")
+	}
+}
+
 func TestRemoveTouchesOneTrackOnly(t *testing.T) {
 	s := removeQueueTrackScript("BBBB2222", 3, false)
 

@@ -122,8 +122,14 @@ func simple(cmd string) error {
 // 1초 폴링이 그대로 프로세스 더미가 된다.
 const cmdTimeout = 5 * time.Second
 
-func run(script string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
+// 큐를 트는 일은 n번째까지 건너뛰고 재생 위치를 되짚느라 몇 초를 쓴다.
+// 그 몇 초를 폴링의 상한과 같이 둘 수는 없다.
+const queueTimeout = 45 * time.Second
+
+func run(script string) (string, error) { return runFor(cmdTimeout, script) }
+
+func runFor(timeout time.Duration, script string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, "osascript", "-e", script).CombinedOutput()
 	s := strings.TrimSpace(string(out))
