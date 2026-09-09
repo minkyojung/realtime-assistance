@@ -16,7 +16,13 @@ import (
 // 라우터가 앱을 지목했을 때.
 //
 // 여기서 말하는 것은 셋이다. **이것이 무엇인가**, **어떻게 조작하는가**,
-// 그리고 **지금 무엇이 막혀 있는가**. 환영 인사도 버전도 없다.
+// 그리고 **지금 무엇이 막혀 있는가**. 환영 인사는 없다.
+//
+// 자리가 넉넉하면 넷째가 붙는다 — **무엇에 붙어 있는가**(homebox.go).
+// 오래 버전을 적지 않았던 이유는 그것이 자기 이야기여서였는데, 붙은
+// 곳을 적는 것은 다르다. "네 것만 튼다"는 주장이 진짜 그 사람의
+// Music.app 에 붙어 있을 때만 사실이기 때문이다. 버전은 그 목록의 한
+// 줄로만 따라 들어간다. 자리가 없으면 넷째부터 사라진다.
 //
 // 한때 여기에 앱 목록이 있었다. 앱이 하나가 되면서 한 줄짜리 목록이
 // 남았는데, 고를 것이 하나뿐인 목록은 목록이 아니라 그냥 버튼이다.
@@ -317,32 +323,36 @@ func renderWordmark(px []string, dx, dy int, face, shadow color.Color) []string 
 	return out
 }
 
-// 조작법 — 화면에 아직 안 적혀 있는 것만 적는다.
+// 관문 — 홈에서 할 수 있는 일의 전부다.
 //
-// `/` 와 `?` 는 입력창 플레이스홀더가 이미 말하고 있으므로 넣지 않는다.
-// 같은 것을 두 번 말하면 둘 다 안 읽힌다.
-var homeTips = []struct{ key, what string }{
-	{"type", `a sentence — "something quiet, nothing i've skipped"`},
-	{"enter", "open the library"},
-	{"ctrl+o", "what the last request actually did"},
-}
+// 조작법을 목록으로 늘어놓지 않고 이 한 줄만 둔다. 홈에서 손이 하는 일은
+// 들어가는 것뿐이고, `/` 와 `?` 는 입력창 플레이스홀더가 이미 말한다
+// (host.go applyMode) — 같은 것을 두 번 말하면 둘 다 안 읽힌다.
+const homeGate = "Press Enter to start"
 
-// 조작키를 적는 칸. 설명이 세로로 맞으면 눈이 한 번만 움직인다.
-const homeKeyCol = 10
+// centerRow 는 한 줄을 폭 안에서 가운데에 놓는다.
+//
+// 오른쪽은 채우지 않는다. 빈칸을 채워봐야 보이지 않고, 줄 끝에 공백이
+// 붙으면 골든 파일과 폭 검사가 그것까지 세게 된다.
+func centerRow(w int, s string) string {
+	if pad := (w - lipgloss.Width(s)) / 2; pad > 0 {
+		return strings.Repeat(" ", pad) + s
+	}
+	return s
+}
 
 // viewHome 은 본문 자리를 정확히 h 줄로 채운다.
 // 앱으로 들어갈 때 화면이 튀지 않아야 한다.
 func (m Model) viewHome(w, h int) string {
-	// 아래쪽을 먼저 정한다. 조작법과 관문은 자리가 아무리 없어도 남는다 —
-	// 이것이 무엇인지는 몰라도 되지만, 어떻게 쓰고 무엇이 막혔는지는 알아야 한다.
-	var tail []string
-	for _, t := range homeTips {
-		tail = append(tail, "  "+style.BrandSoft.Render(t.key)+
-			strings.Repeat(" ", style.Max(homeKeyCol-len(t.key), 1))+
-			style.Faint.Render(style.Truncate(t.what, style.Max(w-2-homeKeyCol, 0))))
-	}
-	// 관문이 막혀 있으면 사유를 붙인다. 조작법보다 뒤인 이유는 막혀 있어도
-	// 조작법은 그대로이기 때문이다.
+	// 관문은 화면 폭의 한가운데다.
+	//
+	// 왼쪽에 맞추지 않는 이유는 맞출 것이 없기 때문이다. 홈에는 입력창도
+	// 상태줄도 없어서(host.go View) 손이 가는 자리가 따로 없고, 받는 키가
+	// 이것 하나뿐인 화면에서는 한가운데가 곧 "여기를 보라"는 뜻이다.
+	tail := []string{centerRow(w, style.BrandSoft.Render(homeGate))}
+
+	// 관문이 막혀 있으면 사유를 붙인다. 관문보다 뒤인 이유는 막혀 있어도
+	// 들어가는 길은 그대로이기 때문이다.
 	//
 	// 사유는 그릴 때마다 Ready() 를 읽는다. 확정 시점이 앱마다 달라서다 —
 	// 음악은 첫 폴링이 와야 안다. 그래서 멀쩡해 보이다가 잠시 뒤 경고가
@@ -350,13 +360,17 @@ func (m Model) viewHome(w, h int) string {
 	if err := m.app().Ready(); err != nil {
 		// 경고는 "! " 다. 앱 본문이 이미 그렇게 그리므로(musicapp/player.go)
 		// 여기서 새 기호를 들이면 화면에 경고가 두 종류가 된다.
-		tail = append(tail, "", "  "+style.Warn.Render("! ")+
-			style.Dim.Render(style.Truncate(err.Error(), style.Max(w-4, 0))))
+		tail = append(tail, centerRow(w, style.Warn.Render("! ")+
+			style.Dim.Render(style.Truncate(err.Error(), style.Max(w-4, 0)))))
 	}
 
 	// 남은 자리에 이름을 넣는다. 큰 것 → 글자 → 없음 순으로 물러선다.
-	title := "  " + style.Title.Render("APPLE MUSIC")
-	tagline := "  " + style.Faint.Render(style.Truncate(m.app().Tagline(), style.Max(w-2, 0)))
+	//
+	// 한 줄짜리 소개 문구는 뺐다. 박스가 이 앱이 무엇에 붙어 있는지를
+	// 목록으로 말하게 된 뒤로, 그 위에 얹힌 한 문장은 같은 것을 더 흐리게
+	// 말하는 줄이 됐다. 문구 자체는 계약에 남는다 — 라우터와 앱 전환이
+	// 그것을 읽는다(app.App.Tagline).
+	title := style.Title.Render("APPLE MUSIC")
 
 	// 두 단어를 따로 그린다. 한 번에 그리면 앞 단어 그림자가 뒤 단어
 	// 첫 줄까지 새어 든다.
@@ -367,23 +381,42 @@ func (m Model) viewHome(w, h int) string {
 		}
 		for _, line := range renderWordmark(word, wordmarkShadowDX, wordmarkShadowDY,
 			style.ColBrand, style.ColBrandShadow) {
-			big = append(big, "  "+line)
+			big = append(big, line)
 		}
 	}
-	big = append(big, "", tagline)
-	small := []string{"", title, "", tagline, ""}
+	small := []string{"", title, ""}
 
+	// 박스는 이름표와 관문 사이의 자리를 쓴다(homebox.go).
+	//
+	// 자리가 모자라면 박스가 스스로 접는다. 그때는 지금까지의 화면 그대로다 —
+	// 이름표가 이 화면의 본론이고 박스는 그 각주다.
+	room := h - len(tail)
 	var head []string
-	switch room := h - len(tail); {
-	case w >= wordmarkDrawWidth+2 && room >= len(big):
+	switch {
+	case w >= wordmarkDrawWidth && room >= len(big):
 		head = big
+		// 이름표와 박스 사이 한 줄, 박스와 관문 사이 한 줄.
+		if box := m.homeBoxRows(w, room-len(big)-2); len(box) > 0 {
+			head = append(append(append([]string{}, big...), ""), box...)
+		}
 	case room >= len(small):
 		head = small
-	case room >= 2:
-		head = []string{title, ""}
+	case room >= 1:
+		head = []string{title}
 	}
 
-	rows := append(head, tail...)
+	// 세로로도 남는 자리의 한가운데다. 화면 전체의 한가운데가 아닌 이유는,
+	// 그 자리가 이름표 안이기 때문이다. 박스가 서서 남는 자리를 다 쓰면
+	// 관문은 박스 바로 아래가 된다.
+	rows := append([]string{}, head...)
+	for i := 0; i < (room-len(head))/2; i++ {
+		rows = append(rows, "")
+	}
+	return fillTo(append(rows, tail...), h)
+}
+
+// fillTo 는 줄들을 정확히 h 줄로 맞춘다. 모자라면 빈 줄로 채우고 넘치면 자른다.
+func fillTo(rows []string, h int) string {
 	for len(rows) < h {
 		rows = append(rows, "")
 	}

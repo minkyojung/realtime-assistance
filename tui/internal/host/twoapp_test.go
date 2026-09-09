@@ -41,7 +41,18 @@ func (s stubApp) Status() string             { return s.name }
 func (s stubApp) Filter(string) app.App      { return s }
 func (s stubApp) Back() (app.App, bool)      { return s, s.back }
 func (s stubApp) Commands() []app.Command    { return nil }
-func (s stubApp) View(w, h int) string       { return strings.Repeat("\n", h-1) }
+func (s stubApp) Facts() []app.Fact {
+	return []app.Fact{
+		{Group: "Sources", Name: "Music.app", Detail: "play · queue · playlists"},
+		{Group: "Sources", Name: "Apple Music", Detail: "catalog search · signed in"},
+		{Group: "Sources", Name: "LRCLIB", Detail: "synced lyrics"},
+		{Group: "Sources", Name: "OpenAI", Detail: "gpt-5.5 · gpt-5.4-mini"},
+		{Group: "Library", Detail: "12,481 tracks · 37 playlists"},
+		{Group: "Commands", Detail: "/songs /artists /albums /queue /save"},
+		{Group: "Commands", Detail: "press / for all 18"},
+	}
+}
+func (s stubApp) View(w, h int) string { return strings.Repeat("\n", h-1) }
 func (s stubApp) Ask(string) tea.Cmd {
 	return func() tea.Msg { return app.SayMsg{App: s.name, Text: s.reply} }
 }
