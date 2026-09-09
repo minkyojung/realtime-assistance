@@ -1,231 +1,221 @@
 openapi: 3.0.3
 
 info:
-  title: Apple Music CLI API
-  version: 1.0.0
+  title: Music CLI API
+  version: 2.0.0
   license:
     name: UNLICENSED
     url: https://choosealicense.com/no-permission/
   description: |
-    내가 이미 가진 음악을 자연어로 파고, 왜 골랐는지 말해주고,
-    스킵하면 배우는 터미널 뮤직 플레이어의 서버 API.
+    터미널에서 쓰는 Apple Music 클라이언트의 서버 API.
+
+    화면(TUI)과 서버를 쪼갠 구조다. **Music.app 을 만지는 것은 서버뿐이고**,
+    화면은 이 API 만 부른다. 그래서 AppleScript 권한·토큰·AI 키가 전부
+    서버 한 곳에 모이고, 화면은 무엇을 그릴지만 알면 된다.
 
     ## 설계 원칙
 
-    1. **자연어 요청은 비동기 잡이다.** `POST /sessions/{sessionId}/turns` 는 `202` 를
-       반환하고, 클라이언트는 `GET /turns/{turnId}` 로 진행 상태를 조회한다.
-       LLM 호출(L2~L4)이 초 단위이므로 입력창을 막지 않기 위한 구조다.
-    2. **라이브러리 동기화도 비동기 잡이다.** `POST /library/sync-runs` → `202`.
-    3. **화면의 모든 예외(E1~E10)가 에러 코드로 대응된다.** 아래 표 참조.
-    4. **AI 실패는 잡의 `failed` 상태로 표현되고, 재생은 막지 않는다.**
+    1. **자연어 요청은 비동기다.** `POST /turns` 는 `202` 를 돌려주고,
+       화면은 `GET /turns/{turnId}` 로 진행을 본다. 선곡은 초 단위라
+       입력창을 막으면 안 된다.
+    2. **실시간 값은 저장하지 않는다.** 재생 위치·섞기·반복은 서버가
+       Music.app 에 그때그때 물어 `GET /playback` 으로 돌려준다.
+       우리가 켠 것을 기억하지 않고 매번 읽는 이유는, 사용자가 Music.app
+       에서 직접 켤 수도 있기 때문이다.
+    3. **관문은 로그인이 아니라 권한이다.** 그래서 `401` 이 없다.
+       대신 `403 AUTOMATION_PERMISSION_DENIED` 와
+       `503 MUSIC_APP_NOT_RUNNING` 이 있다.
+    4. **AI 실패는 재생을 막지 않는다.** 선정 근거를 못 만들면
+       `reason` 이 `null` 일 뿐 큐는 그대로 돈다.
+
+    ## 화면 ↔ API
+
+    | 화면 | 부르는 API |
+    |---|---|
+    | S1 홈 | `GET /status` |
+    | S2·S3 지금 재생 | `GET /playback` · `GET /playback/lyrics` |
+    | S4 목록 — Recently Added | `GET /tracks?sort=addedAt` |
+    | S4 목록 — Songs | `GET /tracks?sort=title` |
+    | S4 목록 — Unplayed | `GET /tracks?unplayed=true` |
+    | S5 목록 — Artists · Albums | `GET /artists` · `GET /albums` |
+    | S5 파고들기 | `GET /artists/{id}/tracks` · `GET /albums/{id}/tracks` |
+    | S6 플레이리스트 | `GET /playlists` · `GET /playlists/{id}/tracks` |
+    | S6 Queue | `GET /queue` · `POST /queue/items` · `PATCH`·`DELETE /queue/items/{id}` |
+    | S6 Catalog | `GET /catalog/tracks?q=` · `POST /library/tracks` |
+    | S7 로그 띠 | `GET /messages` · `POST /turns` · `GET /turns/{id}` |
+    | S8 입력창 — Search | `GET /tracks?q=` |
+    | S8 입력창 — 취소(esc) | `POST /turns/{id}/cancel` |
+    | S9 상태줄 누적 비용 | `GET /turns/usage` |
+    | S10 `/save` | `POST /playlists` |
+    | S11 관문 | 모든 응답의 에러 코드 |
+    | (화면 없음) 재생 종료 기록 | `POST /plays` |
 
     ## 화면 예외 ↔ 에러 코드
 
-    | 화면 예외 | HTTP | code |
+    | 화면이 하는 말 | HTTP | code |
     |---|---|---|
-    | E1 자동화 권한 거부 | 403 | `AUTOMATION_PERMISSION_DENIED` |
-    | E2 Music.app 미실행 | 503 | `MUSIC_APP_NOT_RUNNING` |
-    | E3 동기화 진행 중 | 409 | `SYNC_IN_PROGRESS` |
-    | E4 큐 생성 실패 | 502 | `MODEL_UNAVAILABLE` |
-    | E5 조건에 맞는 곡 없음 | 422 | `NO_MATCHING_TRACKS` |
-    | E6 곡이 로컬에 없음 | 409 | `TRACK_NOT_AVAILABLE_LOCALLY` |
-    | E7 카탈로그 접근 불가 | 502 | `CATALOG_UNAVAILABLE` |
-    | E8 재편성 충돌 | 409 | `TURN_ALREADY_RUNNING` |
-    | E9 마이크 권한 거부 | 403 | `MICROPHONE_PERMISSION_DENIED` |
-    | E10 인식 실패 | 422 | `NO_MATCH_FOUND` |
+    | `PERMISSION` 자동화 권한을 허용해 주세요 | 403 | `AUTOMATION_PERMISSION_DENIED` |
+    | `MUSIC APP` Music 이 실행되어 있지 않습니다 | 503 | `MUSIC_APP_NOT_RUNNING` |
+    | `⟳ syncing` 이미 읽는 중입니다 | 409 | `SYNC_IN_PROGRESS` |
+    | `AI is off · /ai <key>` | 409 | `AI_NOT_CONFIGURED` |
+    | `/setup <team ID>` 카탈로그 설정이 없습니다 | 409 | `CATALOG_NOT_CONFIGURED` |
+    | 카탈로그에 닿지 못했습니다 | 502 | `CATALOG_UNAVAILABLE` |
+    | 모델이 답하지 않습니다 | 502 | `MODEL_UNAVAILABLE` |
+    | 조건에 맞는 곡이 없습니다 | 422 | `NO_MATCHING_TRACKS` |
+    | 이미 진행 중인 요청이 있습니다 | 409 | `TURN_ALREADY_RUNNING` |
+    | 가사를 찾지 못했습니다 | 404 | `LYRICS_NOT_FOUND` |
 
     ## 범위 밖
 
     **Security Schemes 는 과제 명세에 따라 정의하지 않는다.**
-    단일 사용자 로컬 서버를 전제하므로 `401` 응답도 정의하지 않는다.
+    한 사람의 기기에서 도는 로컬 서버를 전제하므로 `401` 도 없다.
 
 servers:
-  - url: http://localhost:8787/v1
-    description: 로컬 서버
+  - url: http://127.0.0.1:8787/v1
+    description: 로컬 서버 — 이 기기 밖으로 나가지 않는다
 
 tags:
+  - name: status
+    description: 무엇에 붙어 있고 무엇이 막혀 있는가 (S1 홈 · S11 관문)
   - name: library
-    description: 라이브러리 동기화와 진단 (F6)
-  - name: tracks
-    description: 곡 조회 · 묘비 · 유사곡 (F7, F8)
-  - name: sessions
-    description: 청취 세션과 자연어 요청 (F1, F2, F3)
+    description: Music.app 스냅샷 — 곡 · 아티스트 · 앨범 · 플레이리스트 (S4·S5·S6)
+  - name: catalog
+    description: Apple Music 카탈로그 검색과 담기 (S6 Catalog)
+  - name: playback
+    description: 지금 재생 중인 것과 그 제어 (S2·S3)
   - name: queue
-    description: 재생 큐와 반응 (F2, F4)
-  - name: taste-rules
-    description: 취향 규칙 (F5)
-  - name: playlists
-    description: 플레이리스트 저장 (F9)
-  - name: recognitions
-    description: Shazam 인식과 라이브러리 대조 (F10, F11)
+    description: 다음에 틀 것 (S6 Queue)
+  - name: turns
+    description: 자연어 요청과 그 대화 (S7·S8)
+  - name: plays
+    description: 곡이 끝난 사건 — 왜 끝났는지는 우리만 안다
 
 paths:
+
   # ===================================================================
-  #  library — S3 진단 화면
+  #  status — S1 홈 · S11 관문
   # ===================================================================
-  /library/diagnosis:
+  /status:
     get:
-      tags: [library]
-      operationId: getLibraryDiagnosis
-      summary: 라이브러리 진단 지표 조회
+      tags: [status]
+      summary: 무엇에 붙어 있고 무엇을 갖고 있는가
       description: |
-        S3 진단 화면 전체를 채운다. **서비스의 문제 정의를 사용자 본인의
-        데이터로 증명하는 화면**이므로 미재생 곡 수와 비율이 핵심 필드다.
+        홈 화면(S1)이 통째로 이 응답으로 그려진다. 관문 사유도 여기 있다 —
+        **이 호출만은 권한이 없어도 200 을 준다.** 막혀 있다는 사실 자체가
+        화면이 그려야 할 내용이기 때문이다.
+      operationId: getStatus
       responses:
         '200':
-          description: 진단 지표
+          description: 현재 상태
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LibraryDiagnosis'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
+                $ref: '#/components/schemas/Status'
 
-  /library/sync-runs:
+  /settings:
     get:
-      tags: [library]
-      operationId: listSyncRuns
-      summary: 동기화 이력 조회
-      parameters:
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Cursor'
+      tags: [status]
+      summary: 설정 조회
+      description: 비밀값은 돌려주지 않는다. "붙어 있는가"만 돌려준다.
+      operationId: getSettings
       responses:
         '200':
-          description: 동기화 이력
+          description: 설정
           content:
             application/json:
               schema:
-                type: object
-                required: [data, page]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SyncRun'
-                  page:
-                    $ref: '#/components/schemas/PageMeta'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-    post:
-      tags: [library]
-      operationId: createSyncRun
-      summary: 라이브러리 동기화 시작 (비동기)
+                $ref: '#/components/schemas/Settings'
+    patch:
+      tags: [status]
+      summary: 설정 변경
       description: |
-        Music.app 에서 전곡 메타데이터를 읽어 저장하고, 신규 곡에 대해
-        L1 무드 태깅을 수행한다. 즉시 `202` 를 반환한다.
-      responses:
-        '202':
-          description: 동기화 잡이 생성되었다
-          headers:
-            Location:
-              description: 생성된 잡의 조회 경로
-              schema:
-                type: string
-                example: /v1/library/sync-runs/41
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SyncRun'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-
-  /library/sync-runs/{syncRunId}:
-    parameters:
-      - $ref: '#/components/parameters/SyncRunId'
-    get:
-      tags: [library]
-      operationId: getSyncRun
-      summary: 동기화 잡 상태 조회
-      responses:
-        '200':
-          description: 잡 상태
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SyncRun'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /library/tracks:
-    post:
-      tags: [library]
-      operationId: addLibraryTrack
-      summary: 카탈로그 곡을 라이브러리에 추가
-      description: |
-        S5 인식 결과에서 **라이브러리에 없는 곡**을 담을 때 사용한다 (F11).
+        `/setup <team ID>` 와 `/ai <key>` 가 부른다. 보낸 필드만 바뀐다.
+        키와 토큰은 서버가 macOS 키체인에 넣고 DB 에는 남기지 않는다.
+      operationId: updateSettings
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddLibraryTrackRequest'
+              $ref: '#/components/schemas/UpdateSettingsRequest'
       responses:
-        '201':
-          description: 추가된 곡
+        '200':
+          description: 바뀐 설정
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Track'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '502':
-          $ref: '#/components/responses/BadGateway'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
+                $ref: '#/components/schemas/Settings'
+        '400': { $ref: '#/components/responses/BadRequest' }
 
   # ===================================================================
-  #  tracks — S2 묘비 화면
+  #  library — S4 · S5 · S6
   # ===================================================================
+  /library/sync:
+    get:
+      tags: [library]
+      summary: 동기화 상태
+      description: 상태줄의 `⟳ syncing` 이 이 값을 본다.
+      operationId: getSync
+      responses:
+        '200':
+          description: 마지막 동기화
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sync'
+    post:
+      tags: [library]
+      summary: Music.app 을 다시 읽는다
+      description: |
+        `/reload` 가 부른다. 1만 곡대에서 초 단위가 걸리므로 비동기다 —
+        `202` 를 돌려주고 화면은 `GET /library/sync` 로 진행을 본다.
+      operationId: startSync
+      responses:
+        '202':
+          description: 읽기 시작함
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sync'
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
   /tracks:
     get:
-      tags: [tracks]
-      operationId: listTracks
-      summary: 곡 목록 조회 (묘비 포함)
+      tags: [library]
+      summary: 곡 목록
       description: |
-        `filter=never_played` 가 **묘비 화면(S2)의 기본 질의**다.
-        `last_played_at IS NULL` 인 곡을 돌려준다.
+        목록 패널의 세 구역이 이 하나를 파라미터만 바꿔 쓴다.
+
+        | 구역 | 호출 |
+        |---|---|
+        | Recently Added | `?sort=addedAt&order=desc` |
+        | Songs | `?sort=title` |
+        | Unplayed | `?unplayed=true` |
+        | 검색(ctrl+f) | `?q=<검색어>` |
+
+        `inLibrary=false` 인 곡은 기본으로 빠진다 — 플레이리스트에만
+        담고 라이브러리에는 없는 곡이 실제로 존재하기 때문이다.
+      operationId: listTracks
       parameters:
-        - name: filter
+        - $ref: '#/components/parameters/Query'
+        - name: unplayed
           in: query
-          description: 조회 기준
-          schema:
-            type: string
-            enum: [all, never_played, not_played_since, excluded]
-            default: all
-        - name: since
-          in: query
-          description: '`filter=not_played_since` 일 때의 기준일'
-          schema:
-            type: string
-            format: date
-        - name: q
-          in: query
-          description: 제목·아티스트 부분 일치
-          schema:
-            type: string
-        - name: tag
-          in: query
-          description: 태그명으로 필터 (복수 지정 시 AND)
-          schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
+          description: '`true` 면 한 번도 재생하지 않은 곡만 (`lastPlayedAt` 이 null)'
+          schema: { type: boolean, default: false }
         - name: sort
           in: query
           schema:
             type: string
-            enum: [added_at_desc, last_played_at_asc, play_count_asc, title_asc]
-            default: added_at_desc
+            enum: [title, addedAt, lastPlayedAt, playCount]
+            default: title
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
       responses:
@@ -234,25 +224,16 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [data, page]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Track'
-                  page:
-                    $ref: '#/components/schemas/PageMeta'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/TrackPage'
+        '400': { $ref: '#/components/responses/BadRequest' }
 
   /tracks/{trackId}:
     parameters:
       - $ref: '#/components/parameters/TrackId'
     get:
-      tags: [tracks]
+      tags: [library]
+      summary: 곡 하나
       operationId: getTrack
-      summary: 곡 상세 조회
       responses:
         '200':
           description: 곡
@@ -260,480 +241,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Track'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      tags: [tracks]
-      operationId: updateTrack
-      summary: 곡 제외 표시 변경 (묘비 정리)
-      description: |
-        F7 의 "정리"는 **제외 표시까지만** 한다. 원본 파일이나
-        Music.app 라이브러리에서 삭제하지 않는다.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateTrackRequest'
-      responses:
-        '200':
-          description: 변경된 곡
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Track'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /tracks/{trackId}/similar:
-    parameters:
-      - $ref: '#/components/parameters/TrackId'
-    get:
-      tags: [tracks]
-      operationId: listSimilarCatalogTracks
-      summary: 카탈로그에서 유사곡 조회 (F8)
-      description: |
-        죽은 곡을 실마리로 Apple Music 카탈로그를 조회한다.
-        **바깥으로 나가되 출발점은 내 라이브러리 안쪽**이라는 점이 F8 의 전부다.
-      parameters:
-        - $ref: '#/components/parameters/Limit'
-      responses:
-        '200':
-          description: 카탈로그 유사곡
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [data]
-                properties:
-                  seedTrackId:
-                    type: integer
-                    format: int64
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/CatalogTrack'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '502':
-          $ref: '#/components/responses/BadGateway'
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /artists:
     get:
-      tags: [tracks]
+      tags: [library]
+      summary: 아티스트 묶음 목록
+      description: 목록 패널의 Artists 구역(S5). 곡 수와 누적 재생 수를 부제로 쓴다.
       operationId: listArtists
-      summary: 아티스트 검색
-      description: '`@` 멘션 자동완성에 사용한다.'
       parameters:
-        - name: q
-          in: query
-          schema:
-            type: string
+        - $ref: '#/components/parameters/Query'
         - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
       responses:
         '200':
           description: 아티스트 목록
           content:
             application/json:
               schema:
-                type: object
-                required: [data]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Artist'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/ArtistPage'
+        '400': { $ref: '#/components/responses/BadRequest' }
 
-  # ===================================================================
-  #  sessions — S1 재생 뷰
-  # ===================================================================
-  /sessions:
-    get:
-      tags: [sessions]
-      operationId: listSessions
-      summary: 청취 세션 목록 (A8 재개)
-      parameters:
-        - name: status
-          in: query
-          schema:
-            $ref: '#/components/schemas/SessionStatus'
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Cursor'
-      responses:
-        '200':
-          description: 세션 목록
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [data, page]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/SessionSummary'
-                  page:
-                    $ref: '#/components/schemas/PageMeta'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-    post:
-      tags: [sessions]
-      operationId: createSession
-      summary: 청취 세션 생성
-      description: |
-        세션만 만든다. 큐 생성은 `POST /sessions/{sessionId}/turns` 가 담당한다.
-        `prompt` 를 함께 보내면 첫 턴을 즉시 시작한다.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSessionRequest'
-      responses:
-        '201':
-          description: 생성된 세션
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Session'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /sessions/{sessionId}:
+  /artists/{artistId}/tracks:
     parameters:
-      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/ArtistId'
     get:
-      tags: [sessions]
-      operationId: getSession
-      summary: 세션 조회 (큐 포함)
-      description: S1 재생 뷰를 한 번에 복원하는 데 필요한 값을 모두 담는다.
-      responses:
-        '200':
-          description: 세션
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Session'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      tags: [sessions]
-      operationId: updateSession
-      summary: 세션 종료 · 제목 변경
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSessionRequest'
-      responses:
-        '200':
-          description: 변경된 세션
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Session'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /sessions/{sessionId}/turns:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
-    get:
-      tags: [sessions]
-      operationId: listTurns
-      summary: 세션의 자연어 요청 이력
+      tags: [library]
+      summary: 그 아티스트의 곡 — 파고들기
+      operationId: listArtistTracks
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
       responses:
         '200':
-          description: 턴 목록
+          description: 곡 목록
           content:
             application/json:
               schema:
-                type: object
-                required: [data, page]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Turn'
-                  page:
-                    $ref: '#/components/schemas/PageMeta'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      tags: [sessions]
-      operationId: createTurn
-      summary: 자연어 요청 (비동기)
-      description: |
-        큐 생성(F1) · 재편성(F3) · 근거 질의 · 반응 표명을 모두 이 하나로 받는다.
-        의도 분류는 서버(L2)가 한다.
+                $ref: '#/components/schemas/TrackPage'
+        '404': { $ref: '#/components/responses/NotFound' }
 
-        즉시 `202` 를 반환하고 `status=queued` 인 턴을 준다.
-        클라이언트는 `GET /turns/{turnId}` 로 완료를 확인한다.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateTurnRequest'
-      responses:
-        '202':
-          description: 턴이 접수되었다
-          headers:
-            Location:
-              schema:
-                type: string
-                example: /v1/turns/882
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Turn'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-
-  /turns/{turnId}:
-    parameters:
-      - $ref: '#/components/parameters/TurnId'
+  /albums:
     get:
-      tags: [sessions]
-      operationId: getTurn
-      summary: 턴 상태·결과 조회
-      description: |
-        `status` 가 `succeeded` 가 되면 `queueItems` 에 결과가 담긴다.
-        `failed` 인 경우 `error` 에 사유가 담기며, **이때에도 기존 큐의 재생은 계속된다.**
-      responses:
-        '200':
-          description: 턴
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Turn'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      tags: [sessions]
-      operationId: cancelTurn
-      summary: 진행 중인 턴 취소 (Ctrl+C)
-      responses:
-        '204':
-          description: 취소되었다
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  # ===================================================================
-  #  queue — S1 재생 뷰
-  # ===================================================================
-  /sessions/{sessionId}/queue-items:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
-    get:
-      tags: [queue]
-      operationId: listQueueItems
-      summary: 재생 큐 조회
-      responses:
-        '200':
-          description: 큐
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [data, summary]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/QueueItem'
-                  summary:
-                    $ref: '#/components/schemas/QueueSummary'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      tags: [queue]
-      operationId: createQueueItem
-      summary: 큐에 곡 투입
-      description: |
-        묘비에서 되살리기(`origin=revive`), 인식 결과에서 투입(`origin=recognition`),
-        직접 추가(`origin=manual`) 가 모두 이 엔드포인트를 쓴다.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateQueueItemRequest'
-      responses:
-        '201':
-          description: 추가된 큐 항목
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/QueueItem'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /queue-items/{queueItemId}:
-    parameters:
-      - $ref: '#/components/parameters/QueueItemId'
-    patch:
-      tags: [queue]
-      operationId: updateQueueItem
-      summary: 큐 항목 상태·순서 변경
-      description: 재생 상태 폴링이 감지한 전이(`playing` → `played`)를 반영한다.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateQueueItemRequest'
-      responses:
-        '200':
-          description: 변경된 큐 항목
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/QueueItem'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    delete:
-      tags: [queue]
-      operationId: deleteQueueItem
-      summary: 큐에서 제거
-      responses:
-        '204':
-          description: 제거되었다
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /queue-items/{queueItemId}/reactions:
-    parameters:
-      - $ref: '#/components/parameters/QueueItemId'
-    post:
-      tags: [queue]
-      operationId: createReaction
-      summary: 반응 기록 (F4)
-      description: |
-        **대부분의 반응은 사용자가 아니라 클라이언트의 재생 위치 폴링이 보낸다**
-        (`detectedBy=poll`). 3초 이내 이탈은 `skip_early` 로 기록된다.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateReactionRequest'
-      responses:
-        '201':
-          description: 기록된 반응
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Reaction'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # ===================================================================
-  #  taste-rules — S4
-  # ===================================================================
-  /taste-rules:
-    get:
-      tags: [taste-rules]
-      operationId: listTasteRules
-      summary: 취향 규칙 목록 (F5)
+      tags: [library]
+      summary: 앨범 묶음 목록
+      operationId: listAlbums
       parameters:
-        - name: active
-          in: query
-          schema:
-            type: boolean
+        - $ref: '#/components/parameters/Query'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
       responses:
         '200':
-          description: 규칙 목록
+          description: 앨범 목록
           content:
             application/json:
               schema:
-                type: object
-                required: [data, page]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/TasteRule'
-                  page:
-                    $ref: '#/components/schemas/PageMeta'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/AlbumPage'
+        '400': { $ref: '#/components/responses/BadRequest' }
 
-  /taste-rules/{tasteRuleId}:
+  /albums/{albumId}/tracks:
     parameters:
-      - $ref: '#/components/parameters/TasteRuleId'
-    patch:
-      tags: [taste-rules]
-      operationId: updateTasteRule
-      summary: 규칙 수정·비활성화
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateTasteRuleRequest'
+      - $ref: '#/components/parameters/AlbumId'
+    get:
+      tags: [library]
+      summary: 그 앨범의 곡 — 파고들기
+      operationId: listAlbumTracks
       responses:
         '200':
-          description: 변경된 규칙
+          description: 곡 목록
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TasteRule'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      tags: [taste-rules]
-      operationId: deleteTasteRule
-      summary: 규칙 삭제
-      responses:
-        '204':
-          description: 삭제되었다
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: '#/components/schemas/TrackPage'
+        '404': { $ref: '#/components/responses/NotFound' }
 
-  # ===================================================================
-  #  playlists — F9
-  # ===================================================================
   /playlists:
     get:
-      tags: [playlists]
-      operationId: listPlaylists
+      tags: [library]
       summary: 플레이리스트 목록
-      parameters:
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Cursor'
+      description: 곡이 0개인 것은 빠진다 — 화면이 빈 구역을 만들지 않기 때문이다.
+      operationId: listPlaylists
       responses:
         '200':
           description: 플레이리스트 목록
@@ -741,23 +328,17 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data, page]
+                required: [items]
                 properties:
-                  data:
+                  items:
                     type: array
                     items:
                       $ref: '#/components/schemas/Playlist'
-                  page:
-                    $ref: '#/components/schemas/PageMeta'
-        '400':
-          $ref: '#/components/responses/BadRequest'
     post:
-      tags: [playlists]
+      tags: [library]
+      summary: 지금 큐를 플레이리스트로 저장
+      description: '`/save <name>` 이 부른다. Music.app 에 실제로 만들어진다.'
       operationId: createPlaylist
-      summary: 현재 큐를 플레이리스트로 저장 (F9)
-      description: |
-        서버에 저장한 뒤 Music.app 에도 생성한다. Music.app 반영에 실패해도
-        서버 저장은 유지되며 `appleMusicPlaylistId` 가 `null` 로 남는다.
       requestBody:
         required: true
         content:
@@ -766,97 +347,450 @@ paths:
               $ref: '#/components/schemas/CreatePlaylistRequest'
       responses:
         '201':
-          description: 생성된 플레이리스트
+          description: 만들어진 플레이리스트
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Playlist'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
-  # ===================================================================
-  #  recognitions — S5 (F10, F11)
-  # ===================================================================
-  /recognitions:
+  /playlists/{playlistId}/tracks:
+    parameters:
+      - $ref: '#/components/parameters/PlaylistId'
     get:
-      tags: [recognitions]
-      operationId: listRecognitions
-      summary: 인식 이력 조회
-      parameters:
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Cursor'
+      tags: [library]
+      summary: 플레이리스트의 곡 — 담긴 순서대로
+      operationId: listPlaylistTracks
       responses:
         '200':
-          description: 인식 이력
+          description: 곡 목록
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackPage'
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ===================================================================
+  #  catalog — S6 Catalog 구역
+  # ===================================================================
+  /catalog/tracks:
+    get:
+      tags: [catalog]
+      summary: Apple Music 카탈로그 검색
+      description: |
+        설정이 없으면 화면에 구역 자체가 없다. 그래도 호출되면
+        `409 CATALOG_NOT_CONFIGURED` 로 왜 없는지 말한다.
+
+        응답의 `inLibrary` 가 화면의 `✓` / `+` 표시다.
+      operationId: searchCatalog
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 검색 결과
           content:
             application/json:
               schema:
                 type: object
-                required: [data, page]
+                required: [items]
                 properties:
-                  data:
+                  items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Recognition'
-                  page:
-                    $ref: '#/components/schemas/PageMeta'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                      $ref: '#/components/schemas/CatalogTrack'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '502': { $ref: '#/components/responses/BadGateway' }
+
+  /library/tracks:
     post:
-      tags: [recognitions]
-      operationId: createRecognition
-      summary: 인식 결과 등록 및 라이브러리 대조 (F10 · F11)
-      description: |
-        ShazamKit 헬퍼가 얻은 결과를 서버에 등록하면, 서버가
-        `appleMusicId` 와 `isrc` **정확 일치**로 라이브러리를 대조한다.
-
-        > **대조에 AI 를 쓰지 않는다.** "내 라이브러리에 있는가"는 판정이지
-        > 해석이 아니며, 확률적으로 답하면 F11 의 주장 자체가 무너진다.
-
-        일치하는 곡이 있으면 `matchedTrack` 이 채워지고, 그 곡의
-        `lastPlayedAt` 이 `null` 이면 **담아두고 한 번도 듣지 않은 곡**이다.
+      tags: [catalog]
+      summary: 카탈로그 곡을 내 라이브러리에 담는다
+      description: 화면의 표시가 `+` → `⋯` → `✓` 로 바뀌는 그 동작이다.
+      operationId: addCatalogTrack
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateRecognitionRequest'
+              type: object
+              required: [appleMusicId]
+              properties:
+                appleMusicId:
+                  type: string
       responses:
         '201':
-          description: 등록된 인식 결과
+          description: 담긴 곡
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Recognition'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
+                $ref: '#/components/schemas/Track'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '502': { $ref: '#/components/responses/BadGateway' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
-  /recognitions/{recognitionId}:
-    parameters:
-      - $ref: '#/components/parameters/RecognitionId'
+  # ===================================================================
+  #  playback — S2 · S3
+  # ===================================================================
+  /playback:
     get:
-      tags: [recognitions]
-      operationId: getRecognition
-      summary: 인식 결과 조회
+      tags: [playback]
+      summary: 지금 재생 중인 것
+      description: |
+        **전부 실시간이다.** 서버가 Music.app 에 물어 그대로 돌려준다.
+        저장하지 않는 이유는 사용자가 Music.app 에서 직접 조작할 수 있기
+        때문이다 — 우리가 기억한 값은 그 순간 거짓말이 된다.
+
+        화면이 1초마다 부른다.
+      operationId: getPlayback
       responses:
         '200':
-          description: 인식 결과
+          description: 재생 상태
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Recognition'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: '#/components/schemas/Playback'
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    patch:
+      tags: [playback]
+      summary: 켜져 있는 것을 바꾼다
+      description: '`/shuffle` · `/repeat` · `/volume` · `/love` · `/rate` 가 부른다.'
+      operationId: updatePlayback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlaybackRequest'
+      responses:
+        '200':
+          description: 바뀐 재생 상태
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Playback'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /playback/play:
+    post:
+      tags: [playback]
+      summary: 튼다
+      description: |
+        `trackId` 를 주면 그 곡부터, `queueItemId` 를 주면 큐의 그 자리부터,
+        둘 다 없으면 멈춰 있던 것을 이어서 튼다. `enter` 의 뜻은 하나다.
+      operationId: play
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayRequest'
+      responses:
+        '200':
+          description: 재생 상태
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Playback'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /playback/pause:
+    post:
+      tags: [playback]
+      summary: 멈춘다
+      operationId: pause
+      responses:
+        '200':
+          description: 재생 상태
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Playback'
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /playback/next:
+    post:
+      tags: [playback]
+      summary: 다음 곡으로 넘긴다
+      description: 넘긴 곡은 `POST /plays` 로 `skipped` 로 기록된다.
+      operationId: next
+      responses:
+        '200':
+          description: 재생 상태
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Playback'
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /playback/lyrics:
+    get:
+      tags: [playback]
+      summary: 지금 곡의 가사
+      description: |
+        LRCLIB 에서 받아 온다. **저장하지 않는다** — 우리 것이 아니고,
+        같은 곡이라도 판본마다 타이밍이 다르다.
+
+        없는 것이 정상이다. 없으면 화면은 그 자리에 곡 이력을 그린다.
+      operationId: getLyrics
+      responses:
+        '200':
+          description: 가사
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lyrics'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '502': { $ref: '#/components/responses/BadGateway' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  # ===================================================================
+  #  queue — S6 Queue 구역
+  # ===================================================================
+  /queue:
+    get:
+      tags: [queue]
+      summary: 지금 큐
+      operationId: getQueue
+      responses:
+        '200':
+          description: 큐
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+    delete:
+      tags: [queue]
+      summary: 큐를 비운다
+      description: '`/clear` 가 부른다. 빠진 곡들은 `removed` 로 기록된다.'
+      operationId: clearQueue
+      responses:
+        '204':
+          description: 비웠다
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /queue/items:
+    post:
+      tags: [queue]
+      summary: 큐에 곡을 넣는다
+      description: |
+        `/next` 는 `position=next`, `/later` 는 `position=end` 로 부른다.
+        **재생을 끊지 않는다** — 지금 곡은 그대로 간다.
+      operationId: addQueueItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddQueueItemRequest'
+      responses:
+        '201':
+          description: 넣은 항목
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueItem'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /queue/items/{queueItemId}:
+    parameters:
+      - $ref: '#/components/parameters/QueueItemId'
+    patch:
+      tags: [queue]
+      summary: 순서를 바꾼다
+      description: '`/up` 과 `/down` 이 부른다. 뒤 항목들의 `position` 은 서버가 다시 매긴다.'
+      operationId: moveQueueItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [position]
+              properties:
+                position:
+                  type: integer
+                  minimum: 0
+      responses:
+        '200':
+          description: 옮긴 뒤의 큐
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [queue]
+      summary: 큐에서 뺀다
+      description: '`/remove` 가 부른다. 지금 재생 중인 항목은 뺄 수 없다 — `409`.'
+      operationId: removeQueueItem
+      responses:
+        '204':
+          description: 뺐다
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # ===================================================================
+  #  turns — S7 로그 띠 · S8 입력창
+  # ===================================================================
+  /turns:
+    post:
+      tags: [turns]
+      summary: 자연어 요청을 낸다
+      description: |
+        입력창에 친 문장이 여기로 온다. **`202` 를 즉시 돌려준다** —
+        선곡은 실측 7초라 기다리게 하면 입력창이 그동안 죽는다.
+
+        화면은 로그 띠에 스피너를 띄우고 `GET /turns/{turnId}` 를 폴링한다.
+
+        `intent` 를 주지 않으면 서버가 문장을 보고 정한다 — 새 큐를 짤지,
+        지금 큐에 덧붙일지.
+      operationId: createTurn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTurnRequest'
+      responses:
+        '202':
+          description: 요청을 받았다. 아직 답은 없다
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turn'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /turns/usage:
+    get:
+      tags: [turns]
+      summary: 이 기기가 지금까지 쓴 것
+      description: |
+        상태줄 오른쪽 끝(S9)과 `/cost`(S10)가 본다.
+        `turn` 을 합친 값이다 — 따로 저장하지 않는다.
+      operationId: getUsage
+      responses:
+        '200':
+          description: 누적 사용량
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usage'
+
+  /turns/{turnId}:
+    parameters:
+      - $ref: '#/components/parameters/TurnId'
+    get:
+      tags: [turns]
+      summary: 요청 하나의 진행과 결과
+      description: |
+        `status` 가 `running` 이면 아직이다. `done` 이면 `usage` 와
+        `picks` 가 채워져 있고, 그것이 로그를 `ctrl+o` 로 펼쳤을 때
+        보이는 내용(S7)이다.
+      operationId: getTurn
+      responses:
+        '200':
+          description: 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turn'
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /turns/{turnId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/TurnId'
+    post:
+      tags: [turns]
+      summary: 진행 중인 요청을 물린다
+      description: |
+        `esc` 사슬의 첫 칸이다. 선곡이 7초 걸리는 동안 잘못 물어본 것을
+        알아채는데, 물러날 방법이 없으면 끝날 때까지 봐야 한다.
+
+        이미 끝난 요청에 부르면 `409`.
+      operationId: cancelTurn
+      responses:
+        '200':
+          description: 물린 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turn'
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /messages:
+    get:
+      tags: [turns]
+      summary: 로그 띠에 그릴 줄들
+      description: 최근 것이 아래다. 사람이 친 말과 앱이 한 말이 한 흐름으로 섞인다.
+      operationId: listMessages
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: 로그
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePage'
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  # ===================================================================
+  #  plays — 화면에 없지만 남겨야 하는 것
+  # ===================================================================
+  /plays:
+    post:
+      tags: [plays]
+      summary: 곡 하나가 끝났다
+      description: |
+        화면이 재생을 지켜보다가 곡이 끝나는 순간 부른다.
+
+        Music.app 의 재생 횟수·스킵 횟수에는 넷이 뒤섞여 있어서 **왜**
+        끝났는지를 알 수 없다. 사용자가 넘긴 것, 큐에서 뺀 것, 큐를
+        갈아끼운 것, 끝까지 들은 것. 그것을 여기서 나눈다.
+
+        이 기록은 화면 어디에도 안 보인다. 대신 다음 선곡(`POST /turns`)이
+        읽어서, "이 사람이 최근에 넘긴 곡"을 후보에서 덜어낸다.
+      operationId: recordPlay
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordPlayRequest'
+      responses:
+        '201':
+          description: 적었다
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Play'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
 # =====================================================================
 #  components
@@ -868,153 +802,121 @@ components:
       name: trackId
       in: path
       required: true
-      schema:
-        type: integer
-        format: int64
-    SessionId:
-      name: sessionId
+      schema: { type: integer, format: int64 }
+    ArtistId:
+      name: artistId
       in: path
       required: true
-      schema:
-        type: integer
-        format: int64
-    TurnId:
-      name: turnId
+      schema: { type: integer, format: int64 }
+    AlbumId:
+      name: albumId
       in: path
       required: true
-      schema:
-        type: integer
-        format: int64
+      schema: { type: integer, format: int64 }
+    PlaylistId:
+      name: playlistId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
     QueueItemId:
       name: queueItemId
       in: path
       required: true
-      schema:
-        type: integer
-        format: int64
-    TasteRuleId:
-      name: tasteRuleId
+      schema: { type: integer, format: int64 }
+    TurnId:
+      name: turnId
       in: path
       required: true
-      schema:
-        type: integer
-        format: int64
-    RecognitionId:
-      name: recognitionId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
-    SyncRunId:
-      name: syncRunId
-      in: path
-      required: true
-      schema:
-        type: integer
-        format: int64
+      schema: { type: integer, format: int64 }
+    Query:
+      name: q
+      in: query
+      description: 검색어. 제목과 아티스트를 본다. 비면 필터를 풀지 않은 것이다
+      schema: { type: string, maxLength: 200 }
     Limit:
       name: limit
       in: query
-      description: 한 번에 가져올 개수
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 200
-        default: 50
+      description: 한 번에 받을 개수
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
     Cursor:
       name: cursor
       in: query
-      description: 다음 페이지 커서
-      schema:
-        type: string
+      description: 이전 응답의 `nextCursor`
+      schema: { type: string }
 
   responses:
     BadRequest:
       description: 요청 형식이 잘못되었다
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
           example:
             code: VALIDATION_FAILED
             message: 'position 은 0 이상이어야 합니다'
     Forbidden:
-      description: macOS 권한이 거부되었다 (E1, E9)
+      description: macOS 자동화 권한이 거부되었다
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
           example:
             code: AUTOMATION_PERMISSION_DENIED
-            message: '시스템 설정 > 개인정보 보호 및 보안 > 자동화 에서 Music 접근을 허용해 주세요'
-            hint: 'open x-apple.systempreferences:com.apple.preference.security?Privacy_Automation'
+            message: 'Allow Terminal to control Music, then it just works'
+            hint: '시스템 설정 › 개인정보 보호 및 보안 › 자동화'
     NotFound:
       description: 대상을 찾을 수 없다
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
           example:
             code: NOT_FOUND
-            message: '세션 91 을 찾을 수 없습니다'
+            message: '곡 4821 을 찾을 수 없습니다'
     Conflict:
-      description: 현재 상태에서 수행할 수 없다 (E3, E6, E8)
+      description: 지금 상태에서는 할 수 없다
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
           example:
-            code: TURN_ALREADY_RUNNING
-            message: '이미 진행 중인 요청이 있습니다'
-    UnprocessableEntity:
-      description: 요청은 유효하나 결과를 만들 수 없다 (E5, E10)
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: NO_MATCHING_TRACKS
-            message: '조건에 맞는 곡이 라이브러리에 없습니다'
-            hint: '가사 없음 조건을 빼면 12곡이 나옵니다'
+            code: AI_NOT_CONFIGURED
+            message: 'AI is off'
+            hint: '/ai <key> 로 켤 수 있습니다'
     BadGateway:
-      description: 외부 시스템 응답 실패 (E4, E7)
+      description: 바깥이 답하지 않는다 — 카탈로그 · 모델 · 가사
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
           example:
             code: CATALOG_UNAVAILABLE
-            message: 'Apple Music 카탈로그에 접근할 수 없습니다'
+            message: 'Apple Music 카탈로그에 닿지 못했습니다'
     ServiceUnavailable:
-      description: Music.app 을 사용할 수 없다 (E2)
+      description: Music.app 이 실행되어 있지 않다
       content:
         application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+          schema: { $ref: '#/components/schemas/Error' }
           example:
             code: MUSIC_APP_NOT_RUNNING
-            message: 'Music 앱이 실행되어 있지 않습니다'
+            message: 'Music is not running. Open it to start playback'
+            hint: 'open -a Music'
 
   schemas:
 
     # ---------------- 공통 ----------------
     ErrorCode:
       type: string
-      description: 화면 예외 E1~E10 에 대응한다
+      description: 화면(S11)이 하는 말에 하나씩 대응한다
       enum:
         - VALIDATION_FAILED
         - NOT_FOUND
         - AUTOMATION_PERMISSION_DENIED
-        - MICROPHONE_PERMISSION_DENIED
         - MUSIC_APP_NOT_RUNNING
         - SYNC_IN_PROGRESS
-        - TURN_ALREADY_RUNNING
-        - TRACK_NOT_AVAILABLE_LOCALLY
-        - NO_MATCHING_TRACKS
-        - NO_MATCH_FOUND
-        - MODEL_UNAVAILABLE
+        - AI_NOT_CONFIGURED
+        - CATALOG_NOT_CONFIGURED
         - CATALOG_UNAVAILABLE
+        - MODEL_UNAVAILABLE
+        - NO_MATCHING_TRACKS
+        - TURN_ALREADY_RUNNING
+        - TRACK_NOT_AVAILABLE
+        - LYRICS_NOT_FOUND
 
     Error:
       type: object
@@ -1024,104 +926,52 @@ components:
           $ref: '#/components/schemas/ErrorCode'
         message:
           type: string
-          description: 사용자에게 그대로 보여줄 수 있는 문장
+          description: 화면에 그대로 띄울 수 있는 문장
         hint:
           type: string
           nullable: true
-          description: 조치 안내. 화면 하단에 함께 표시된다
+          description: 무엇을 하면 되는지. 왜 안 되는지가 아니다
 
     PageMeta:
       type: object
       required: [hasMore]
       properties:
-        hasMore:
-          type: boolean
+        hasMore: { type: boolean }
         nextCursor:
           type: string
           nullable: true
 
-    # ---------------- 음악 ----------------
+    # ---------------- 라이브러리 ----------------
     Artist:
       type: object
       required: [id, name]
       properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
+        id: { type: integer, format: int64 }
+        name: { type: string }
 
     Album:
       type: object
       required: [id, title, artist]
       properties:
-        id:
-          type: integer
-          format: int64
-        title:
-          type: string
-        artist:
-          $ref: '#/components/schemas/Artist'
-        releaseYear:
-          type: integer
-          nullable: true
-        artworkUrl:
-          type: string
-          format: uri
-          nullable: true
-
-    Tag:
-      type: object
-      required: [id, name, kind]
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-          example: 새벽
-        kind:
-          type: string
-          enum: [mood, context, energy]
-        confidence:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 1
-          description: 해당 곡에 부여된 신뢰도 (L1 산출)
-
-    TrackSource:
-      type: string
-      enum: [file, shared]
-      description: '`shared` 는 Apple Music 스트리밍. 실측 라이브러리의 97%'
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        artist: { $ref: '#/components/schemas/Artist' }
 
     Track:
       type: object
-      required:
-        [id, title, artist, durationMs, source, playCount, skipCount,
-         favorited, disliked, excluded, inLibrary]
+      description: '`track` 표 그대로다. 화면 S2·S4 가 이 필드들을 그린다'
+      required: [id, title, artist, durationMs, playCount, inLibrary]
       properties:
-        id:
-          type: integer
-          format: int64
-        persistentId:
-          type: string
-          description: Music.app 동기화 키
-        appleMusicId:
-          type: string
-          nullable: true
-        isrc:
-          type: string
-          nullable: true
+        id: { type: integer, format: int64 }
         title:
           type: string
-        artist:
-          $ref: '#/components/schemas/Artist'
+          description: S2·S4 제목
+        artist: { $ref: '#/components/schemas/Artist' }
         album:
           type: object
+          allOf: [{ $ref: '#/components/schemas/Album' }]
           nullable: true
-          allOf:
-            - $ref: '#/components/schemas/Album'
+          description: 앨범 없는 곡이 있다
         genre:
           type: string
           nullable: true
@@ -1130,231 +980,349 @@ components:
           nullable: true
         durationMs:
           type: integer
-        source:
-          $ref: '#/components/schemas/TrackSource'
-        cloudStatus:
-          type: string
-          nullable: true
-          example: subscription
+          description: S2·S4 길이
         playCount:
           type: integer
-        lastPlayedAt:
-          type: string
-          format: date-time
-          nullable: true
-          description: '★ `null` 이면 **담아두고 한 번도 재생하지 않은 곡**이다. 묘비의 1차 기준'
-        skipCount:
-          type: integer
-        lastSkippedAt:
-          type: string
-          format: date-time
-          nullable: true
-        favorited:
-          type: boolean
-        disliked:
-          type: boolean
-        rating:
-          type: integer
-          nullable: true
-          minimum: 0
-          maximum: 100
+          description: S2·S4 재생 횟수
         addedAt:
           type: string
           format: date-time
           nullable: true
-          description: |
-            라이브러리에 담은 시각. **라이브러리에 없는 곡(`inLibrary=false`)은
-            `null`** 이다 — 담은 적이 없으므로 담은 날짜도 없다.
-            없는 값을 채워 넣으면 선정 근거가 사실이 아니게 된다.
+          description: 담은 적이 없으면 null
+        lastPlayedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: '★ null 이면 담아두고 한 번도 재생하지 않은 곡. `Unplayed` 구역과 `never played` 경고가 이 값 하나에 걸려 있다'
         inLibrary:
           type: boolean
-          description: |
-            사용자 라이브러리에 담긴 곡인지. 플레이리스트에만 담고
-            라이브러리에는 추가하지 않은 곡이 실제로 존재하므로 구분한다.
-            `false` 인 곡은 Songs·Artists·Albums 목록에 나오지 않는다.
-        excluded:
-          type: boolean
-          description: 정리 표시된 곡. 큐 후보에서 제외된다
-        tags:
-          type: array
-          items:
-            $ref: '#/components/schemas/Tag'
+          description: 플레이리스트에만 담긴 곡은 false
+        appleMusicId:
+          type: string
+          nullable: true
 
-    UpdateTrackRequest:
+    TrackPage:
       type: object
-      description: 묘비 화면의 "정리" — 제외 표시만 바꾼다. 곡을 삭제하지 않는다
+      required: [items, meta]
       properties:
-        excluded:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Track' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+
+    ArtistSummary:
+      type: object
+      description: 목록 패널의 묶음 행(S5). 부제로 곡 수와 누적 재생 수를 쓴다
+      required: [id, name, trackCount, playCount]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        trackCount: { type: integer }
+        playCount: { type: integer }
+
+    ArtistPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ArtistSummary' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+
+    AlbumSummary:
+      type: object
+      required: [id, title, artist, trackCount, playCount]
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        artist: { $ref: '#/components/schemas/Artist' }
+        trackCount: { type: integer }
+        playCount: { type: integer }
+
+    AlbumPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AlbumSummary' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+
+    Playlist:
+      type: object
+      required: [id, name, trackCount]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        trackCount: { type: integer }
+
+    CreatePlaylistRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        fromQueue:
           type: boolean
+          default: true
+          description: 지금 큐를 그대로 담는다
+        trackIds:
+          type: array
+          description: '`fromQueue` 가 false 일 때 직접 지정한다'
+          items: { type: integer, format: int64 }
 
     CatalogTrack:
       type: object
-      description: Apple Music 카탈로그의 곡. 아직 라이브러리에 없을 수 있다
-      required: [appleMusicId, title, artistName]
+      description: 카탈로그 검색 결과(S6). 아직 내 것이 아닐 수 있다
+      required: [appleMusicId, title, artistName, durationMs, inLibrary]
       properties:
-        appleMusicId:
-          type: string
-        isrc:
-          type: string
-          nullable: true
-        title:
-          type: string
-        artistName:
-          type: string
-        albumName:
+        appleMusicId: { type: string }
+        title: { type: string }
+        artistName: { type: string }
+        albumTitle:
           type: string
           nullable: true
-        year:
-          type: integer
-          nullable: true
-        genre:
-          type: string
-          nullable: true
-        artworkUrl:
-          type: string
-          format: uri
-          nullable: true
+        durationMs: { type: integer }
         inLibrary:
           type: boolean
-          description: 이미 라이브러리에 있는지 여부
-
-    # ---------------- 세션 ----------------
-    SessionStatus:
-      type: string
-      enum: [active, ended]
-
-    SessionSummary:
-      type: object
-      required: [id, title, status, startedAt]
-      properties:
-        id:
+          description: 화면의 `✓` / `+` 표시가 이 값이다
+        trackId:
           type: integer
           format: int64
-        title:
-          type: string
-          description: 최초 요청에서 생성. S1 헤더에 표시된다
+          nullable: true
+          description: 담겨 있으면 우리 쪽 id
+
+    Sync:
+      type: object
+      required: [status]
+      properties:
         status:
-          $ref: '#/components/schemas/SessionStatus'
+          type: string
+          enum: [idle, running, failed]
         trackCount:
           type: integer
-        startedAt:
-          type: string
-          format: date-time
-        endedAt:
+          nullable: true
+        playlistCount:
+          type: integer
+          nullable: true
+        syncedAt:
           type: string
           format: date-time
           nullable: true
+        errorMessage:
+          type: string
+          nullable: true
 
-    Session:
-      allOf:
-        - $ref: '#/components/schemas/SessionSummary'
-        - type: object
-          required: [prompt, usage]
-          properties:
-            prompt:
-              type: string
-              description: 최초 자연어 입력 원문
-            usage:
-              $ref: '#/components/schemas/Usage'
-            queueItems:
-              type: array
-              items:
-                $ref: '#/components/schemas/QueueItem'
-            summary:
-              $ref: '#/components/schemas/QueueSummary'
+    # ---------------- 재생 ----------------
+    Repeat:
+      type: string
+      enum: [off, one, all]
 
-    Usage:
+    Playback:
       type: object
-      description: S1 상태줄에 표시되는 누적 사용량
-      required: [promptTokens, completionTokens, costUsd]
+      description: '**전부 실시간이다.** 저장되는 값이 하나도 없다'
+      required: [playing, shuffle, repeat]
       properties:
-        promptTokens:
+        playing: { type: boolean }
+        track:
+          type: object
+          allOf: [{ $ref: '#/components/schemas/Track' }]
+          nullable: true
+          description: 라이브러리에 없는 곡(카탈로그 스트리밍)도 여기로 온다
+        positionMs:
           type: integer
-        completionTokens:
+          nullable: true
+        durationMs:
           type: integer
-        costUsd:
-          type: number
-          format: double
+          nullable: true
+        shuffle: { type: boolean }
+        repeat: { $ref: '#/components/schemas/Repeat' }
+        favorited:
+          type: boolean
+          nullable: true
+        volume:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 100
+        queueItemId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 큐에서 튼 곡이면 그 항목
 
+    UpdatePlaybackRequest:
+      type: object
+      description: 보낸 것만 바뀐다. 전부 선택이다
+      minProperties: 1
+      properties:
+        shuffle: { type: boolean }
+        repeat: { $ref: '#/components/schemas/Repeat' }
+        volume: { type: integer, minimum: 0, maximum: 100 }
+        favorited: { type: boolean }
+        rating: { type: integer, minimum: 0, maximum: 5 }
+
+    PlayRequest:
+      type: object
+      description: 셋 중 하나. 아무것도 안 주면 이어서 튼다
+      properties:
+        trackId: { type: integer, format: int64 }
+        queueItemId: { type: integer, format: int64 }
+
+    LyricLine:
+      type: object
+      required: [atMs, text]
+      properties:
+        atMs:
+          type: integer
+          description: 이 줄이 시작하는 시각. 화면이 이걸로 현재 줄을 고른다
+        text: { type: string }
+
+    Lyrics:
+      type: object
+      required: [source, lines]
+      properties:
+        source:
+          type: string
+          example: LRCLIB
+        synced:
+          type: boolean
+          description: false 면 시간 정보 없는 통짜 가사다
+        lines:
+          type: array
+          items: { $ref: '#/components/schemas/LyricLine' }
+
+    # ---------------- 큐 ----------------
+    QueueItemOrigin:
+      type: string
+      enum: [user, ai]
+      description: 사람이 넣었나 AI 가 넣었나
+
+    QueueItemState:
+      type: string
+      enum: [pending, playing, played, skipped, removed]
+
+    QueueItem:
+      type: object
+      required: [id, position, track, origin, state]
+      properties:
+        id: { type: integer, format: int64 }
+        position:
+          type: integer
+          description: S6 큐 순번
+        track: { $ref: '#/components/schemas/Track' }
+        reason:
+          type: string
+          nullable: true
+          description: '★ AI 가 이 곡을 왜 골랐는지 한 줄. 로그를 `ctrl+o` 로 펼치면 보인다(S7). 못 만들면 null 이고 재생은 그대로 간다'
+          example: 담아둔 뒤 한 번도 재생한 적이 없습니다
+        origin: { $ref: '#/components/schemas/QueueItemOrigin' }
+        state: { $ref: '#/components/schemas/QueueItemState' }
+        turnId:
+          type: integer
+          format: int64
+          nullable: true
+
+    Queue:
+      type: object
+      required: [id, items, trackCount, totalDurationMs]
+      properties:
+        id: { type: integer, format: int64 }
+        title:
+          type: string
+          nullable: true
+          description: S9 상태줄에 뜬다
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/QueueItem' }
+        trackCount: { type: integer }
+        totalDurationMs: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    AddQueueItemRequest:
+      type: object
+      required: [trackId]
+      properties:
+        trackId: { type: integer, format: int64 }
+        position:
+          oneOf:
+            - type: string
+              enum: [next, end]
+            - type: integer
+              minimum: 0
+          default: end
+          description: '`next` 는 지금 곡 바로 뒤, `end` 는 맨 뒤'
+
+    # ---------------- 대화 ----------------
     TurnStatus:
       type: string
-      enum: [queued, running, succeeded, failed, cancelled]
+      enum: [running, done, failed, canceled]
 
     TurnIntent:
       type: string
-      description: L2 가 분류한 의도
-      enum: [generate_queue, refine_queue, explain, react, unknown]
+      enum: [create, append]
+      description: 새 큐를 짤지 지금 큐에 덧붙일지. 안 주면 서버가 문장을 보고 정한다
+
+    Usage:
+      type: object
+      required: [promptTokens, completionTokens, costUsd]
+      properties:
+        promptTokens: { type: integer }
+        completionTokens: { type: integer }
+        costUsd:
+          type: number
+          format: double
+          description: S9 상태줄 오른쪽 끝에 붙박이로 앉는다
 
     Turn:
       type: object
-      required: [id, sessionId, prompt, status, createdAt]
+      required: [id, prompt, status, createdAt]
       properties:
-        id:
-          type: integer
-          format: int64
-        sessionId:
-          type: integer
-          format: int64
-        prompt:
-          type: string
+        id: { type: integer, format: int64 }
+        prompt: { type: string }
+        status: { $ref: '#/components/schemas/TurnStatus' }
         intent:
           type: string
+          allOf: [{ $ref: '#/components/schemas/TurnIntent' }]
           nullable: true
-          description: 분류 전에는 `null`
-          allOf:
-            - $ref: '#/components/schemas/TurnIntent'
-        status:
-          $ref: '#/components/schemas/TurnStatus'
-        assistantMessage:
+        message:
           type: string
           nullable: true
-          description: 사용자에게 보여줄 응답 문장
-        queueItems:
-          type: array
+          description: 로그 띠에 한 줄로 뜨는 답
+        model:
+          type: string
           nullable: true
-          description: '`succeeded` 일 때 생성·변경된 큐 항목'
-          items:
-            $ref: '#/components/schemas/QueueItem'
+          description: S7 상세 — 어느 모델이 답했나
+        candidateCount:
+          type: integer
+          nullable: true
+          description: S7 상세 — 후보 몇 곡에서 골랐나
+        elapsedMs:
+          type: integer
+          nullable: true
         usage:
           type: object
+          allOf: [{ $ref: '#/components/schemas/Usage' }]
           nullable: true
-          allOf:
-            - $ref: '#/components/schemas/Usage'
-        error:
-          type: object
+        picks:
+          type: array
           nullable: true
-          description: '`failed` 일 때의 사유. 이 경우에도 기존 큐의 재생은 계속된다'
-          allOf:
-            - $ref: '#/components/schemas/Error'
-        createdAt:
+          description: 이 요청이 큐에 넣은 항목들. 곡별 근거가 여기 있다
+          items: { $ref: '#/components/schemas/QueueItem' }
+        errorCode:
           type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
+          allOf: [{ $ref: '#/components/schemas/ErrorCode' }]
           nullable: true
-
-    CreateSessionRequest:
-      type: object
-      properties:
-        prompt:
+          description: |
+            선곡이 실패한 이유. **HTTP 상태가 아니라 잡의 상태로 온다** —
+            요청 자체는 이미 202 로 받았기 때문이다.
+            `NO_MATCHING_TRACKS` · `MODEL_UNAVAILABLE` 이 여기로 온다
+        errorMessage:
           type: string
-          minLength: 1
-          maxLength: 500
-          description: 함께 보내면 첫 턴을 즉시 시작한다
-          example: 새벽 코딩용, 가사 없는 걸로
-        title:
-          type: string
-          maxLength: 200
-
-    UpdateSessionRequest:
-      type: object
-      properties:
-        status:
-          $ref: '#/components/schemas/SessionStatus'
-        title:
-          type: string
-          maxLength: 200
+          nullable: true
+        createdAt: { type: string, format: date-time }
 
     CreateTurnRequest:
       type: object
@@ -1364,380 +1332,149 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-          example: 좀 더 조용한 걸로
-        mentionedArtistIds:
-          type: array
-          description: '`@` 멘션으로 후보를 좁힌 경우'
-          items:
-            type: integer
-            format: int64
-        mentionedTrackIds:
-          type: array
-          items:
-            type: integer
-            format: int64
+          description: 입력창 글자 수 제한과 같다
+        intent:
+          $ref: '#/components/schemas/TurnIntent'
 
-    # ---------------- 큐 ----------------
-    QueueItemState:
+    MessageRole:
       type: string
-      enum: [pending, playing, played, skipped, removed]
+      enum: [user, assistant]
 
-    QueueItemOrigin:
-      type: string
-      description: |
-        누가 이 곡을 큐에 넣었는지. `agent` 는 AI 에이전트가 API 로 직접
-        투입한 경우이며, 사람이 고른 것과 구분해 측정하기 위해 남긴다.
-      enum: [generation, revive, recognition, manual, agent]
-
-    QueueItem:
+    Message:
       type: object
-      required: [id, sessionId, position, state, origin, track]
+      required: [id, role, text, isError, createdAt]
       properties:
-        id:
+        id: { type: integer, format: int64 }
+        turnId:
           type: integer
           format: int64
-        sessionId:
-          type: integer
-          format: int64
-        position:
-          type: integer
-        track:
-          $ref: '#/components/schemas/Track'
-        reason:
-          type: string
           nullable: true
-          description: '★ F2 선정 근거 한 줄. L4 실패 시 `null` 이며 재생은 계속된다'
-          example: 담아둔 뒤 한 번도 재생한 적 없고, 가사가 없습니다
-        state:
-          $ref: '#/components/schemas/QueueItemState'
-        origin:
-          $ref: '#/components/schemas/QueueItemOrigin'
-        createdAt:
-          type: string
-          format: date-time
+        role: { $ref: '#/components/schemas/MessageRole' }
+        text: { type: string }
+        isError:
+          type: boolean
+          description: 실패도 대화의 일부다
+        createdAt: { type: string, format: date-time }
 
-    QueueSummary:
+    MessagePage:
       type: object
-      description: S1 상태줄의 큐 요약
-      required: [trackCount, totalDurationMs, neverPlayedCount]
+      required: [items, meta]
       properties:
-        trackCount:
-          type: integer
-        totalDurationMs:
-          type: integer
-        neverPlayedCount:
-          type: integer
-          description: 큐 안에서 `lastPlayedAt` 이 `null` 인 곡 수
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Message' }
+        meta: { $ref: '#/components/schemas/PageMeta' }
 
-    CreateQueueItemRequest:
-      type: object
-      required: [trackId]
-      properties:
-        trackId:
-          type: integer
-          format: int64
-        position:
-          type: integer
-          minimum: 0
-          description: 생략하면 큐 끝에 붙인다
-        origin:
-          $ref: '#/components/schemas/QueueItemOrigin'
-
-    UpdateQueueItemRequest:
-      type: object
-      properties:
-        state:
-          $ref: '#/components/schemas/QueueItemState'
-        position:
-          type: integer
-          minimum: 0
-
-    # ---------------- 반응 ----------------
-    ReactionType:
+    # ---------------- 재생 사건 ----------------
+    EndedBy:
       type: string
-      enum:
-        - skip_early
-        - skip_mid
-        - complete
-        - repeat
-        - favorite
-        - dislike
-        - explicit_positive
-        - explicit_negative
+      enum: [finished, skipped, removed, replaced]
+      description: 무엇이 이 곡을 끝냈나. 이 기록의 존재 이유다
 
-    ReactionDetector:
-      type: string
-      enum: [poll, user]
-      description: '`poll` 은 재생 위치 폴링이 관찰한 것 (기본)'
-
-    Reaction:
+    RecordPlayRequest:
       type: object
-      required: [id, queueItemId, type, detectedBy, createdAt]
+      required: [trackId, playedMs, durationMs, endedBy, shuffle]
       properties:
-        id:
-          type: integer
-          format: int64
+        trackId: { type: integer, format: int64 }
         queueItemId:
           type: integer
           format: int64
-        type:
-          $ref: '#/components/schemas/ReactionType'
-        detectedBy:
-          $ref: '#/components/schemas/ReactionDetector'
-        positionSec:
-          type: number
-          format: float
           nullable: true
-          description: 이탈 시점. `skip_early` 판정 근거
-        createdAt:
-          type: string
-          format: date-time
-
-    CreateReactionRequest:
-      type: object
-      required: [type]
-      properties:
-        type:
-          $ref: '#/components/schemas/ReactionType'
-        detectedBy:
-          $ref: '#/components/schemas/ReactionDetector'
-        positionSec:
-          type: number
-          format: float
-          minimum: 0
-
-    # ---------------- 취향 규칙 ----------------
-    TasteRule:
-      type: object
-      required: [id, statement, condition, evidenceCount, active, derivedAt]
-      properties:
-        id:
+        playedMs:
           type: integer
-          format: int64
-        statement:
-          type: string
-          example: 새벽 시간대에 가사 있는 곡을 회피
-        condition:
+          description: 몇 ms 듣고 나갔나
+        durationMs:
+          type: integer
+          description: 그때의 곡 길이. 판본이 바뀌어도 그날의 셈이 틀어지면 안 된다
+        endedBy: { $ref: '#/components/schemas/EndedBy' }
+        shuffle: { type: boolean }
+
+    Play:
+      allOf:
+        - $ref: '#/components/schemas/RecordPlayRequest'
+        - type: object
+          required: [id, playedAt]
+          properties:
+            id: { type: integer, format: int64 }
+            playedAt: { type: string, format: date-time }
+
+    # ---------------- 상태 ----------------
+    Status:
+      type: object
+      description: 홈 화면(S1)이 통째로 이것으로 그려진다
+      required: [version, music, catalog, ai, library]
+      properties:
+        version: { type: string }
+        music:
           type: object
-          additionalProperties: true
-          description: L3 선곡이 소비하는 구조화 조건
-        evidenceCount:
-          type: integer
-          description: 근거가 된 반응 수. S4 에 함께 표시된다
-        active:
-          type: boolean
-        derivedAt:
+          required: [running, permission]
+          properties:
+            running: { type: boolean }
+            permission:
+              type: string
+              enum: [granted, denied, unknown]
+        catalog:
+          type: object
+          required: [configured, signedIn]
+          properties:
+            configured:
+              type: boolean
+              description: '`/setup <team ID>` 를 했나'
+            signedIn:
+              type: boolean
+              description: '`/login` 을 했나'
+        ai:
+          type: object
+          required: [enabled]
+          properties:
+            enabled: { type: boolean }
+            provider:
+              type: string
+              nullable: true
+              description: 네 돈이 어디로 가는지는 밝혀야 한다
+            model:
+              type: string
+              nullable: true
+        library:
+          type: object
+          required: [trackCount, playlistCount]
+          properties:
+            trackCount: { type: integer }
+            playlistCount: { type: integer }
+            syncedAt:
+              type: string
+              format: date-time
+              nullable: true
+
+    Settings:
+      type: object
+      description: 비밀값은 없다. "붙어 있는가"만 있다
+      required: [catalogConfigured, catalogSignedIn, aiEnabled]
+      properties:
+        appleTeamId:
           type: string
-          format: date-time
+          nullable: true
+        catalogConfigured: { type: boolean }
+        catalogSignedIn: { type: boolean }
+        aiEnabled: { type: boolean }
+        aiProvider:
+          type: string
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
 
-    UpdateTasteRuleRequest:
+    UpdateSettingsRequest:
       type: object
+      description: 보낸 것만 바뀐다
+      minProperties: 1
       properties:
-        statement:
+        appleTeamId:
           type: string
-          maxLength: 300
-        active:
-          type: boolean
-
-    # ---------------- 플레이리스트 ----------------
-    Playlist:
-      type: object
-      required: [id, name, trackCount, createdAt]
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
+          description: '`/setup <team ID>`'
+        aiApiKey:
           type: string
-        appleMusicPlaylistId:
+          description: '`/ai <key>`. 서버가 키체인에 넣고 DB 에는 남기지 않는다'
+        aiProvider:
           type: string
-          nullable: true
-          description: Music.app 반영 실패 시 `null` 로 남는다
-        sourceSessionId:
-          type: integer
-          format: int64
-          nullable: true
-        trackCount:
-          type: integer
-        createdAt:
-          type: string
-          format: date-time
-
-    CreatePlaylistRequest:
-      type: object
-      required: [name, sessionId]
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 200
-        sessionId:
-          type: integer
-          format: int64
-          description: 이 세션의 큐를 그대로 저장한다
-
-    # ---------------- 인식 ----------------
-    Recognition:
-      type: object
-      required: [id, shazamId, title, artistName, recognizedAt]
-      properties:
-        id:
-          type: integer
-          format: int64
-        sessionId:
-          type: integer
-          format: int64
-          nullable: true
-        shazamId:
-          type: string
-        appleMusicId:
-          type: string
-          nullable: true
-        isrc:
-          type: string
-          nullable: true
-        title:
-          type: string
-        artistName:
-          type: string
-        year:
-          type: integer
-          nullable: true
-        genre:
-          type: string
-          nullable: true
-        artworkUrl:
-          type: string
-          format: uri
-          nullable: true
-        matchedTrack:
-          type: object
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/Track'
-          description: |
-            ★ F11. `null` 이면 라이브러리에 없는 곡이다.
-            채워져 있고 그 곡의 `lastPlayedAt` 이 `null` 이면
-            **담아두고 한 번도 듣지 않은 곡**이다.
-        recognizedAt:
-          type: string
-          format: date-time
-
-    CreateRecognitionRequest:
-      type: object
-      description: ShazamKit 헬퍼가 반환한 `SHMediaItem` 을 그대로 옮긴다
-      required: [shazamId, title, artistName]
-      properties:
-        shazamId:
-          type: string
-        appleMusicId:
-          type: string
-        isrc:
-          type: string
-        title:
-          type: string
-        artistName:
-          type: string
-        year:
-          type: integer
-        genre:
-          type: string
-        artworkUrl:
-          type: string
-          format: uri
-        sessionId:
-          type: integer
-          format: int64
-
-    AddLibraryTrackRequest:
-      type: object
-      required: [appleMusicId]
-      properties:
-        appleMusicId:
-          type: string
-        enqueueToSessionId:
-          type: integer
-          format: int64
-          description: 지정하면 추가 후 곧바로 이 세션의 큐에 넣는다
-
-    # ---------------- 동기화 · 진단 ----------------
-    SyncStatus:
-      type: string
-      enum: [running, succeeded, failed]
-
-    SyncRun:
-      type: object
-      required: [id, status, startedAt]
-      properties:
-        id:
-          type: integer
-          format: int64
-        status:
-          $ref: '#/components/schemas/SyncStatus'
-        trackCount:
-          type: integer
-          nullable: true
-        taggedCount:
-          type: integer
-          nullable: true
-          description: L1 무드 태깅이 완료된 곡 수
-        error:
-          type: object
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/Error'
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-          nullable: true
-
-    LibraryDiagnosis:
-      type: object
-      description: S3 진단 화면. 서비스의 문제 정의를 사용자 데이터로 증명한다
-      required:
-        [totalTracks, neverPlayedCount, neverPlayedRatio,
-         playedLast30DaysCount, playedLast365DaysCount]
-      properties:
-        totalTracks:
-          type: integer
-          example: 157
-        neverPlayedCount:
-          type: integer
-          description: '`lastPlayedAt` 이 `null` 인 곡 수'
-          example: 57
-        neverPlayedRatio:
-          type: number
-          format: float
-          description: 0.0 ~ 1.0
-          example: 0.363
-        playedLast30DaysCount:
-          type: integer
-          example: 52
-        playedLast365DaysCount:
-          type: integer
-          example: 100
-        oldestLastPlayedAt:
-          type: string
-          format: date-time
-          nullable: true
-          description: 전곡이 미재생이면 `null`
-        sharedTrackCount:
-          type: integer
-          description: Apple Music 스트리밍 곡 수
-        fileTrackCount:
-          type: integer
-          description: 로컬 파일 곡 수
-        untaggedCount:
-          type: integer
-          description: L1 태깅이 아직 안 된 곡 수
-        lastSync:
-          type: object
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/SyncRun'
