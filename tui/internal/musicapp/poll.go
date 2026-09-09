@@ -221,3 +221,22 @@ func cmdRemoveQueueTrack(pid string, n int, advance bool) tea.Cmd {
 		return queueWrittenMsg{pid: pid}
 	}
 }
+
+// triagedMsg — 문장이 큐를 고치라는 말인지 판단한 결과다.
+type triagedMsg struct {
+	seq    int
+	prompt string
+	edit   intent.Edit
+	err    error
+}
+
+// cmdTriage 는 "무엇을 할 셈인가"를 먼저 묻는다.
+//
+// 라이브러리를 넘기지 않으므로 실측 1초다. 고치라는 말이면 여기서 끝나고,
+// 새로 짜라는 말이면 그때 Build 로 간다 — 그 요청에는 1초가 얹힌다.
+func cmdTriage(ctx context.Context, seq int, prompt string, cur intent.Current) tea.Cmd {
+	return func() tea.Msg {
+		e, err := intent.Triage(ctx, prompt, cur)
+		return triagedMsg{seq: seq, prompt: prompt, edit: e, err: err}
+	}
+}

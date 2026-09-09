@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"image"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -153,6 +154,10 @@ func (m Model) Ask(prompt string) tea.Cmd {
 }
 
 // startAsk 는 요청을 띄우고 취소 손잡이를 들고 있는다.
+//
+// 큐가 이미 있으면 곧장 선곡으로 가지 않는다. "이 곡 빼줘"는 라이브러리를
+// 다시 읽을 이유가 없는 말인데, Build 는 언제나 목록 전체를 돌려주므로
+// 한 곡을 빼려고 나머지를 전부 다시 고르게 된다(intent/edit.go).
 func (m Model) startAsk(prompt string) (Model, tea.Cmd) {
 	// 앞의 요청은 버린다. 한 번에 하나만 기다린다.
 	if m.cancelAsk != nil {
@@ -161,11 +166,20 @@ func (m Model) startAsk(prompt string) (Model, tea.Cmd) {
 	ctx, cancel := context.WithTimeout(context.Background(), askTimeout)
 	m.cancelAsk = cancel
 	m.askSeq++
-	return m, cmdBuildQueue(ctx, m.askSeq, prompt, data.Lib().Tracks, intent.Current{
+
+	if len(m.queue) > 0 {
+		return m, cmdTriage(ctx, m.askSeq, prompt, m.current())
+	}
+	return m, cmdBuildQueue(ctx, m.askSeq, prompt, data.Lib().Tracks, m.current())
+}
+
+// current 는 모델에게 보여줄 "지금 화면의 큐"다.
+func (m Model) current() intent.Current {
+	return intent.Current{
 		Title:   m.queueTitle,
 		Items:   m.queue,
 		Playing: m.nowPlayingID,
-	})
+	}
 }
 
 // stopAsk 는 도는 요청을 끊는다. 번호를 올려 늦게 오는 답도 버린다.
@@ -234,6 +248,30 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			return m, app.SayErr(m.Name(), msg.err)
 		}
 		return m, app.Say(m.Name(), "Saved \""+msg.name+"\" to Apple Music")
+
+	case triagedMsg:
+		// 그만뒀거나 더 새 물음이 떠 있으면 늦게 온 답이다. 버린다.
+		if msg.seq != m.askSeq {
+			return m, nil
+		}
+		m.usage.PromptTokens += msg.edit.Usage.PromptTokens
+		m.usage.CompletionTokens += msg.edit.Usage.CompletionTokens
+		m.usage.CostUsd += msg.edit.Usage.CostUsd
+
+		// 판단이 실패하면 새로 짜는 쪽으로 간다. 느릴 뿐 틀리지는 않는다.
+		if msg.err != nil || msg.edit.Kind != intent.EditRemove {
+			if errors.Is(msg.err, context.Canceled) {
+				return m, nil
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), askTimeout)
+			m.cancelAsk = cancel
+			return m, cmdBuildQueue(ctx, m.askSeq, msg.prompt, data.Lib().Tracks, m.current())
+		}
+
+		// 고치라는 말이었다. 사람이 /remove 를 눌렀을 때와 **같은 문**으로 간다.
+		m.thinking = false
+		m.cancelAsk = nil
+		return m.removeTracks(msg.edit.TrackIDs, msg.edit.Note)
 
 	case queueMsg:
 		// 그만뒀거나 더 새 물음이 떠 있으면 늦게 온 답이다. 버린다.
@@ -503,23 +541,59 @@ func (m Model) removeFromQueue(id int64) (Model, tea.Cmd) {
 	if at < 0 {
 		return m, send(errMsg{errNotInQueue})
 	}
+	title := m.queue[at].Track.Title
+	m, cmd := m.dropAt(at)
+	return m, tea.Batch(cmd, app.Say(m.Name(), "Removed "+title))
+}
 
+// dropAt 은 큐에서 한 줄을 빼고 Music.app 에도 반영한다. 말은 하지 않는다 —
+// 여러 곡을 뺄 때 줄마다 말하면 로그가 시끄럽다.
+func (m Model) dropAt(at int) (Model, tea.Cmd) {
 	// 지금 나오는 곡을 빼면 다음 곡으로 넘어간다. 조용해지는 것이 아니다 —
 	// "이거 별로야"는 다음 걸 틀라는 뜻이다.
 	playing := m.queue[at].Track.Id == m.nowPlayingID
 
-	title := m.queue[at].Track.Title
 	m.queue = append(append([]api.QueueItem{}, m.queue[:at]...), m.queue[at+1:]...)
 	m.clampList()
 
 	// 화면과 Music.app 이 어긋나 있으면 번호를 믿을 수 없다. 화면만 고친다.
 	if m.queuePID == "" {
-		return m, app.Say(m.Name(), "Removed "+title)
+		return m, nil
 	}
-	return m, tea.Batch(
-		cmdRemoveQueueTrack(m.queuePID, at+1, playing),
-		app.Say(m.Name(), "Removed "+title),
-	)
+	return m, cmdRemoveQueueTrack(m.queuePID, at+1, playing)
+}
+
+// removeTracks 는 곡 여럿을 큐에서 뺀다. AI 가 지목했을 때 쓴다.
+//
+// 뒤에서부터 뺀다. 앞에서 빼면 그 뒤 곡들의 자리번호가 밀려, 두 번째
+// 곡을 지울 때 엉뚱한 줄을 가리키게 된다.
+func (m Model) removeTracks(ids []int64, note string) (app.App, tea.Cmd) {
+	at := make([]int, 0, len(ids))
+	for _, id := range ids {
+		for i, it := range m.queue {
+			if it.Track.Id == id {
+				at = append(at, i)
+				break
+			}
+		}
+	}
+	if len(at) == 0 {
+		return m, app.SayErr(m.Name(), errNotInQueue)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(at)))
+
+	cmds := make([]tea.Cmd, 0, len(at)+1)
+	for _, i := range at {
+		next, cmd := m.dropAt(i)
+		m = next
+		if cmd != nil {
+			cmds = append(cmds, cmd)
+		}
+	}
+	if strings.TrimSpace(note) != "" {
+		cmds = append(cmds, app.Say(m.Name(), note))
+	}
+	return m, tea.Batch(cmds...)
 }
 
 // enterGroup — 묶음 안으로 한 단계 들어간다.
