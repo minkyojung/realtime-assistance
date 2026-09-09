@@ -96,7 +96,12 @@ func (m Model) app() app.App { return m.apps[m.current] }
 
 func (m Model) Init() tea.Cmd {
 	// textarea.Blink 를 걸지 않는다. 실제 커서는 터미널이 깜빡인다.
-	cmds := []tea.Cmd{m.spinner.Tick}
+	//
+	// 배경색을 묻는다. 우리는 선택 줄을 **배경 위에 미리 섞어** 만드는데,
+	// 그러려면 무엇 위에 얹는지를 알아야 한다. 한때 그 값을 한 터미널에서
+	// 픽셀로 재서 박아 두었고, 밝은 배경을 쓰는 사람에게는 흰 글씨가 흰
+	// 바탕에 얹혀 앱이 통째로 안 보였다.
+	cmds := []tea.Cmd{m.spinner.Tick, tea.RequestBackgroundColor}
 	for _, a := range m.apps {
 		cmds = append(cmds, a.Init(m.push))
 	}
@@ -244,6 +249,15 @@ func (m *Model) setMode(mode inputMode) {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.BackgroundColorMsg:
+		// 터미널이 자기 배경색을 알려줬다. 추측을 실제 값으로 갈아끼운다.
+		//
+		// 시작할 때 한 번 오고, 사람이 터미널 테마를 바꾸면 또 온다.
+		// 팔레트를 여기서만 손대는 이유는 Retheme 이 패키지 전역을
+		// 갈아끼우기 때문이다 — 명령은 다른 고루틴에서 돈다.
+		style.Retheme(msg.Color)
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
 		m.input.SetWidth(m.inputWidth())

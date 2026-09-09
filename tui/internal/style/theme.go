@@ -39,6 +39,13 @@ func tint(bg, fg color.Color, a float64) color.Color {
 //
 // 터미널에서 빨강은 보통 에러를 뜻하므로, 에러는 색이 아니라
 // 채워진 배지로 구분한다.
+//
+// **값이 아니라 계산 결과다.** 한때 여기 전부가 상수였고, 그중에는
+// "터미널 배경은 #1C1B27 일 것이다" 라는 추측도 있었다. 밝은 배경을 쓰는
+// 사람에게는 흰 글씨가 흰 바탕에 얹혀 앱이 통째로 안 보였다.
+//
+// 터미널은 자기 배경색을 알려준다(tea.BackgroundColorMsg). 추측할 이유가
+// 없다 — Retheme 이 그 값을 받아 여기를 다시 만든다.
 var (
 	ColBrand       = lipgloss.Color("#FF5A75") // Apple Music red
 	ColBrandSoft   = lipgloss.Color("#FF8FA3") // 본문에 얹을 때 읽기 좋은 톤
@@ -51,16 +58,25 @@ var (
 	ColRule  = lipgloss.Color("#2E2E36")
 	ColWarn  = lipgloss.Color("#E8A33D")
 
-	// 터미널 배경. 실제 화면을 픽셀로 재서 잡은 값이다.
+	// 글자로 쓰는 브랜드 색. **채우는 색과 나눈 이유가 있다.**
 	//
-	// 우리가 칠하는 색이 아니라 **뒤에 비치는 색**이다. 투명도를 미리 섞어
-	// 두려면 무엇 위에 얹는지를 알아야 해서 여기 적어 둔다.
+	// #FF5A75 는 채워 놓으면 어느 배경에서든 애플뮤직이지만, 흰 바탕에
+	// 글씨로 얹으면 대비가 모자라 읽히지 않는다. 정체성은 채우는 쪽이
+	// 지키고(진행 바·배지), 읽혀야 하는 쪽만 배경을 따라간다.
+	colBrandText = ColBrand
+
+	// 터미널 배경. **우리가 칠하는 색이 아니라 뒤에 비치는 색이다.**
+	//
+	// 투명도를 미리 섞어 두려면 무엇 위에 얹는지를 알아야 해서 필요하다.
+	// 시작할 때는 이 기본값이고, 터미널이 답하면 진짜 값으로 바뀐다.
+	// 기본을 어두운 쪽으로 둔 것은 대부분의 터미널이 어둡고, 답이 오면
+	// 한 프레임 뒤에 정정되기 때문이다.
 	ColBase = lipgloss.Color("#1C1B27")
 
 	// 선택된 줄의 배경 — 브랜드 색을 옅게 얹은 것.
 	//
-	// 터미널에는 투명도가 없다. 그래서 배경 위에 14%만큼 미리 섞어 불투명한
-	// 한 색으로 만든다. 브랜드 색을 그대로 채우지 않는 이유는, 이 화면에서
+	// 터미널에는 투명도가 없다. 그래서 배경 위에 미리 섞어 불투명한 한
+	// 색으로 만든다. 브랜드 색을 그대로 채우지 않는 이유는, 이 화면에서
 	// **채워진 빨강이 "오류"라는 뜻**이기 때문이다(ErrorBadge). 옅게 얹은
 	// 것은 그 규칙과 부딪히지 않는다 — 다른 것은 색조가 아니라 진하기다.
 	//
@@ -70,7 +86,7 @@ var (
 	// 채널당 평균으로 재면 안 된다. 빨강은 R 이 227 움직이는 동안 G 는 63밖에
 	// 안 움직이는데 눈은 G 를 72% 로 보므로, 평균을 맞추면 실제로는 17% 어두운
 	// 띠가 나온다. 한 번 그렇게 잡았다가 두 띠의 무게가 눈에 띄게 달랐다.
-	ColRowSel = tint(ColBase, ColBrand, 0.17)
+	ColRowSel = tint(ColBase, ColBrand, rowSelMix)
 
 	// 대화 띠에서 **내가 친 문장**의 바탕. 답에는 깔지 않는다.
 	//
@@ -78,35 +94,113 @@ var (
 	// 저절로 갈린다. 칠하는 쪽을 내 말로 정한 것은 답이 길고 내 말이 짧기
 	// 때문이다 — 긴 쪽을 칠하면 화면의 절반이 색면이 된다.
 	//
-	// 어둡되 보여야 한다. 처음에 #23232E 로 뒀더니 터미널 배경(#1C1B27)과
-	// 채널당 7 차이라 제대로 칠해도 안 보였다. 실제 화면을 픽셀로 재서
-	// 잡은 값이다.
-	ColSaidByMe = lipgloss.Color("#2C2C3A")
+	// 배경에서 글씨색 쪽으로 살짝 들어 올린 값이다. 한때 #2C2C3A 로 박혀
+	// 있었는데, 그것은 한 터미널에서 픽셀로 재서 잡은 값이라 다른 배경에서는
+	// 배경과 붙어 안 보이거나 너무 튀었다. 계산하면 어느 배경에서든 같은
+	// 만큼 들린다.
+	ColSaidByMe = tint(ColBase, ColFg, saidMix)
 )
+
+// 얹는 비율. 이름을 붙여 두는 것은 위 주석이 가리키는 값이기 때문이다.
+const (
+	rowSelMix = 0.17
+	saidMix   = 0.085
+)
+
+// Retheme 은 터미널이 알려준 실제 배경색으로 팔레트를 다시 만든다.
+//
+// **Update 에서만 부른다.** 여기서 갈아끼우는 것은 패키지 전역이고,
+// 명령(Cmd)은 다른 고루틴에서 돈다. 지금 명령 안에서 색을 읽는 곳은
+// 없으므로 안전하지만, 생기면 이 규칙이 깨진다.
+//
+// 밝기로 어느 쪽인지 정한다. 사람 눈의 가중치를 쓴다 — 같은 값이라도
+// 초록이 밝게 보이고 파랑이 어둡게 보이므로, 채널 평균으로 재면 파란
+// 배경을 어둡다고 잘못 읽는다.
+func Retheme(bg color.Color) {
+	ColBase = bg
+	if isDark(bg) {
+		ColFg = lipgloss.Color("#E8E8EA")
+		ColDim = lipgloss.Color("#8A8A92")
+		ColFaint = lipgloss.Color("#55555E")
+		ColRule = lipgloss.Color("#2E2E36")
+		ColBrandSoft = lipgloss.Color("#FF8FA3")
+		ColWarn = lipgloss.Color("#E8A33D")
+		colBrandText = ColBrand
+	} else {
+		// 밝은 배경에서는 **전부 뒤집는다.** 흐릿함은 "배경 쪽으로 가까운
+		// 것"이지 "어두운 것"이 아니다 — 흰 바탕에서 흐릿한 회색은 밝은
+		// 회색이다. 여기서 뒤집기를 빠뜨리면 부제가 본문보다 진해진다.
+		ColFg = lipgloss.Color("#1C1B27")
+		ColDim = lipgloss.Color("#6C6C76")
+		ColFaint = lipgloss.Color("#A0A0AA")
+		ColRule = lipgloss.Color("#D8D8DE")
+		// 밝은 바탕에서 #FF8FA3 은 거의 안 읽힌다. 진한 쪽을 쓴다.
+		ColBrandSoft = lipgloss.Color("#A8253F")
+		ColWarn = lipgloss.Color("#9A6A14")
+		colBrandText = ColBrandDeep
+	}
+	ColRowSel = tint(ColBase, ColBrand, rowSelMix)
+	ColSaidByMe = tint(ColBase, ColFg, saidMix)
+	rebuild()
+}
+
+// isDark 는 이 색 위에 밝은 글씨를 얹어야 하는가다.
+func isDark(c color.Color) bool { return luma(c) < 0.5 }
+
+// luma 는 사람 눈이 느끼는 밝기다 (0~1).
+func luma(c color.Color) float64 {
+	r, g, b, _ := c.RGBA()
+	return (0.2126*float64(r) + 0.7152*float64(g) + 0.0722*float64(b)) / 65535
+}
 
 var (
-	Title          = lipgloss.NewStyle().Bold(true).Foreground(ColFg)
-	Track          = lipgloss.NewStyle().Bold(true).Foreground(ColFg)
-	Body           = lipgloss.NewStyle().Foreground(ColFg)
-	Meta           = lipgloss.NewStyle().Foreground(ColDim)
-	Dim            = lipgloss.NewStyle().Foreground(ColDim)
-	Faint          = lipgloss.NewStyle().Foreground(ColFaint)
-	RuleStyle      = lipgloss.NewStyle().Foreground(ColRule)
-	RuleBrandStyle = lipgloss.NewStyle().Foreground(ColBrandDeep)
+	Title          lipgloss.Style
+	Track          lipgloss.Style
+	Body           lipgloss.Style
+	Meta           lipgloss.Style
+	Dim            lipgloss.Style
+	Faint          lipgloss.Style
+	RuleStyle      lipgloss.Style
+	RuleBrandStyle lipgloss.Style
 
-	Brand     = lipgloss.NewStyle().Foreground(ColBrand)
-	BrandBold = lipgloss.NewStyle().Bold(true).Foreground(ColBrand)
-	BrandSoft = lipgloss.NewStyle().Foreground(ColBrandSoft)
-	TrackHead = lipgloss.NewStyle().Foreground(ColBrandDeep)
-	Warn      = lipgloss.NewStyle().Foreground(ColWarn)
+	Brand     lipgloss.Style
+	BrandBold lipgloss.Style
+	BrandSoft lipgloss.Style
+	TrackHead lipgloss.Style
+	Warn      lipgloss.Style
 
 	// 에러는 색이 아니라 배지로 구분한다.
-	ErrorBadge = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Background(ColBrand).
-			Bold(true).
-			Padding(0, 1)
+	ErrorBadge lipgloss.Style
 )
+
+func init() { rebuild() }
+
+// rebuild 는 팔레트에서 스타일을 다시 만든다.
+//
+// 스타일이 색을 값으로 품으므로, 색만 바꾸고 두면 스타일은 옛 색을 계속
+// 쓴다. 팔레트를 손대는 곳이 Retheme 하나뿐인 이유이기도 하다.
+func rebuild() {
+	Title = lipgloss.NewStyle().Bold(true).Foreground(ColFg)
+	Track = lipgloss.NewStyle().Bold(true).Foreground(ColFg)
+	Body = lipgloss.NewStyle().Foreground(ColFg)
+	Meta = lipgloss.NewStyle().Foreground(ColDim)
+	Dim = lipgloss.NewStyle().Foreground(ColDim)
+	Faint = lipgloss.NewStyle().Foreground(ColFaint)
+	RuleStyle = lipgloss.NewStyle().Foreground(ColRule)
+	RuleBrandStyle = lipgloss.NewStyle().Foreground(ColBrandDeep)
+
+	Brand = lipgloss.NewStyle().Foreground(colBrandText)
+	BrandBold = lipgloss.NewStyle().Bold(true).Foreground(colBrandText)
+	BrandSoft = lipgloss.NewStyle().Foreground(ColBrandSoft)
+	TrackHead = lipgloss.NewStyle().Foreground(ColBrandDeep)
+	Warn = lipgloss.NewStyle().Foreground(ColWarn)
+
+	ErrorBadge = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(ColBrand).
+		Bold(true).
+		Padding(0, 1)
+}
 
 // 앨범 아트 자리. Bubble Tea 는 셀 기반 렌더러라 진짜 이미지를 띄울 수 없어
 // 색 블록으로 대체한다.
