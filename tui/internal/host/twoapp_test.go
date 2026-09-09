@@ -531,9 +531,9 @@ func TestSpinnerSitsWhereAnswerWill(t *testing.T) {
 		}
 		return -1
 	}
-	spin := rowOf(m, "묻는 중")
+	spin := rowOf(m, "asking")
 	if spin < 0 {
-		spin = rowOf(m, "정하는 중")
+		spin = rowOf(m, "where this goes")
 	}
 	if d := spin - rowOf(m, "› hi"); d != 2 {
 		t.Fatalf("스피너가 내 말에서 %d줄 아래다 — 안여백 다음이어야 한다", d)

@@ -121,9 +121,9 @@ func (m Model) spinnerRows(waiting []string, w int) []string {
 	if len(waiting) == 0 {
 		return nil
 	}
-	label := strings.Join(waiting, ", ") + " 에게 묻는 중…"
+	label := "asking " + strings.Join(waiting, ", ") + "…"
 	if m.routing {
-		label = "어디로 보낼지 정하는 중…"
+		label = "working out where this goes…"
 	}
 	return []string{m.spinner.View() + " " + style.Dim.Render(style.Truncate(label, w-2))}
 }
@@ -257,7 +257,7 @@ func (m Model) cancelPending() Model {
 		m.routeSeq++
 		m.routing = false
 	}
-	m.log = append(m.log, logEntry{who: "host", text: "그만뒀습니다"})
+	m.log = append(m.log, logEntry{who: "host", text: "Stopped"})
 	return m
 }
 

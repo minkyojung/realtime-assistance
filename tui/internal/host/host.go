@@ -341,7 +341,7 @@ func (m Model) deliver(msg routedMsg) (tea.Model, tea.Cmd) {
 		// 여기서 아무 앱이나 열면 고르지도 않은 화면이 튀어나온다.
 		if m.home {
 			m.log = append(m.log, logEntry{
-				who: "host", text: "어느 앱의 일인지 모르겠습니다", err: true,
+				who: "host", text: "Not sure which app that is for", err: true,
 			})
 			return m, nil
 		}

@@ -21,7 +21,7 @@ func main() {
 	m.SetSend(func(msg tea.Msg) { p.Send(msg) })
 
 	if _, err := p.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, "실행 실패:", err)
+		fmt.Fprintln(os.Stderr, "could not start:", err)
 		os.Exit(1)
 	}
 }

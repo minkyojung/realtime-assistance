@@ -186,7 +186,7 @@ func TestPromptToQueue(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("enter 를 눌렀는데 아무 Cmd 도 나오지 않았다")
 	}
-	if out := plain(m.View().Content); !strings.Contains(out, "묻는 중") {
+	if out := plain(m.View().Content); !strings.Contains(out, "asking") {
 		t.Error("요청 중이라는 표시가 없다")
 	}
 	if out := plain(m.View().Content); !strings.Contains(out, "quiet") {
@@ -219,7 +219,7 @@ func TestPromptToQueue(t *testing.T) {
 			t.Errorf("화면에 %q 가 없다", want)
 		}
 	}
-	if strings.Contains(out, "묻는 중") {
+	if strings.Contains(out, "asking") {
 		t.Error("결과가 왔는데 기다린다는 표시가 남아 있다")
 	}
 }

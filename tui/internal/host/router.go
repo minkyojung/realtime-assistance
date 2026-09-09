@@ -3,6 +3,7 @@ package host
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -28,6 +29,12 @@ import (
 //
 // 그리고 **대부분의 경우 부르지 않는다** — 앱이 하나거나, 사용자가 @ 로
 // 지정했거나, 슬래시 명령이면 답이 이미 정해져 있다.
+
+// 화면에 나가는 말은 영어로 적는다. 주석은 우리끼리 읽는 것이라 그대로 둔다.
+var (
+	errNoApps     = errors.New("no apps to route to")
+	errEmptyReply = errors.New("the reply was empty")
+)
 
 // Spec 은 라우터가 보는 앱의 전부다.
 type Spec struct {
@@ -66,7 +73,7 @@ const routerPrompt = `You route one sentence to the apps that should handle it.
 // 빈 목록은 "모르겠다"는 뜻이고, 호스트가 지금 보고 있는 앱으로 넘긴다.
 func Route(ctx context.Context, prompt string, apps []Spec, current string) ([]string, error) {
 	if len(apps) == 0 {
-		return nil, fmt.Errorf("앱이 없습니다")
+		return nil, errNoApps
 	}
 	// 앱이 하나면 물어볼 것이 없다.
 	if len(apps) == 1 {
@@ -105,14 +112,14 @@ func Route(ctx context.Context, prompt string, apps []Spec, current string) ([]s
 		return nil, err
 	}
 	if len(resp.Choices) == 0 {
-		return nil, fmt.Errorf("응답이 비어 있습니다")
+		return nil, errEmptyReply
 	}
 
 	var out struct {
 		Apps []string `json:"apps"`
 	}
 	if err := json.Unmarshal([]byte(resp.Choices[0].Message.Content), &out); err != nil {
-		return nil, fmt.Errorf("응답을 읽을 수 없습니다: %w", err)
+		return nil, fmt.Errorf("could not read the reply: %w", err)
 	}
 
 	// 모델이 없는 이름을 내놓으면 버린다. 스키마가 막지 못하는 유일한 구멍이다.
