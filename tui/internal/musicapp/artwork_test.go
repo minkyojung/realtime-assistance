@@ -42,8 +42,8 @@ func TestNowPlayingPanelShape(t *testing.T) {
 		t.Fatal("커버를 그릴 수 있는 크기인데 안 그렸다")
 	}
 	lines := strings.Split(out, "\n")
-	if len(lines) != 12 {
-		t.Errorf("줄 수 %d, 기대 12", len(lines))
+	if len(lines) != 16 {
+		t.Errorf("줄 수 %d, 기대 16", len(lines))
 	}
 	for i, l := range lines {
 		if w := lipgloss.Width(l); w > 100 {
@@ -61,7 +61,8 @@ func TestNowPlayingPanelShape(t *testing.T) {
 // 좁아지거나 낮아지면 한 단계씩 물러나고, 끝에는 접는다.
 func TestArtSizeSteps(t *testing.T) {
 	for _, c := range []struct{ w, h, cols int }{
-		{100, 30, 24}, // 넉넉하면 큰 것
+		{100, 30, 32}, // 넉넉하면 제일 큰 것
+		{100, 22, 24}, // 낮아지면 한 단계
 		{60, 30, 16},  // 좁으면 작은 것
 		{100, 16, 16}, // 낮으면 작은 것
 		{100, 14, 0},  // 더 낮으면 접는다 — 목록에 다섯 줄은 남겨야 한다
