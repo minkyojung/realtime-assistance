@@ -111,7 +111,7 @@
    [38;2;232;232;234m/queue[m                                                                               [38;2;85;85;94mgo to Queue[m 
    [38;2;232;232;234m/unplayed[m                                                      [38;2;85;85;94mtracks you added but never played[m 
    [38;2;232;232;234m/save[m[38;2;85;85;94m <name>[m                                           [38;2;85;85;94msave the queue as an Apple Music playlist[m 
-   [38;2;85;85;94m+10 more — keep typing[m                                                                           
+   [38;2;85;85;94m+11 more — keep typing[m                                                                           
  [38;2;138;138;146mRecently Added[m[38;2;85;85;94m · 157[m                                                                               
                                                                                                     
 === help ===

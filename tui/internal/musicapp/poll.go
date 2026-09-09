@@ -207,3 +207,17 @@ func cmdPlayQueueAt(pid string, n int) tea.Cmd {
 		return fetchStatus()
 	}
 }
+
+// cmdRemoveQueueTrack 은 큐에서 곡 하나를 뺀다.
+//
+// 통째로 다시 쓰지 않으므로 음악이 끊기지 않는다. advance 는 지금 나오는
+// 곡을 빼는 중이라는 뜻이고, 그때는 지우기 전에 다음 곡으로 넘어간다.
+func cmdRemoveQueueTrack(pid string, n int, advance bool) tea.Cmd {
+	return func() tea.Msg {
+		if err := music.RemoveQueueTrack(pid, n, advance); err != nil {
+			return queueWrittenMsg{err: err}
+		}
+		// 뺀 자리만큼 화면과 플레이리스트가 같이 밀렸다. 짝은 그대로다.
+		return queueWrittenMsg{pid: pid}
+	}
+}

@@ -122,3 +122,38 @@ func PlayQueueAt(pid string, n int, positionSec int) error {
 	_, err := run(b.String())
 	return err
 }
+
+// RemoveQueueTrack 은 큐에서 곡 하나를 뺀다 (n 은 1부터 센다).
+//
+// 통째로 다시 쓰지 않는 이유는 **음악이 끊기기 때문**이다. 플레이리스트를
+// 지우고 새로 만들면 듣던 곡도 함께 사라진다. 한 줄만 지우면 나머지는
+// 그대로 흐른다 — 앞쪽을 빼든 뒤쪽을 빼든 마찬가지다.
+//
+// advance 는 "지금 나오는 곡을 빼는 중"이라는 뜻이다. 그 곡은 지우기 전에
+// 다음 곡으로 넘겨야 한다. 사용자가 기대하는 것도 그것이다 — "이거 별로야"는
+// 조용해지라는 뜻이 아니라 다음 걸 틀라는 뜻이다.
+//
+// 지우는 대상은 언제나 **우리 플레이리스트를 거쳐서** 가리킨다. 라이브러리
+// 쪽으로 새면 파일이 사라지고, 그것은 되돌릴 수 없다.
+func RemoveQueueTrack(pid string, n int, advance bool) error {
+	if !Running() {
+		return ErrNotRunning
+	}
+	if pid == "" || n < 1 {
+		return errNoPlaylist
+	}
+	_, err := run(removeQueueTrackScript(pid, n, advance))
+	return err
+}
+
+func removeQueueTrackScript(pid string, n int, advance bool) string {
+	var b strings.Builder
+	b.WriteString("tell application \"Music\"\n")
+	fmt.Fprintf(&b, "\tset pl to (first user playlist whose persistent ID is %q)\n", pid)
+	if advance {
+		b.WriteString("\tnext track\n")
+	}
+	fmt.Fprintf(&b, "\tdelete track %d of pl\n", n)
+	b.WriteString("end tell")
+	return b.String()
+}

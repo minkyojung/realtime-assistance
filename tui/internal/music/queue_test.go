@@ -77,3 +77,54 @@ func TestQueueScriptCarriesEveryTrackInOrder(t *testing.T) {
 		t.Error("새 플레이리스트의 ID 를 돌려주지 않는다 — 다음번에 지울 대상을 잃는다")
 	}
 }
+
+// 곡 빼기는 통째로 다시 쓰지 않는다. 다시 쓰면 듣던 곡까지 사라져 음악이 끊긴다.
+func TestRemoveTouchesOneTrackOnly(t *testing.T) {
+	s := removeQueueTrackScript("BBBB2222", 3, false)
+
+	if strings.Contains(s, "make new user playlist") {
+		t.Errorf("한 곡 빼자고 플레이리스트를 새로 만든다:\n%s", s)
+	}
+	if !strings.Contains(s, "delete track 3 of pl") {
+		t.Errorf("3번 곡을 지우지 않는다:\n%s", s)
+	}
+}
+
+// 지우는 대상은 언제나 우리 플레이리스트를 거쳐서 가리켜야 한다.
+//
+// 라이브러리 쪽으로 새면 파일이 사라진다. 이 테스트가 그 한 줄을 지킨다.
+func TestRemoveNeverReachesTheLibrary(t *testing.T) {
+	s := removeQueueTrackScript("BBBB2222", 3, true)
+
+	if !strings.Contains(s, `set pl to (first user playlist whose persistent ID is "BBBB2222")`) {
+		t.Fatalf("우리 플레이리스트를 ID 로 잡지 않는다:\n%s", s)
+	}
+	for _, line := range strings.Split(s, "\n") {
+		if !strings.Contains(line, "delete") {
+			continue
+		}
+		if !strings.HasSuffix(strings.TrimSpace(line), "of pl") {
+			t.Errorf("우리 플레이리스트를 거치지 않는 delete 다: %q", strings.TrimSpace(line))
+		}
+		if strings.Contains(line, "library") {
+			t.Errorf("라이브러리를 가리키는 delete 다: %q", strings.TrimSpace(line))
+		}
+	}
+}
+
+// 지금 나오는 곡을 빼면 다음 곡으로 넘어간다. 조용해지는 것이 아니다.
+func TestRemovingTheCurrentTrackAdvancesFirst(t *testing.T) {
+	with := removeQueueTrackScript("BBBB2222", 1, true)
+	without := removeQueueTrackScript("BBBB2222", 1, false)
+
+	if !strings.Contains(with, "next track") {
+		t.Error("지금 나오는 곡을 빼는데 다음 곡으로 안 넘긴다")
+	}
+	if strings.Contains(without, "next track") {
+		t.Error("안 나오는 곡을 빼는데 재생을 건드린다")
+	}
+	// 넘긴 다음에 지워야 한다. 지우고 넘기면 그 사이에 무엇이 나올지 모른다.
+	if strings.Index(with, "next track") > strings.Index(with, "delete") {
+		t.Error("지우고 나서 넘긴다 — 순서가 반대다")
+	}
+}

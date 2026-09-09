@@ -28,6 +28,8 @@ func (m Model) Commands() []app.Command {
 			Run: m.saveCmd},
 		{Name: "/pause", Help: "play or pause — same as shift+↓",
 			Run: func(string) tea.Cmd { return cmdPlayPause() }},
+		{Name: "/remove", Help: "drop the selected track from the queue",
+			Run: func(string) tea.Cmd { return send(removeSelectedMsg{}) }},
 		{Name: "/clear", Help: "empty the queue",
 			Run: func(string) tea.Cmd { return send(clearQueueMsg{}) }},
 		{Name: "/reload", Help: "read your library from Music.app again",
@@ -137,7 +139,13 @@ func slug(s string) string {
 // 명령의 결과는 메시지로 돌아온다. 그래야 Update 한 곳에서만 상태가 바뀐다.
 type (
 	clearQueueMsg struct{}
-	jumpMsg       struct {
+
+	// removeSelectedMsg — 커서가 놓인 곡을 큐에서 뺀다.
+	//
+	// 명령이 곡을 직접 지목하지 않는 이유는, 목록에서 보고 고른 것이
+	// 이미 지목이기 때문이다. 이름을 다시 치게 하면 두 번 고르는 셈이다.
+	removeSelectedMsg struct{}
+	jumpMsg           struct {
 		kind sectionKind
 		// 플레이리스트는 종류가 같고 이름만 다르다. 이름 없이 옮기면
 		// 언제나 첫 플레이리스트로 간다.

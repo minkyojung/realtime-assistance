@@ -294,6 +294,13 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		// esc — 방금 시킨 일에서 물러난다. 화면은 그대로 두고 요청만 끊는다.
 		return m.stopAsk(), nil
 
+	case removeSelectedMsg:
+		rows := m.rows()
+		if m.listIdx < 0 || m.listIdx >= len(rows) || rows[m.listIdx].track == nil {
+			return m, send(errMsg{errNotInQueue})
+		}
+		return m.removeFromQueue(rows[m.listIdx].track.Id)
+
 	case clearQueueMsg:
 		m.queue = nil
 		m.queuePID = ""
@@ -406,10 +413,11 @@ func (m Model) applyQueue(res intent.Result) (app.App, tea.Cmd) {
 }
 
 var (
-	errNoTracks = errors.New("None of those tracks are in your library")
-	errNoQueue  = errors.New("Nothing in the queue to save")
-	errSyncing  = errors.New("Already reading your library")
-	errNoName   = errors.New("Needs a playlist name: /save <name>")
+	errNoTracks   = errors.New("None of those tracks are in your library")
+	errNoQueue    = errors.New("Nothing in the queue to save")
+	errSyncing    = errors.New("Already reading your library")
+	errNoName     = errors.New("Needs a playlist name: /save <name>")
+	errNotInQueue = errors.New("That track is not in the queue")
 )
 
 // 목록에서 고른 곡을 튼다. 실제 재생은 Music.app 이 하고, 화면은 폴링으로 따라간다.
@@ -451,6 +459,44 @@ func (m Model) playSelected() (app.App, tea.Cmd) {
 		return m, cmdPlayTrack(*t.PersistentId)
 	}
 	return m, nil
+}
+
+// removeFromQueue 는 큐에서 곡 하나를 뺀다.
+//
+// **사람과 AI 가 같이 쓰는 진입점이다.** 지금은 /remove 가 부르고, 나중에
+// 의도 층이 "이 곡 빼줘"를 여기로 바로 보낸다 — 그러면 큐를 통째로 다시
+// 고르지 않아도 되므로 7초가 0초가 된다.
+//
+// 통째로 다시 쓰지 않는다. 다시 쓰면 듣던 곡까지 사라져 음악이 끊긴다.
+// 한 줄만 지우면 앞쪽을 빼든 뒤쪽을 빼든 나머지는 그대로 흐른다.
+func (m Model) removeFromQueue(id int64) (Model, tea.Cmd) {
+	at := -1
+	for i, it := range m.queue {
+		if it.Track.Id == id {
+			at = i
+			break
+		}
+	}
+	if at < 0 {
+		return m, send(errMsg{errNotInQueue})
+	}
+
+	// 지금 나오는 곡을 빼면 다음 곡으로 넘어간다. 조용해지는 것이 아니다 —
+	// "이거 별로야"는 다음 걸 틀라는 뜻이다.
+	playing := m.queue[at].Track.Id == m.nowPlayingID
+
+	title := m.queue[at].Track.Title
+	m.queue = append(append([]api.QueueItem{}, m.queue[:at]...), m.queue[at+1:]...)
+	m.clampList()
+
+	// 화면과 Music.app 이 어긋나 있으면 번호를 믿을 수 없다. 화면만 고친다.
+	if m.queuePID == "" {
+		return m, app.Say(m.Name(), "Removed "+title)
+	}
+	return m, tea.Batch(
+		cmdRemoveQueueTrack(m.queuePID, at+1, playing),
+		app.Say(m.Name(), "Removed "+title),
+	)
 }
 
 // enterGroup — 묶음 안으로 한 단계 들어간다.
