@@ -22,9 +22,9 @@ import (
 func (m Model) Facts() []app.Fact {
 	facts := []app.Fact{
 		{Group: sources, Name: "Music.app", Detail: m.factPlayer()},
-		{Group: sources, Name: "Apple Music", Detail: m.factCatalog()},
+		{Group: sources, Name: "Apple Music", Detail: m.factCatalog(), Off: m.cat == nil},
 		{Group: sources, Name: "LRCLIB", Detail: "synced lyrics"},
-		{Group: sources, Name: "AI", Detail: m.factAI()},
+		{Group: sources, Name: "AI", Detail: m.factAI(), Off: !secrets.HasOpenAIKey()},
 		{Group: library, Detail: factLibrary(data.Lib())},
 	}
 	// 명령은 이름만 늘어놓는다. 무엇을 하는지는 팔레트가 말하고(`/`),

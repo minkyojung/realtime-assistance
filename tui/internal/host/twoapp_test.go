@@ -572,3 +572,88 @@ func TestMyWordsHaveLeftPadding(t *testing.T) {
 	}
 	t.Fatal("내 말이 화면에 없다")
 }
+
+// ── 첫 화면이 무엇을 권하는가 ────────────────────────────────────────
+
+// 켤 것이 남아 있으면 들어가라고 하지 않는다.
+//
+// 아무것도 안 켠 사람이 enter 로 들어가서, 문장을 치고, **그제야** AI 가
+// 꺼진 것을 알았다. 써 보고 나서야 아는 순서는 거꾸로다.
+type factApp struct {
+	stubApp
+	off bool
+}
+
+func (f factApp) Facts() []app.Fact {
+	return []app.Fact{
+		{Group: "Sources", Name: "Music.app", Detail: "play"},
+		{Group: "Sources", Name: "AI", Detail: "on", Off: f.off},
+	}
+}
+
+// stubApp.Update 는 자기 자신(안쪽 타입)을 돌려주므로, 막지 않으면 첫
+// Update 에 바깥 타입이 슬라이스에서 날아간다.
+func (f factApp) Update(msg tea.Msg) (app.App, tea.Cmd) {
+	_, cmd := f.stubApp.Update(msg)
+	return f, cmd
+}
+
+func homeWith(off bool) tea.Model {
+	hm := New(factApp{stubApp: stubApp{name: "alpha"}, off: off})
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 30})
+	return m
+}
+
+func TestHomeAsksToSetUpWhenSomethingIsOff(t *testing.T) {
+	out := plain(homeWith(true).View().Content)
+	if !strings.Contains(out, "Type /  to set up") {
+		t.Error("켤 것이 남았는데 들어가라고만 한다")
+	}
+	if strings.Contains(out, "Press Enter to start") {
+		t.Error("켤 것이 남았는데 '시작하라'고 한다")
+	}
+	// 그래도 막지 않는다. 하나도 안 켜도 앱의 절반은 돈다.
+	if !strings.Contains(out, "browse your library") {
+		t.Error("들어가는 길이 사라졌다 — 안 켜도 라이브러리는 볼 수 있다")
+	}
+}
+
+func TestHomeSaysStartWhenNothingIsOff(t *testing.T) {
+	out := plain(homeWith(false).View().Content)
+	if !strings.Contains(out, "Press Enter to start") {
+		t.Error("다 켜졌는데 시작하라고 안 한다")
+	}
+	if strings.Contains(out, "set up") {
+		t.Error("다 켜졌는데 설정하라고 한다")
+	}
+}
+
+// 홈에서 `/` 는 통과한다. 그 길이 없으면 홈에서 켤 방법이 없다.
+func TestSlashLeavesHome(t *testing.T) {
+	m := homeWith(true)
+	m, cmd := m.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
+	if cmd == nil {
+		t.Fatal("`/` 를 쳤는데 아무 일도 안 일어났다")
+	}
+	m, _ = m.Update(cmd())
+
+	out := plain(m.View().Content)
+	if strings.Contains(out, "browse your library") {
+		t.Error("`/` 를 쳤는데 홈에 그대로 있다")
+	}
+	if !strings.Contains(out, "Ask AI  /") {
+		t.Error("입력창에 `/` 가 안 들어갔다 — 팔레트가 안 뜬다")
+	}
+}
+
+// 나머지 글자는 여전히 삼킨다. 안 보이는 입력창에 쌓이면, 앱에 들어간
+// 순간 친 적 없는 문장이 거기 들어 있다.
+func TestHomeStillSwallowsLetters(t *testing.T) {
+	m := homeWith(true)
+	before := m.View().Content
+	m, _ = m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	if m.View().Content != before {
+		t.Error("홈에서 글자가 통과했다")
+	}
+}

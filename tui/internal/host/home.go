@@ -382,6 +382,31 @@ func sameColor(a, b color.Color) bool {
 // (host.go applyMode) — 같은 것을 두 번 말하면 둘 다 안 읽힌다.
 const homeGate = "Press Enter to start"
 
+// 켤 것이 남아 있으면 들어가라고 하지 않는다.
+//
+// 아무것도 안 켠 사람이 enter 로 들어가서, 문장을 치고, **그제야** AI 가
+// 꺼진 것을 알았다. 써 보고 나서야 아는 순서는 거꾸로다.
+//
+// 그래도 막지는 않는다. 하나도 안 켜도 앱의 절반은 돈다 — 라이브러리를
+// 훑고 틀고 가사를 본다. 그래서 들어가는 길은 아래에 작게 남긴다.
+const (
+	homeSetup  = "Type /  to set up"
+	homeBrowse = "enter   browse your library"
+)
+
+// somethingOff — 앱이 "켜면 되는데 안 켰다"고 말한 것이 있는가.
+//
+// 무엇이 꺼졌는지는 호스트가 모른다. 앱마다 다르고, 알 필요도 없다 —
+// 앱이 Fact 에 표시하고 호스트는 세기만 한다(app.Fact.Off).
+func (m Model) somethingOff() bool {
+	for _, f := range m.app().Facts() {
+		if f.Off {
+			return true
+		}
+	}
+	return false
+}
+
 // centerRow 는 한 줄을 폭 안에서 가운데에 놓는다.
 //
 // 오른쪽은 채우지 않는다. 빈칸을 채워봐야 보이지 않고, 줄 끝에 공백이
@@ -402,6 +427,13 @@ func (m Model) viewHome(w, h int) string {
 	// 상태줄도 없어서(host.go View) 손이 가는 자리가 따로 없고, 받는 키가
 	// 이것 하나뿐인 화면에서는 한가운데가 곧 "여기를 보라"는 뜻이다.
 	tail := []string{centerRow(w, style.BrandSoft.Render(homeGate))}
+	if m.somethingOff() {
+		tail = []string{
+			centerRow(w, style.BrandSoft.Render(homeSetup)),
+			"",
+			centerRow(w, style.Faint.Render(homeBrowse)),
+		}
+	}
 
 	// 관문이 막혀 있으면 사유를 붙인다. 관문보다 뒤인 이유는 막혀 있어도
 	// 들어가는 길은 그대로이기 때문이다.

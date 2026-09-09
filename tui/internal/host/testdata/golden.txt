@@ -19,9 +19,9 @@
                                                                                                     
                                                                                                     
                                                                                                     
+                                         [38;2;255;143;163mType /  to set up[m                                          
                                                                                                     
-                                        [38;2;255;143;163mPress Enter to start[m                                        
-                                                                                                    
+                                    [38;2;85;85;94menter   browse your library[m                                     
                                                                                                     
                                                                                                     
                                                                                                     

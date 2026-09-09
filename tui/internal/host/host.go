@@ -449,6 +449,15 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 	if m.home {
 		switch msg.String() {
 		case "enter", "esc", "ctrl+c", "?":
+		case "/":
+			// `/` 만은 통과시킨다. 치는 순간 홈이 걷히고 팔레트가 뜨므로,
+			// 글자를 삼키는 이유(안 보이는 입력창에 쌓인다)에 해당이 없다.
+			//
+			// 홈에서 켤 것을 켜려면 명령을 쳐야 하는데, 그 길이 이것뿐이다.
+			// `/` 는 원래 "갈 곳과 할 것"이다(docs/07 2절).
+			m.input.SetValue("/")
+			m.input.CursorEnd()
+			return true, m, switchTo(m.current)("")
 		default:
 			return true, m, nil
 		}
