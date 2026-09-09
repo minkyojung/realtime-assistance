@@ -26,6 +26,7 @@ func TestGolden(t *testing.T) {
 func renderAll() string {
 	var b strings.Builder
 	for _, c := range []struct{ name, keys string }{
+		{"home", ""},
 		{"default", ""},
 		{"search", "\x06oasis"},
 		{"commands", "/"},
@@ -33,6 +34,9 @@ func renderAll() string {
 		{"prompt", "something quiet"},
 	} {
 		hm := New(musicapp.New())
+		if c.name != "home" {
+			hm.LeaveHome()
+		}
 		var m tea.Model = &hm
 		m, _ = m.Update(tea.WindowSizeMsg{Width: 100, Height: 28})
 		for _, r := range c.keys {

@@ -26,7 +26,7 @@ import (
 func (m Model) hostCommands() []app.Command {
 	out := make([]app.Command, 0, len(m.apps)+2)
 	for i, a := range m.apps {
-		if i == m.current {
+		if !m.home && i == m.current {
 			continue // 지금 보고 있는 앱으로 갈 이유는 없다
 		}
 		help := "switch to " + a.Name()
@@ -71,7 +71,11 @@ func (m Model) allCommands() []app.Command {
 			out = append(out, c)
 		}
 	}
-	out = append(out, m.app().Commands()...)
+	// 홈에서는 앱 명령을 내놓지 않는다. 들어가지도 않은 앱의 /queue 를
+	// 실행하면 화면은 홈인데 큐만 바뀌어 있다.
+	if !m.home {
+		out = append(out, m.app().Commands()...)
+	}
 	for _, c := range host {
 		if !isAppName(m, c.Name) {
 			out = append(out, c)

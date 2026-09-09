@@ -18,12 +18,18 @@ type stubApp struct {
 	name  string
 	reply string
 	badge int
+	ready error
+
+	// 포커스 신호를 센다. 화면 앞에 있는 앱만 장치를 잡게 하는 통로라
+	// 새거나 빠지면 안 보는 동안에도 카메라 불이 켜져 있게 된다.
+	focus, blur *int
 }
 
 func (s stubApp) Name() string               { return s.name }
 func (s stubApp) Description() string        { return s.name + " does things" }
+func (s stubApp) Tagline() string            { return s.name + " does things" }
 func (s stubApp) Init(func(tea.Msg)) tea.Cmd { return nil }
-func (s stubApp) Ready() error               { return nil }
+func (s stubApp) Ready() error               { return s.ready }
 func (s stubApp) Badge() int                 { return s.badge }
 func (s stubApp) Status() string             { return s.name }
 func (s stubApp) Filter(string) app.App      { return s }
@@ -33,8 +39,17 @@ func (s stubApp) Ask(string) tea.Cmd {
 	return func() tea.Msg { return app.SayMsg{App: s.name, Text: s.reply} }
 }
 func (s stubApp) Update(msg tea.Msg) (app.App, tea.Cmd) {
-	if m, ok := msg.(app.AskMsg); ok {
+	switch m := msg.(type) {
+	case app.AskMsg:
 		return s, s.Ask(m.Prompt)
+	case app.FocusMsg:
+		if s.focus != nil {
+			*s.focus++
+		}
+	case app.BlurMsg:
+		if s.blur != nil {
+			*s.blur++
+		}
 	}
 	return s, nil
 }
@@ -44,6 +59,7 @@ func twoAppHost() (tea.Model, *Model) {
 		stubApp{name: "alpha", reply: "알파가 했습니다"},
 		stubApp{name: "beta", reply: "베타가 했습니다", badge: 3},
 	)
+	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 28})
 	return m, &hm

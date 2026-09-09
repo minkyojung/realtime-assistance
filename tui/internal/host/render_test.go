@@ -21,6 +21,7 @@ import (
 func TestViewFitsWidth(t *testing.T) {
 	for _, w := range []int{70, 80, 96, 120, 200} {
 		hm := New(musicapp.New())
+		hm.LeaveHome()
 		var m tea.Model = &hm
 		m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 32})
 
@@ -35,6 +36,7 @@ func TestViewFitsWidth(t *testing.T) {
 // 기본 화면에 라이브러리와 재생 바가 실제로 그려지는지.
 func TestViewShowsLibraryAndPlayer(t *testing.T) {
 	hm := New(musicapp.New())
+	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	out := m.View().Content
@@ -53,6 +55,7 @@ func TestViewShowsLibraryAndPlayer(t *testing.T) {
 // tab 으로 섹션을 옮기면 목록이 실제로 바뀌는지.
 func TestTabSwitchesSection(t *testing.T) {
 	hm := New(musicapp.New())
+	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	first := m.View().Content
@@ -79,6 +82,7 @@ func typeText(m tea.Model, s string) tea.Model {
 // 그리고 프롬프트 모드에서는 목록을 건드리지 않아야 한다.
 func TestPromptDoesNotFilterList(t *testing.T) {
 	hm := New(musicapp.New())
+	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	m = typeText(m, "something quiet")
@@ -95,6 +99,7 @@ func TestPromptDoesNotFilterList(t *testing.T) {
 // ctrl+f 로 들어간 검색 모드에서만 목록이 걸러져야 한다.
 func TestSearchModeFiltersList(t *testing.T) {
 	hm := New(musicapp.New())
+	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
@@ -116,6 +121,7 @@ func TestSearchModeFiltersList(t *testing.T) {
 // Music.app 폴링 결과가 화면에 반영되는지.
 func TestStatusUpdatesPlayer(t *testing.T) {
 	hm := New(musicapp.New())
+	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 
@@ -149,6 +155,7 @@ func TestFirstRunGates(t *testing.T) {
 	}
 	for _, c := range cases {
 		hm := New(musicapp.New())
+		hm.LeaveHome()
 		var m tea.Model = &hm
 		m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 		m, _ = m.Update(musicapp.StatusMsgFor(music.PlayerState{}, c.err))
@@ -167,6 +174,7 @@ func TestFirstRunGates(t *testing.T) {
 // 실제 API 는 부르지 않는다 — queueMsg 를 직접 흘려보낸다.
 func TestPromptToQueue(t *testing.T) {
 	hm := New(musicapp.New())
+	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	m = typeText(m, "quiet")
@@ -216,6 +224,7 @@ func TestPromptToQueue(t *testing.T) {
 // 요청이 실패해도 화면이 살아 있어야 한다.
 func TestQueueFailureShowsBadge(t *testing.T) {
 	hm := New(musicapp.New())
+	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	m, _ = m.Update(musicapp.QueueMsgFor(intent.Result{}, errors.New("model unavailable")))

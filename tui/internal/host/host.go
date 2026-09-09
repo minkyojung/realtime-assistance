@@ -20,6 +20,10 @@ import (
 //	기본     › 프롬프트 — 자연어 요청. 목록을 건드리지 않는다
 //	ctrl+f   ⌕ 검색   — 지금 보고 있는 것을 즉시 거른다
 //	/        › 명령    — 로컬에서 바로 실행
+//
+// 창 제목. 터미널 탭에 뜬다.
+const windowTitle = "npm run dev"
+
 type inputMode int
 
 const (
@@ -38,6 +42,13 @@ type Model struct {
 
 	// 팔레트·도움말에서 고른 줄.
 	pick int
+
+	// 홈에 있는가. 앱을 보고 있지 않다는 뜻이다.
+	//
+	// current 를 지우지 않는 이유는, 그것이 "마지막으로 본 앱"으로 계속
+	// 쓸모가 있기 때문이다 — esc 로 홈에 와도 그 앱은 살아서 재생 중이고,
+	// 상태줄이 그것을 계속 말한다. home.go
+	home bool
 
 	// 로그 — 호스트의 세 번째 자산. 입력의 짝이다.
 	log        []logEntry
@@ -63,7 +74,7 @@ func New(apps ...app.App) Model {
 	sp.Spinner = spinner.Dot
 	sp.Style = lipgloss.NewStyle().Foreground(style.ColBrand)
 
-	m := Model{apps: apps, input: ta, spinner: sp, pending: map[string]bool{}}
+	m := Model{apps: apps, input: ta, spinner: sp, pending: map[string]bool{}, home: true}
 	(&m).applyMode()
 	return m
 }
@@ -75,7 +86,14 @@ func (m Model) Init() tea.Cmd {
 	for _, a := range m.apps {
 		cmds = append(cmds, a.Init(m.push))
 	}
-	return tea.Batch(cmds...)
+	// 홈에서 시작하면 아직 아무 앱도 보고 있지 않다. 포커스는 앱에
+	// 들어갈 때 준다 — 안 그러면 안 보는 동안 카메라 불이 켜진다.
+	if m.home {
+		return tea.Batch(cmds...)
+	}
+	first, cmd := m.apps[m.current].Update(app.FocusMsg{})
+	m.apps[m.current] = first
+	return tea.Batch(append(cmds, cmd)...)
 }
 
 // push 는 앱이 이벤트 루프 밖에서 메시지를 넣는 통로다.
@@ -89,6 +107,10 @@ func (m Model) push(msg tea.Msg) {
 // SetSend 는 tea.Program 이 만들어진 뒤 주입한다.
 func (m *Model) SetSend(f func(tea.Msg)) { m.send = f }
 
+// LeaveHome 은 홈을 건너뛰고 곧장 앱 안에서 시작한다.
+// 골든과 화면 테스트가 앱 화면을 보기 위해 쓴다.
+func (m *Model) LeaveHome() { m.home = false }
+
 // commanding — 입력이 `/` 로 시작하면 명령 모드다. 별도 상태를 두지 않는다.
 func (m Model) commanding() bool {
 	return m.mode == modePrompt && strings.HasPrefix(m.input.Value(), "/")
@@ -97,10 +119,26 @@ func (m Model) commanding() bool {
 // overlaying — 본문 자리를 호스트가 잠시 빌려 쓰는 중인가.
 func (m Model) overlaying() bool { return m.showHelp || m.commanding() }
 
+// pickCount — ↑↓ 로 고를 것이 지금 화면에 몇 개 있는가.
+//
+// 홈의 앱 목록과 팔레트는 같은 조작을 쓴다(↑↓ 로 고르고 enter). 홈에서
+// `/` 를 치면 팔레트가 앞에 서므로 오버레이를 먼저 본다.
+func (m Model) pickCount() int {
+	if m.overlaying() {
+		return m.overlayCount()
+	}
+	if m.home {
+		return len(m.apps)
+	}
+	return 0
+}
+
+func (m Model) picking() bool { return m.pickCount() > 0 }
+
 func (m *Model) applyMode() {
 	if m.mode == modeSearch {
 		m.input.Prompt = "⌕ "
-		m.input.Placeholder = "Search your library"
+		m.input.Placeholder = "Search"
 	} else {
 		m.input.Prompt = "› "
 		m.input.Placeholder = "Ask for anything    /  commands     ?  help"
@@ -131,14 +169,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case switchAppMsg:
 		// 화면만 갈아끼운다. 다른 앱은 계속 살아 있다.
 		if msg.index >= 0 && msg.index < len(m.apps) {
+			// 나가는 앱에게 먼저 알린다. 장치를 잡고 있는 앱은 여기서 놓는다.
+			// 홈에서 들어가는 길이면 나가는 앱이 없다.
+			var blurCmd tea.Cmd
+			if !m.home {
+				var blur app.App
+				blur, blurCmd = m.app().Update(app.BlurMsg{})
+				m.apps[m.current] = blur
+			}
+
+			m.home = false
 			m.current = msg.index
 			m.mode = modePrompt
 			m.showHelp = false
 			(&m).applyMode()
-			return m.forward(app.ResizeMsg{
+
+			focus, focusCmd := m.app().Update(app.FocusMsg{})
+			m.apps[m.current] = focus
+
+			mm, sizeCmd := m.forward(app.ResizeMsg{
 				Width:  style.ContentWidth(m.w),
 				Height: m.bodyHeight(),
 			})
+			return mm, tea.Batch(blurCmd, focusCmd, sizeCmd)
 		}
 		return m, nil
 
@@ -167,6 +220,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, cmd
 		}
+		// 홈에서는 넘길 앱이 없다. 보이지도 않는 앱이 방향키를 먹으면
+		// 돌아갔을 때 엉뚱한 곳에 커서가 가 있다.
+		if m.home {
+			return m, cmd
+		}
 		// 입력창이 안 먹은 키만 앱에게 간다 (방향키·tab 등).
 		next, appCmd := m.app().Update(msg)
 		m.apps[m.current] = next
@@ -186,9 +244,15 @@ func (m Model) dispatch(prompt string) (tea.Model, tea.Cmd) {
 	if len(m.apps) == 1 {
 		return m.ask([]string{m.app().Name()}, prompt)
 	}
+	// 홈에서는 기댈 "지금 보는 앱"이 없다. 그것을 넘기면 애매한 문장이
+	// 마지막에 본 앱으로 계속 쏠린다.
+	current := ""
+	if !m.home {
+		current = m.app().Name()
+	}
 	m.routing = true
 	return m, tea.Batch(
-		cmdRoute(prompt, m.specs(), m.app().Name()),
+		cmdRoute(prompt, m.specs(), current),
 		m.spinner.Tick,
 	)
 }
@@ -197,9 +261,17 @@ func (m Model) dispatch(prompt string) (tea.Model, tea.Cmd) {
 func (m Model) deliver(msg routedMsg) (tea.Model, tea.Cmd) {
 	m.routing = false
 	names := msg.apps
-	// 라우터가 실패하거나 아무도 못 고르면 지금 보고 있는 앱에게 준다.
-	// 틀려도 망하지 않는다 — 그 앱이 못 하겠다고 로그에 남기고 끝이다.
 	if msg.err != nil || len(names) == 0 {
+		// 홈에는 기댈 곳이 없다. 모르면 모른다고 말하고 홈에 머문다.
+		// 여기서 아무 앱이나 열면 고르지도 않은 화면이 튀어나온다.
+		if m.home {
+			m.log = append(m.log, logEntry{
+				who: "host", text: "어느 앱의 일인지 모르겠습니다", err: true,
+			})
+			return m, nil
+		}
+		// 앱 안에서는 지금 보고 있는 앱에게 준다. 틀려도 망하지 않는다 —
+		// 그 앱이 못 하겠다고 로그에 남기고 끝이다.
 		names = []string{m.app().Name()}
 	}
 	return m.ask(names, msg.prompt)
@@ -211,10 +283,14 @@ func (m Model) deliver(msg routedMsg) (tea.Model, tea.Cmd) {
 // 요청("A 하고 나서 B")은 지금 범위 밖이다. 결과는 도착하는 대로 로그에 쌓인다.
 func (m Model) ask(names []string, prompt string) (tea.Model, tea.Cmd) {
 	cmds := []tea.Cmd{m.spinner.Tick}
+	enter := -1
 	for _, name := range names {
 		for i, a := range m.apps {
 			if a.Name() != name {
 				continue
+			}
+			if enter < 0 {
+				enter = i
 			}
 			m.pending[name] = true
 			next, cmd := a.Update(app.AskMsg{Prompt: prompt})
@@ -223,6 +299,14 @@ func (m Model) ask(names []string, prompt string) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, cmd)
 			}
 		}
+	}
+	// 홈에서 문장을 쳤고 앱이 지목됐으면 그 앱으로 들어간다. 목적지를
+	// 고른 것과 같다 — 답이 그 화면에 나올 텐데 홈에 남아 있을 이유가 없다.
+	//
+	// 여럿이 지목되면 첫 번째로 간다. 나머지는 배경에서 답하고, 그 답은
+	// 로그와 상태줄에 남는다 — 원래 그렇게 도는 구조다.
+	if m.home && enter >= 0 {
+		cmds = append(cmds, switchTo(enter)(""))
 	}
 	return m, tea.Batch(cmds...)
 }
@@ -257,6 +341,11 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		return true, m, nil
 
 	case "ctrl+f":
+		if m.home {
+			// 홈에는 거를 목록이 없다. 조용히 무시하면 고장으로 보인다.
+			m.notice = "Nothing to search here"
+			return true, m, nil
+		}
 		m.showHelp = false
 		m.mode = modeSearch
 		m.input.Reset()
@@ -265,7 +354,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		return true, m, nil
 
 	case "esc":
-		// 한 단계씩 물러난다 — 도움말 → 검색 → 입력 비우기 → 종료.
+		// 한 단계씩 물러난다 — 도움말 → 검색 → 입력 비우기 → 홈 → 종료.
 		if m.showHelp {
 			m.showHelp = false
 			return true, m, nil
@@ -290,16 +379,24 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 			m.input.Reset()
 			return true, m, nil
 		}
+		if !m.home {
+			// 앱에서 물러나면 홈이다. 앱은 계속 살아 있고 화면만 떠난다.
+			// 나온 앱에 커서를 둔다 — 다시 enter 면 방금 있던 곳이다.
+			blur, blurCmd := m.app().Update(app.BlurMsg{})
+			m.apps[m.current] = blur
+			m.home, m.pick = true, m.current
+			return true, m, blurCmd
+		}
 		return true, m, tea.Quit
 
 	case "up", "ctrl+p":
-		if m.overlaying() {
+		if m.picking() {
 			m.pick = style.Max(m.pick-1, 0)
 			return true, m, nil
 		}
 	case "down", "ctrl+n":
-		if m.overlaying() {
-			m.pick = style.Min(m.pick+1, style.Max(m.overlayCount()-1, 0))
+		if m.picking() {
+			m.pick = style.Min(m.pick+1, m.pickCount()-1)
 			return true, m, nil
 		}
 
@@ -317,6 +414,14 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 	}
 	if m.commanding() {
 		return m.runCommand()
+	}
+	// 홈에서 빈 입력에 enter 면 고른 앱으로 들어간다. 친 것이 있으면
+	// 그것이 먼저다 — 홈에서도 문장을 던질 수 있어야 한다.
+	if m.home && strings.TrimSpace(m.input.Value()) == "" {
+		if m.pick < len(m.apps) {
+			return m, switchTo(m.pick)("")
+		}
+		return m, nil
 	}
 	// 검색 중에는 고른 것을 앱이 처리한다. 프롬프트일 때만 요청으로 보낸다.
 	if m.mode == modePrompt {
@@ -348,7 +453,11 @@ func (m Model) View() tea.View {
 
 	var b strings.Builder
 	// 본문은 무엇을 하든 그대로다. 팔레트는 입력창 아래에 붙는다.
-	b.WriteString(m.app().View(w, bodyH))
+	if m.home {
+		b.WriteString(m.viewHome(w, bodyH))
+	} else {
+		b.WriteString(m.app().View(w, bodyH))
+	}
 	// 로그는 입력창 바로 위, 팔레트는 바로 아래. 둘 다 본문을 밀어내지 않는다.
 	for _, r := range m.logRows(w) {
 		b.WriteString("\n")
@@ -367,13 +476,21 @@ func (m Model) View() tea.View {
 
 	v := tea.NewView(lipgloss.NewStyle().Padding(1, 1).Render(b.String()))
 	v.AltScreen = true
-	v.WindowTitle = "Apple Music CLI"
+	// 어깨너머로 제일 먼저 보이는 자리다. 스플래시보다 노출이 크다.
+	// 이 껍데기의 컨셉대로라면 여기가 가장 정직하지 않아야 한다.
+	v.WindowTitle = windowTitle
 	return v
 }
 
 // 상태줄 — 지금 앱이 말하는 것과, 배경 앱들이 말하는 것을 모은다.
 func (m Model) viewStatus(w int) string {
-	left := m.app().Status()
+	// 왼쪽은 언제나 "앞에 나온 것"이다. 홈에서는 고른 줄이 그것이므로,
+	// ↑↓ 로 훑기만 해도 그 앱이 지금 뭘 하는지 미리 보인다.
+	front := m.current
+	if m.home && m.pick < len(m.apps) {
+		front = m.pick
+	}
+	left := m.apps[front].Status()
 	if m.notice != "" {
 		left = style.BrandSoft.Render("· ") + style.Dim.Render(style.Truncate(m.notice, w-2))
 	}
@@ -381,7 +498,7 @@ func (m Model) viewStatus(w int) string {
 	// 배경 앱은 이름과 배지만 내놓는다. 맥 메뉴바와 같다.
 	var bg []string
 	for i, a := range m.apps {
-		if i == m.current {
+		if i == front {
 			continue
 		}
 		s := a.Name()
