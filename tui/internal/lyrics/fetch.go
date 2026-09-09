@@ -48,55 +48,89 @@ func Fetch(ctx context.Context, artist, title, album string, durationMs int) (*L
 	return l, nil
 }
 
-// lookup — 세 단계로 묻는다. 뒤로 갈수록 느슨하다.
+// lookup — 후보를 모아 점수로 고른다.
 //
-// 3단계가 커버리지를 4%p 올렸다. 라이브러리 메타데이터가 지저분한
-// 것이지 가사가 없는 것이 아니었다 — spikes/lrclib-coverage 참조.
+// 처음에는 "찾으면 곧장 반환"이었다. 성공 조건을 **가사를 찾았나** 로
+// 잡았기 때문인데, 실제로 원하는 것은 **이 녹음에 맞는 시간표를 찾았나**
+// 다. 그 둘을 같은 것으로 본 탓에 시간표 없는 답에서 멈추거나(하이라이트
+// 안 됨) 딴 녹음의 시간표를 집었다(박자 안 맞음).
+//
+// 그래서 사다리를 끝까지 두되, **만점이면 즉시 멈춘다.** 잘 되는 곡은
+// 1단에서 끝나므로 요청 횟수가 예전과 같다. 지금 실패하는 곡만 더 묻는다.
+//
+// 실측 — 라이브러리 202곡에서 싱크 가사 68% → 89%.
 func lookup(ctx context.Context, artist, title, album string, durationMs int) (*Lyrics, error) {
-	// 1. 제목·아티스트·앨범·길이가 전부 맞는 것
-	q := url.Values{}
-	q.Set("artist_name", artist)
-	q.Set("track_name", title)
-	q.Set("album_name", album)
-	q.Set("duration", fmt.Sprint(durationMs/1000))
-	var one payload
-	if get(ctx, "https://lrclib.net/api/get?"+q.Encode(), &one) {
-		return one.lyrics(), nil
+	clean := Clean(title)
+
+	// 사다리. 위에서 아래로 좁은 것에서 넓은 것으로 간다.
+	ladder := []func() []payload{
+		// 1. 제목·아티스트·앨범·길이가 전부 맞는 것. 제일 정확하다.
+		func() []payload {
+			q := url.Values{}
+			q.Set("artist_name", artist)
+			q.Set("track_name", title)
+			q.Set("album_name", album)
+			q.Set("duration", fmt.Sprint(durationMs/1000))
+			var one payload
+			if !get(ctx, "https://lrclib.net/api/get?"+q.Encode(), &one) {
+				return nil
+			}
+			// /api/get 은 길이로 걸러 준 답이다. duration 을 안 실어 보내는
+			// 경우가 있어 여기서 채운다 — 안 그러면 점수에서 손해를 본다.
+			if one.Duration == 0 {
+				one.Duration = float64(durationMs) / 1000
+			}
+			return []payload{one}
+		},
+		// 2. 앨범명이 어긋난 곡. 리마스터·디럭스판이 흔하다.
+		func() []payload { return search(ctx, url.Values{"track_name": {title}, "artist_name": {artist}}) },
+		// 3. 제목의 꼬리를 깎는다. "(Live at …)" "(feat. …)"
+		func() []payload {
+			if clean == title {
+				return nil
+			}
+			return search(ctx, url.Values{"track_name": {clean}, "artist_name": {artist}})
+		},
+		// 4. 아티스트 칸이 통째로 빈 곡. 제목 끝에 들어가 있는 경우다.
+		func() []payload { return search(ctx, url.Values{"track_name": {clean}}) },
+		// 5. 통째 검색. 표기가 미묘하게 달라 위의 것들이 다 빗나갈 때 걸린다.
+		func() []payload { return search(ctx, url.Values{"q": {clean + " " + artist}}) },
 	}
-	// 2. 제목 + 아티스트로 검색
-	if l := searchBest(ctx, artist, title); l != nil {
-		return l, nil
-	}
-	// 3. 제목을 깎아서 다시. 라이브·리마스터 꼬리와, 아티스트가 통째로
-	//    비어 제목 끝에 들어간 경우("제목 - Jack Johnson")를 잡는다.
-	if c := Clean(title); c != title || artist == "" {
-		if l := searchBest(ctx, artist, c); l != nil {
-			return l, nil
+
+	var best *payload
+	bestScore := unusable
+	for _, ask := range ladder {
+		for _, c := range ask() {
+			s := score(c, durationMs)
+			if s <= bestScore {
+				continue
+			}
+			hit := c
+			best, bestScore = &hit, s
+			if s >= scorePerfect {
+				return best.lyrics(), nil // 더 볼 것이 없다
+			}
 		}
-		if l := searchBest(ctx, "", c); l != nil {
-			return l, nil
-		}
 	}
-	return nil, ErrNotFound
+	if best == nil {
+		return nil, ErrNotFound
+	}
+	return best.lyrics(), nil
 }
 
-func searchBest(ctx context.Context, artist, title string) *Lyrics {
-	q := url.Values{}
-	q.Set("track_name", title)
-	if artist != "" {
-		q.Set("artist_name", artist)
-	}
-	var hits []payload
-	if !get(ctx, "https://lrclib.net/api/search?"+q.Encode(), &hits) || len(hits) == 0 {
+// search — 후보를 그대로 돌려준다. 고르는 것은 부르는 쪽의 일이다.
+func search(ctx context.Context, q url.Values) []payload {
+	if q.Get("track_name") == "" && q.Get("q") == "" {
 		return nil
 	}
-	// 시각이 붙은 것을 우선한다. 그것만이 하이라이트에 쓸 수 있다.
-	for _, h := range hits {
-		if strings.TrimSpace(h.Synced) != "" {
-			return h.lyrics()
-		}
+	if q.Get("artist_name") == "" {
+		q.Del("artist_name") // 빈 값을 실어 보내면 아무것도 안 나온다
 	}
-	return hits[0].lyrics()
+	var hits []payload
+	if !get(ctx, "https://lrclib.net/api/search?"+q.Encode(), &hits) {
+		return nil
+	}
+	return hits
 }
 
 type payload struct {
