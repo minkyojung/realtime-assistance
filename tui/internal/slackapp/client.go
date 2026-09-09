@@ -89,9 +89,19 @@ func asAPIError(err error, out *apiError) bool {
 // Slack 은 전부 POST + form 이고 토큰은 헤더로 보낸다(본문에 넣는 것은
 // 로그에 남기 쉬워 권장되지 않는다).
 func (c webClient) call(ctx context.Context, method string, form url.Values, out any) error {
-	body, err := c.post(ctx, method, form)
+	_, err := c.callH(ctx, method, form, out)
+	return err
+}
+
+// callH 는 헤더까지 돌려준다.
+//
+// **부여된 권한은 본문이 아니라 헤더에 온다**(X-OAuth-Scopes). 토큰이
+// 실제로 무엇을 할 수 있는지 아는 방법이 이것뿐이라, 권한이 모자랄 때
+// 추측하지 않고 사실을 보여줄 수 있다.
+func (c webClient) callH(ctx context.Context, method string, form url.Values, out any) (http.Header, error) {
+	body, header, err := c.post(ctx, method, form)
 	if err != nil {
-		return err
+		return header, err
 	}
 
 	var head struct {
@@ -99,25 +109,40 @@ func (c webClient) call(ctx context.Context, method string, form url.Values, out
 		Error string `json:"error"`
 	}
 	if err := json.Unmarshal(body, &head); err != nil {
-		return fmt.Errorf("Slack %s: 응답을 읽을 수 없습니다: %w", method, err)
+		return header, fmt.Errorf("Slack %s: 응답을 읽을 수 없습니다: %w", method, err)
 	}
 	if !head.Ok {
-		return apiError{Method: method, Code: head.Error}
+		return header, apiError{Method: method, Code: head.Error}
 	}
 	if out == nil {
-		return nil
+		return header, nil
 	}
 	if err := json.Unmarshal(body, out); err != nil {
-		return fmt.Errorf("Slack %s: 응답을 읽을 수 없습니다: %w", method, err)
+		return header, fmt.Errorf("Slack %s: 응답을 읽을 수 없습니다: %w", method, err)
 	}
-	return nil
+	return header, nil
+}
+
+// grantedScopes 는 응답 헤더가 말하는, 이 토큰이 실제로 가진 권한이다.
+func grantedScopes(h http.Header) []string {
+	raw := h.Get("X-OAuth-Scopes")
+	if raw == "" {
+		return nil
+	}
+	out := make([]string, 0, 8)
+	for _, s := range strings.Split(raw, ",") {
+		if s = strings.TrimSpace(s); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // 429 는 예외가 아니라 정상 응답이다. Retry-After 를 지키고 한 번만 다시 건다.
 // 두 번 이상 미루면 화면이 멈춘 것처럼 보인다.
 const retryCap = 5 * time.Second
 
-func (c webClient) post(ctx context.Context, method string, form url.Values) ([]byte, error) {
+func (c webClient) post(ctx context.Context, method string, form url.Values) ([]byte, http.Header, error) {
 	if form == nil {
 		form = url.Values{}
 	}
@@ -127,7 +152,7 @@ func (c webClient) post(ctx context.Context, method string, form url.Values) ([]
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, slackAPI+method,
 			strings.NewReader(encoded))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		// oauth.v2.access 는 토큰을 받으러 가는 길이라 보낼 토큰이 없다.
 		// 빈 Bearer 를 보내면 Slack 이 invalid_auth 로 막는다.
@@ -138,27 +163,27 @@ func (c webClient) post(ctx context.Context, method string, form url.Values) ([]
 
 		resp, err := c.hc.Do(req)
 		if err != nil {
-			return nil, fmt.Errorf("Slack %s: %w", method, err)
+			return nil, nil, fmt.Errorf("Slack %s: %w", method, err)
 		}
 		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 		resp.Body.Close()
 		if readErr != nil {
-			return nil, fmt.Errorf("Slack %s: %w", method, readErr)
+			return nil, resp.Header, fmt.Errorf("Slack %s: %w", method, readErr)
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests && attempt == 0 {
 			wait := retryAfter(resp.Header.Get("Retry-After"))
 			select {
 			case <-ctx.Done():
-				return nil, ctx.Err()
+				return nil, resp.Header, ctx.Err()
 			case <-time.After(wait):
 			}
 			continue
 		}
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("Slack %s: HTTP %d", method, resp.StatusCode)
+			return nil, resp.Header, fmt.Errorf("Slack %s: HTTP %d", method, resp.StatusCode)
 		}
-		return body, nil
+		return body, resp.Header, nil
 	}
 }
 
@@ -183,10 +208,11 @@ type authInfo struct {
 	UserID string `json:"user_id"`
 }
 
-func (c webClient) authTest(ctx context.Context) (authInfo, error) {
+// authTest 는 내가 누구인지와, 이 토큰이 실제로 가진 권한을 함께 본다.
+func (c webClient) authTest(ctx context.Context) (authInfo, []string, error) {
 	var out authInfo
-	err := c.call(ctx, "auth.test", nil, &out)
-	return out, err
+	h, err := c.callH(ctx, "auth.test", nil, &out)
+	return out, grantedScopes(h), err
 }
 
 // rawConversation 은 users.conversations 가 돌려주는 모양 그대로다.

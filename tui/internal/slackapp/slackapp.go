@@ -54,6 +54,7 @@ type Model struct {
 	team    string
 	convs   []Conversation
 	users   map[string]string // user id → 표시 이름
+	scopes  []string          // 이 토큰이 실제로 가진 권한. 추측하지 않기 위해
 	loaded  bool
 	loadErr error
 
@@ -342,6 +343,22 @@ func (m Model) Ask(prompt string) tea.Cmd {
 	return cmdAct(m.token(), prompt, m.convs)
 }
 
+// hasScope 는 이 토큰이 그 권한을 실제로 가졌는지다.
+//
+// 헤더가 안 오는 경우(권한 목록을 못 받은 경우)에는 판단하지 않는다.
+// 모르는 것을 안다고 말하는 쪽이 더 나쁘다.
+func (m Model) hasScope(scope string) (bool, bool) {
+	if len(m.scopes) == 0 {
+		return false, false
+	}
+	for _, s := range m.scopes {
+		if s == scope {
+			return true, true
+		}
+	}
+	return false, true
+}
+
 // askTarget 은 이 문장이 어디로 갈지 정한다.
 //
 // **방 안이면 받는 사람이 이미 정해져 있다.** 모델에게 물어볼 것이 없으므로
@@ -396,7 +413,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			return m, app.SayErr(m.Name(), msg.Err)
 		}
 		m.creds = creds{}
-		m.convs, m.users = nil, map[string]string{}
+		m.convs, m.users, m.scopes = nil, map[string]string{}, nil
 		m.me, m.team = "", ""
 		m.loaded, m.loadErr = false, nil
 		m.sel, m.top = 0, 0
@@ -408,10 +425,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		if msg.Team != "" {
 			m.team = msg.Team
 		}
+		m.scopes = msg.Scopes
 		if msg.Err != nil {
 			return m, app.SayErr(m.Name(), msg.Err)
 		}
-		m.convs, m.users = msg.Convs, msg.Users
+		m.convs, m.users, m.scopes = msg.Convs, msg.Users, msg.Scopes
 		m.clampList()
 		return m, nil
 
@@ -463,6 +481,12 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		m.onlyUnread = false
 		m.sel, m.top = 0, 0
 		return m, nil
+
+	case showScopesMsg:
+		if len(m.scopes) == 0 {
+			return m, app.Say(m.Name(), "권한 목록을 받지 못했습니다")
+		}
+		return m, app.Say(m.Name(), strings.Join(m.scopes, " "))
 
 	case readAllMsg:
 		for i := range m.convs {

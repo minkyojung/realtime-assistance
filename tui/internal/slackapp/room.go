@@ -315,6 +315,11 @@ func (m Model) scopeNote() string {
 	if !ok || scope == "" {
 		return m.msgsErr.Error()
 	}
+	// 토큰이 그 권한을 이미 가졌다면 원인이 다른 데 있다. 엉뚱한 데로
+	// 보내지 않기 위해, 아는 것만 말한다.
+	if has, known := m.hasScope(scope); known && has {
+		return scope + " 는 있는데도 거절당했습니다 — /scopes 로 가진 권한을 확인하세요"
+	}
 	return scope + " 권한이 없어 못 읽습니다. 앱 설정에 넣고 /logout → /login 하세요"
 }
 

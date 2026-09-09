@@ -47,7 +47,11 @@ type loadedMsg struct {
 	Team  string
 	Convs []Conversation
 	Users map[string]string
-	Err   error
+
+	// 이 토큰이 실제로 가진 권한. 추측하지 않기 위해 들고 다닌다.
+	Scopes []string
+
+	Err error
 }
 
 // nameMsg 는 뒤늦게 알아낸 이름 하나다.
@@ -65,14 +69,14 @@ func cmdLoad(token string) tea.Cmd {
 		defer cancel()
 
 		c := newClient(token)
-		auth, err := c.authTest(ctx)
+		auth, scopes, err := c.authTest(ctx)
 		if err != nil {
-			return loadedMsg{Err: err}
+			return loadedMsg{Scopes: scopes, Err: err}
 		}
 
 		raw, err := c.myConversations(ctx, convLimit)
 		if err != nil {
-			return loadedMsg{Me: auth.UserID, Team: auth.Team, Err: err}
+			return loadedMsg{Me: auth.UserID, Team: auth.Team, Scopes: scopes, Err: err}
 		}
 
 		convs := make([]Conversation, 0, len(raw))
@@ -111,7 +115,10 @@ func cmdLoad(token string) tea.Cmd {
 		}
 
 		sortConvs(convs)
-		return loadedMsg{Me: auth.UserID, Team: auth.Team, Convs: convs, Users: users}
+		return loadedMsg{
+			Me: auth.UserID, Team: auth.Team,
+			Convs: convs, Users: users, Scopes: scopes,
+		}
 	}
 }
 

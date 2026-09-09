@@ -32,6 +32,8 @@ func (m Model) Commands() []app.Command {
 			Run: m.dndCmd},
 		{Name: "/undnd", Help: "turn do not disturb back off",
 			Run: m.undndCmd},
+		{Name: "/scopes", Help: "what this token is actually allowed to do",
+			Run: func(string) tea.Cmd { return send(showScopesMsg{}) }},
 		{Name: "/read", Help: "mark everything as read here",
 			Run: func(string) tea.Cmd { return send(readAllMsg{}) }},
 	}
@@ -48,6 +50,7 @@ func (m Model) Commands() []app.Command {
 // 명령의 결과는 메시지로 돌아온다. 그래야 상태가 Update 한 곳에서만 바뀐다.
 type (
 	loginStartedMsg struct{}
+	showScopesMsg   struct{}
 
 	unreadMsg  struct{}
 	allMsg     struct{}

@@ -231,7 +231,7 @@ func TestCommandsRegistered(t *testing.T) {
 	m := loaded(t)
 	want := map[string]bool{
 		"/unread": false, "/all": false, "/dnd": false, "/undnd": false,
-		"/read": false, "/login": false, "/logout": false,
+		"/read": false, "/scopes": false, "/login": false, "/logout": false,
 	}
 	for _, c := range m.Commands() {
 		if _, ok := want[c.Name]; !ok {
@@ -846,5 +846,72 @@ func TestConversationKind(t *testing.T) {
 		if historyScopes[c.want] == "" {
 			t.Errorf("%s 에 읽기 권한이 안 적혀 있다", c.want)
 		}
+	}
+}
+
+// 권한이 모자랄 때 추측하지 않는다.
+//
+// 토큰이 그 권한을 이미 가졌는데도 거절당했다면 원인이 다른 데 있다.
+// "앱 설정에 넣으세요" 라고 하면 엉뚱한 데로 보내는 것이다.
+func TestScopeNoteWhenScopeIsActuallyPresent(t *testing.T) {
+	m := loaded(t)
+	m.convs = []Conversation{{ID: "X", Name: "#방", Kind: "public_channel"}}
+	m.openID = "X"
+	m.msgsErr = apiError{Method: "conversations.history", Code: "missing_scope"}
+
+	m.scopes = []string{"channels:read", "im:history"}
+	if note := m.scopeNote(); !strings.Contains(note, "앱 설정에 넣고") {
+		t.Errorf("없는데 넣으라고 안 한다: %q", note)
+	}
+
+	m.scopes = []string{"channels:read", "channels:history"}
+	if note := m.scopeNote(); !strings.Contains(note, "있는데도") {
+		t.Errorf("있는데도 넣으라고 한다: %q", note)
+	}
+}
+
+// 권한 목록을 못 받았으면 모른다고 다뤄야 한다.
+func TestHasScopeIsUnknownWithoutHeader(t *testing.T) {
+	m := loaded(t)
+	m.scopes = nil
+	if _, known := m.hasScope("channels:history"); known {
+		t.Error("목록이 없는데 안다고 한다")
+	}
+	m.scopes = []string{"im:history"}
+	if has, known := m.hasScope("channels:history"); !known || has {
+		t.Errorf("has=%v known=%v", has, known)
+	}
+}
+
+// 헤더에서 권한을 읽어낸다. 공백과 빈 항목을 흘리면 비교가 어긋난다.
+func TestGrantedScopes(t *testing.T) {
+	h := http.Header{}
+	if got := grantedScopes(h); got != nil {
+		t.Errorf("헤더가 없는데 %v", got)
+	}
+	h.Set("X-OAuth-Scopes", "channels:read, im:history ,,chat:write")
+	got := grantedScopes(h)
+	want := []string{"channels:read", "im:history", "chat:write"}
+	if len(got) != len(want) {
+		t.Fatalf("%v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+// /scopes 는 가진 권한을 로그로 뱉는다. 막혔을 때 사실을 보는 유일한 창이다.
+func TestScopesCommandSays(t *testing.T) {
+	m := loaded(t)
+	m.scopes = []string{"channels:read", "im:history"}
+	_, cmd := m.Update(showScopesMsg{})
+	say, ok := cmd().(app.SayMsg)
+	if !ok {
+		t.Fatalf("%#v", cmd())
+	}
+	if !strings.Contains(say.Text, "im:history") {
+		t.Errorf("%q", say.Text)
 	}
 }
