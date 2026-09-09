@@ -5,6 +5,8 @@ import (
 
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/app"
+	"amcli/tui/internal/data"
+	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
 	tea "charm.land/bubbletea/v2"
 )
@@ -230,4 +232,59 @@ func (m Model) reorder(k reorderKind) (Model, tea.Cmd) {
 		return m.shift(1)
 	}
 	return m, nil
+}
+
+// appendQueue 는 선곡 결과를 큐에 **붙인다.** 갈아끼우지 않는다.
+//
+// "이거 뒤에 몇 곡 더" 는 지금 듣는 것을 지키겠다는 말이다. 그런데 AI 에게는
+// 갈아끼우는 도구밖에 없어서, 붙여 달라는 말이 늘 처음으로 튀는 결과가 됐다.
+// 사람이 /later 로 하던 일을 AI 도 하게 하는 것이 이 함수다.
+func (m Model) appendQueue(res intent.Result, atEnd bool) (app.App, tea.Cmd) {
+	m.usage.PromptTokens += res.Usage.PromptTokens
+	m.usage.CompletionTokens += res.Usage.CompletionTokens
+	m.usage.CostUsd += res.Usage.CostUsd
+
+	// 붙일 큐가 없으면 붙이는 것이 곧 만드는 것이다. 빈 큐에 "더 틀어줘" 는
+	// "틀어줘" 와 같은 말이라 여기서 갈라 두면 두 경로가 같은 일을 한다.
+	if len(m.queue) == 0 {
+		return m.applyQueue(res)
+	}
+
+	l := data.Lib()
+	add := make([]api.QueueItem, 0, len(res.Picks))
+	for _, p := range res.Picks {
+		t, ok := l.Track(p.TrackID)
+		if !ok {
+			continue // 스키마가 막지만, 없는 id 는 조용히 버린다
+		}
+		// 이미 큐에 있는 곡은 넘어간다. 같은 곡이 두 자리를 차지하면
+		// 자리번호로 곡을 찾는 길이 전부 흔들린다(queueAt).
+		if m.queueAt(t.Id) >= 0 {
+			continue
+		}
+		reason := p.Reason
+		add = append(add, api.QueueItem{
+			Track: t, Reason: &reason,
+			State: api.Pending, Origin: api.QueueItemOriginGeneration,
+		})
+	}
+	if len(add) == 0 {
+		return m, app.SayErr(m.Name(), errNoTracks)
+	}
+
+	at := len(m.queue)
+	if !atEnd {
+		at = m.playingAt() + 1
+	}
+	next := append([]api.QueueItem{}, m.queue[:at]...)
+	next = append(next, add...)
+	next = append(next, m.queue[at:]...)
+
+	// 제목은 갈아엎지 않는다. 큐는 여전히 원래 요청의 것이고, 붙인 것은
+	// 그 위에 얹힌 것이다.
+	m.note = res.Note
+	mm, cmd := m.reseat(next, "")
+	// 붙인 것을 보여준다. 어디에 얹혔는지 안 보이면 정말 얹혔는지 알 수 없다.
+	(&mm).jumpTo(secQueue, "")
+	return mm, cmd
 }

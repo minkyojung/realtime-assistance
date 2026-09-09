@@ -55,7 +55,9 @@ func (m Model) tools() []toolSpec {
 			Name: "build_queue",
 			Description: "Pick tracks from the person's library and start playing them. " +
 				"Use this for any request about what to listen to, including adjusting the " +
-				"current queue into a different one (quieter, shorter, another mood).",
+				"current queue into a different one (quieter, shorter, another mood). " +
+				"This replaces the queue and starts over — if they want to keep what is " +
+				"playing and add to it, use add_tracks instead.",
 			Params: map[string]any{
 				"type":                 "object",
 				"additionalProperties": false,
@@ -65,6 +67,30 @@ func (m Model) tools() []toolSpec {
 						"type": "string",
 						"description": "What to play, in the person's own words. " +
 							"Pass their sentence through; do not translate or summarise it.",
+					},
+				},
+			},
+		}},
+		{answers: true, Tool: intent.Tool{
+			Name: "add_tracks",
+			Description: "Pick more tracks and add them to the queue that is already " +
+				"playing, without interrupting it. Use this when they want to keep " +
+				"listening to what is on and have more of something added — " +
+				"\"a few more like this\", \"add some jazz after this\".",
+			Params: map[string]any{
+				"type":                 "object",
+				"additionalProperties": false,
+				"required":             []string{"request"},
+				"properties": map[string]any{
+					"request": map[string]any{
+						"type": "string",
+						"description": "What to add, in the person's own words. " +
+							"Pass their sentence through; do not translate or summarise it.",
+					},
+					"where": map[string]any{
+						"type":        "string",
+						"enum":        []string{"end", "next"},
+						"description": "Put them at the end of the queue, or right after the track playing now. Defaults to the end.",
 					},
 				},
 			},
@@ -133,6 +159,17 @@ func (m Model) runTool(c intent.Call) (Model, string, tea.Cmd) {
 		// 선곡은 라이브러리 전체를 읽는다. 여기서만 그 값을 치른다.
 		ctx := m.ask.ctx
 		return m, "", cmdBuildQueue(ctx, m.ask.seq, a.Request, data.Lib().Tracks, m.current())
+
+	case "add_tracks":
+		var a struct {
+			Request string `json:"request"`
+			Where   string `json:"where"`
+		}
+		if err := json.Unmarshal([]byte(c.Args), &a); err != nil || strings.TrimSpace(a.Request) == "" {
+			return m, "could not read the request", nil
+		}
+		ctx := m.ask.ctx
+		return m, "", cmdAddTracks(ctx, m.ask.seq, a.Request, data.Lib().Tracks, m.current(), a.Where != "next")
 
 	case "remove_tracks":
 		var a struct {

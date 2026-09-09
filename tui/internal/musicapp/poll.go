@@ -26,6 +26,11 @@ type queueMsg struct {
 	seq int
 	res intent.Result
 	err error
+
+	// add 가 켜져 있으면 **갈아끼우지 않고 붙인다.** 선곡은 같은 길을
+	// 쓰지만 결과를 앉히는 법이 다르다 — 듣던 곡을 끊느냐 마느냐가 갈린다.
+	add   bool
+	atEnd bool // 붙일 자리. 꺼져 있으면 지금 곡 바로 뒤다
 }
 
 // 선곡은 실측 7초다. 상한을 크게 잡아도 되는 이유는 이제 사용자가
@@ -40,6 +45,17 @@ func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Tr
 	return func() tea.Msg {
 		res, err := intent.Build(ctx, prompt, library, cur, time.Now())
 		return queueMsg{seq: seq, res: res, err: err}
+	}
+}
+
+// cmdAddTracks — 같은 선곡을 돌리되 결과를 큐에 **붙인다.**
+//
+// 고르는 일은 한 곳뿐이다. 붙이기 위해 선곡을 따로 만들면 두 벌이 되고,
+// 하나를 고칠 때마다 다른 하나가 뒤처진다.
+func cmdAddTracks(ctx context.Context, seq int, prompt string, library []api.Track, cur intent.Current, atEnd bool) tea.Cmd {
+	return func() tea.Msg {
+		res, err := intent.Build(ctx, prompt, library, cur, time.Now())
+		return queueMsg{seq: seq, res: res, err: err, add: true, atEnd: atEnd}
 	}
 }
 

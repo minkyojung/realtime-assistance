@@ -304,7 +304,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			}
 			return m, app.SayErr(m.Name(), msg.err)
 		}
-		mm, cmd := m.applyQueue(msg.res)
+		apply := m.applyQueue
+		if msg.add {
+			apply = func(r intent.Result) (app.App, tea.Cmd) { return m.appendQueue(r, msg.atEnd) }
+		}
+		mm, cmd := apply(msg.res)
 		// 큐 전체에 대한 한 문장은 로그에, 곡마다의 근거는 펼쳤을 때 보이도록
 		// 상세에 담는다. 평소에는 한 줄이고 ctrl+o 로 열어 본다.
 		note := msg.res.Note
