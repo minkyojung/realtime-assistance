@@ -514,3 +514,40 @@ func TestOpenAICommandNeedsKey(t *testing.T) {
 		t.Fatal("/openai 명령이 없다")
 	}
 }
+
+// 첫 화면은 꺼진 것을 꺼졌다고 적는다.
+//
+// 한때 이 줄이 모델 이름을 무조건 적었다. 모델 이름은 "붙어 있다"는 뜻이
+// 아닌데 붙어 있는 것처럼 보였고, 그래서 키가 없는 사람이 들어가서 문장을
+// 치고 나서야 안 되는 걸 알았다.
+func TestFactsTellTheTruthAboutOpenAI(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "")
+	if secrets.HasOpenAIKey() {
+		t.Skip("이 기계 키체인에 실제 키가 들어 있다")
+	}
+	off := factOf(t, New(), "OpenAI")
+	if !strings.Contains(off, "off") {
+		t.Errorf("키가 없는데 %q 라고 적는다", off)
+	}
+	// 켜는 법까지 적는다. 꺼진 것만 보여 주고 어떻게 켜는지 말하지 않으면
+	// 첫 화면을 나가서 팔레트를 뒤져야 한다.
+	if !strings.Contains(off, "/openai") {
+		t.Errorf("켜는 법이 없다: %q", off)
+	}
+
+	t.Setenv("OPENAI_API_KEY", "sk-test")
+	if on := factOf(t, New(), "OpenAI"); strings.Contains(on, "off") {
+		t.Errorf("키가 있는데 %q 라고 적는다", on)
+	}
+}
+
+func factOf(t *testing.T, m Model, name string) string {
+	t.Helper()
+	for _, f := range m.Facts() {
+		if f.Name == name {
+			return f.Detail
+		}
+	}
+	t.Fatalf("%q 줄이 없다", name)
+	return ""
+}
