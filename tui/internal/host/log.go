@@ -38,7 +38,7 @@ func (m Model) waiting() []string {
 }
 
 // 대화 띠가 쓸 수 있는 줄 수의 상한. 넘으면 오래된 것부터 잘린다.
-const maxLogRows = 12
+const maxLogRows = 10
 
 // logRows 는 입력창 바로 위에 붙는 대화 띠다.
 //
@@ -66,16 +66,15 @@ func (m Model) logRows(w int) []string {
 	// 말과 답이 먼저다. 근거는 남는 자리만큼만 붙인다 — 잘려도 뜻이
 	// 안 상하는 것은 그쪽뿐이다.
 	//
-	// 사이사이를 띄운다. 한 판이 여러 줄이 되면서 목록·내 말·답·근거가
-	// 다닥다닥 붙어 한 덩어리로 읽혔다. 빈 줄 하나가 그것을 가른다.
+	// 안쪽은 띄우지 않는다. 내 말에 깔린 바탕색이 이미 덩어리를 가르고
+	// 있어서, 사이마다 빈 줄을 넣으면 여백이 대화보다 많아진다.
+	//
+	// **스피너는 답이 앉을 자리에 그대로 앉는다.** 기다릴 때와 답이 왔을 때
+	// 줄 수가 달라지면 화면이 한 번 튄다.
 	var said, why []string
-	for i, e := range m.lastExchange() {
-		if i > 0 {
-			said = append(said, "") // 내 말과 답 사이
-		}
+	for _, e := range m.lastExchange() {
 		said = append(said, m.renderLogEntry(e, w)...)
 		if len(e.detail) > 0 {
-			why = append(why, "")
 			why = append(why, m.renderDetail(e.detail, w)...)
 		}
 	}
@@ -87,7 +86,7 @@ func (m Model) logRows(w int) []string {
 	} else if room <= 0 {
 		why = nil
 	}
-	// 위아래로 갈라준다. 목록 마지막 줄에 내 말이 바로 붙으면 그것도 목록으로
+	// 위아래만 갈라준다. 목록 마지막 줄에 내 말이 바로 붙으면 그것도 목록으로
 	// 읽히고, 근거가 입력창 테두리에 붙으면 테두리가 근거의 밑줄로 보인다.
 	said = append([]string{""}, said...)
 	out := append(append(said, why...), m.spinnerRows(waiting, w)...)

@@ -468,11 +468,11 @@ func paintedWidth(l string) (painted, total int) {
 	return painted, total
 }
 
-// 대화 띠는 위아래로 갈라져 있어야 한다.
+// 대화 띠는 위아래만 갈라져 있다.
 //
 // 목록 마지막 줄에 내 말이 바로 붙으면 그것도 목록으로 읽히고, 근거가
-// 입력창 테두리에 붙으면 테두리가 근거의 밑줄로 보인다. 내 말과 답이
-// 붙어 있으면 한 덩어리가 된다.
+// 입력창 테두리에 붙으면 테두리가 근거의 밑줄로 보인다. 안쪽은 띄우지
+// 않는다 — 내 말에 깔린 바탕색이 이미 덩어리를 가른다.
 func TestLogBandBreathes(t *testing.T) {
 	m, _ := twoAppHost()
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
@@ -498,11 +498,44 @@ func TestLogBandBreathes(t *testing.T) {
 	if !blank(mine - 1) {
 		t.Error("내 말 위가 안 비었다 — 목록에 붙는다")
 	}
-	if theirs != mine+2 || !blank(mine+1) {
-		t.Error("내 말과 답 사이가 안 비었다")
+	if theirs != mine+1 {
+		t.Errorf("내 말과 답 사이가 벌어졌다 (%d줄) — 바탕색이 이미 가른다", theirs-mine-1)
 	}
 	if box := at("╭"); box < 0 || !blank(box-1) {
 		t.Error("대화와 입력창 사이가 안 비었다")
+	}
+}
+
+// 스피너는 답이 앉을 자리에 그대로 앉는다.
+//
+// 기다릴 때와 답이 왔을 때 줄 자리가 달라지면 답이 도착하는 순간 화면이
+// 한 번 튄다. 7초를 기다린 끝에 튀는 것은 그 자체로 실패로 보인다.
+func TestSpinnerSitsWhereAnswerWill(t *testing.T) {
+	m, _ := twoAppHost()
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	m = typeText(m, "hi")
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+
+	rowOf := func(mm tea.Model, want string) int {
+		for i, l := range strings.Split(mm.View().Content, "\n") {
+			if strings.Contains(plain(l), want) {
+				return i
+			}
+		}
+		return -1
+	}
+	mineBefore, spin := rowOf(m, "› hi"), rowOf(m, "묻는 중")
+	if spin < 0 {
+		spin = rowOf(m, "정하는 중")
+	}
+	if spin != mineBefore+1 {
+		t.Fatalf("스피너가 내 말 바로 아래가 아니다 (%d, %d)", mineBefore, spin)
+	}
+
+	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요"})
+	m, _ = m.Update(app.SayMsg{App: "beta", Text: "베타도 했어요"})
+	if got := rowOf(m, "골랐어요") - rowOf(m, "› hi"); got != 1 {
+		t.Errorf("답이 스피너 자리에 안 앉았다 (내 말에서 %d줄 아래)", got)
 	}
 }
 
