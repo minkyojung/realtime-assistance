@@ -9,6 +9,11 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
+// wordmark[0] 은 이제 그림자·외곽선까지 얹혀 렌더링되면서 원본 문자열
+// 그대로는 안 나온다(빈 칸 일부가 외곽선 블록으로 바뀐다). 첫 글자
+// 안쪽의 순수 전경 조각만은 색이 안 바뀌므로 그걸로 존재를 확인한다.
+var wordmarkMark = strings.TrimSpace(wordmark[0])[:4]
+
 func homeHost() tea.Model {
 	hm := New(
 		stubApp{name: "alpha"},
@@ -61,7 +66,7 @@ func TestHomeShowsNameTipsAndGate(t *testing.T) {
 	out := m.View().Content
 
 	for _, want := range []string{
-		wordmark[0],         // 이름
+		wordmarkMark,        // 이름
 		"alpha does things", // 못 하는 것
 		"ctrl+o",            // 조작법
 		"sign in required",  // 막힌 사유
@@ -87,7 +92,7 @@ func TestTypingDoesNotLeaveHome(t *testing.T) {
 	if got := hm.input.Value(); got != "a" {
 		t.Errorf("친 글자가 입력창에 없다: %q", got)
 	}
-	if !strings.Contains(m.View().Content, wordmark[0]) {
+	if !strings.Contains(m.View().Content, wordmarkMark) {
 		t.Error("글자를 쳤다고 홈이 걷혔다")
 	}
 }
