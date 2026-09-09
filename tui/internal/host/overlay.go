@@ -15,14 +15,45 @@ import (
 // "화면에 상시로 자리를 주지 않는다"는 원칙에서 나온 결정이다.
 
 // 호스트 자신의 명령. 앱에 속하지 않는 것들이다.
+//
+// 앱 전환도 여기 있다. 전용 키를 두지 않는 이유는 터미널이 ctrl+tab 을
+// tab 과 구별하지 못하기 때문이다 — kitty 키보드 프로토콜이 있어야 하는데
+// Terminal.app 은 지원하지 않는다. 터미널에 따라 되다 안 되다 하는 키는
+// 없는 것만 못하다.
+//
+// 그리고 애초에 새 키가 필요 없다. "화면에 상시로 자리를 주지 않는다"는
+// 원칙대로 `/` 가 갈 곳을 보여주면 된다. 사이드바를 없앤 것과 같은 이유다.
 func (m Model) hostCommands() []app.Command {
-	return []app.Command{
+	out := make([]app.Command, 0, len(m.apps)+2)
+	for i, a := range m.apps {
+		if i == m.current {
+			continue // 지금 보고 있는 앱으로 갈 이유는 없다
+		}
+		help := "switch to " + a.Name()
+		if n := a.Badge(); n > 0 {
+			help += fmt.Sprintf(" · %d unread", n)
+		}
+		out = append(out, app.Command{
+			Name: "/" + a.Name(), Help: help, Run: switchTo(i),
+		})
+	}
+	return append(out, []app.Command{
 		{Name: "/cost", Help: "what this session has spent",
 			Run: func(string) tea.Cmd { return func() tea.Msg { return showCostMsg{} } }},
 		{Name: "/help", Help: "keys and commands",
 			Run: func(string) tea.Cmd { return func() tea.Msg { return showHelpMsg{} } }},
+	}...)
+}
+
+// 전환은 cmd+tab 에 가깝다. 앱은 시작할 때 전부 켜져서 끝까지 살아 있고,
+// 화면만 갈아끼운다. 그래서 채팅을 보는 중에도 음악은 계속 재생된다.
+func switchTo(i int) func(string) tea.Cmd {
+	return func(string) tea.Cmd {
+		return func() tea.Msg { return switchAppMsg{index: i} }
 	}
 }
+
+type switchAppMsg struct{ index int }
 
 type (
 	showHelpMsg struct{}
@@ -30,8 +61,32 @@ type (
 )
 
 // 호스트 명령과 지금 앱의 명령을 합친다. 사용자에게는 하나로 보인다.
+//
+// 앱 전환을 앞에 둔다. 다른 앱으로 가는 길이 그 앱의 명령보다 먼저다.
 func (m Model) allCommands() []app.Command {
-	return append(m.app().Commands(), m.hostCommands()...)
+	host := m.hostCommands()
+	out := make([]app.Command, 0, len(host)+4)
+	for _, c := range host {
+		if strings.HasPrefix(c.Name, "/") && isAppName(m, c.Name) {
+			out = append(out, c)
+		}
+	}
+	out = append(out, m.app().Commands()...)
+	for _, c := range host {
+		if !isAppName(m, c.Name) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func isAppName(m Model, cmd string) bool {
+	for _, a := range m.apps {
+		if cmd == "/"+a.Name() {
+			return true
+		}
+	}
+	return false
 }
 
 // 입력한 것으로 시작하는 명령만 남긴다.
@@ -85,16 +140,15 @@ func (m Model) runCommand() (tea.Model, tea.Cmd) {
 			m.showHelp = true
 			return m, nil
 		}
-		return m.forward(runResultMsg{cmd: c.Run(arg)})
+		// 명령이 만든 Cmd 를 그대로 돌려준다. 그것이 뱉는 메시지는
+		// 호스트 것이면 호스트가 처리하고, 앱 것이면 앱으로 흘러간다.
+		return m, c.Run(arg)
 	}
 
 	m.input.Reset()
 	m.notice = "No such command: " + name
 	return m, nil
 }
-
-// runResultMsg 는 명령이 만든 Cmd 를 앱 쪽으로 흘려보내기 위한 껍데기다.
-type runResultMsg struct{ cmd tea.Cmd }
 
 // 팔레트는 입력창 바로 아래에 뜬다. 본문을 밀어내지 않는다.
 //
@@ -156,5 +210,3 @@ var helpRows = []struct{ key, what string }{
 func (m Model) renderHelp(i int, r struct{ key, what string }, w int) string {
 	return "  " + style.Row(style.BrandSoft.Render(r.key), style.Faint.Render(r.what), w-2)
 }
-
-var _ = fmt.Sprint

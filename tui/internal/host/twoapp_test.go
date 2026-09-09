@@ -100,3 +100,50 @@ func TestMentionSkipsRouter(t *testing.T) {
 		t.Errorf("멘션이 아닌데 %q 를 골랐다", name)
 	}
 }
+
+// 앱 전환은 팔레트에 있다. 전용 키를 두지 않는 이유는 터미널이
+// ctrl+tab 을 tab 과 구별하지 못하기 때문이다 — Terminal.app 은
+// kitty 키보드 프로토콜을 지원하지 않는다.
+func TestSwitchAppFromPalette(t *testing.T) {
+	m, _ := twoAppHost()
+
+	// `/` 를 치면 다른 앱으로 가는 길이 먼저 보인다.
+	m, _ = m.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
+	out := plain(m.View().Content)
+	if !strings.Contains(out, "/beta") {
+		t.Fatal("팔레트에 다른 앱이 없다")
+	}
+	if !strings.Contains(out, "3 unread") {
+		t.Error("배지가 팔레트에 안 보인다")
+	}
+	if strings.Contains(out, "/alpha") {
+		t.Error("지금 보고 있는 앱으로 가는 길이 있다")
+	}
+
+	// 골라서 전환한다.
+	m, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("전환 Cmd 가 없다")
+	}
+	m, _ = m.Update(cmd())
+
+	if got := plain(m.View().Content); !strings.Contains(got, "beta") {
+		t.Error("전환했는데 상태줄이 안 바뀌었다")
+	}
+	// 이제 돌아가는 길이 보여야 한다.
+	m, _ = m.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
+	if got := plain(m.View().Content); !strings.Contains(got, "/alpha") {
+		t.Error("전환 뒤에 돌아가는 길이 없다")
+	}
+}
+
+// 전환은 cmd+tab 에 가깝다 — 배경 앱은 계속 살아 있다.
+func TestSwitchKeepsOtherAppAlive(t *testing.T) {
+	m, _ := twoAppHost()
+
+	// beta 로 옮겨도 alpha 는 여전히 상태줄에 이름을 내놓는다.
+	m, _ = m.Update(switchAppMsg{index: 1})
+	if got := plain(m.View().Content); !strings.Contains(got, "alpha") {
+		t.Error("전환했더니 배경 앱이 사라졌다")
+	}
+}

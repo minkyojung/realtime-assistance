@@ -127,8 +127,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case routedMsg:
 		return m.deliver(msg)
 
-	case runResultMsg:
-		return m, msg.cmd
+	case switchAppMsg:
+		// 화면만 갈아끼운다. 다른 앱은 계속 살아 있다.
+		if msg.index >= 0 && msg.index < len(m.apps) {
+			m.current = msg.index
+			m.mode = modePrompt
+			m.showHelp = false
+			(&m).applyMode()
+			return m.forward(app.ResizeMsg{
+				Width:  style.ContentWidth(m.w),
+				Height: m.bodyHeight(),
+			})
+		}
+		return m, nil
 
 	case showHelpMsg:
 		m.showHelp, m.pick = true, 0
