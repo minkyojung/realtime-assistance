@@ -522,6 +522,22 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 // 프레임 여백. 커서 위치를 보고할 때 이만큼 밀어야 한다.
 const framePad = 1
 
+// padTo — 본문을 받은 높이만큼 빈 줄로 채운다.
+//
+// 앱이 준 높이를 다 쓰지 않는 일이 흔하다. 음악의 목록은 열네 줄에서
+// 멈추므로(maxListRows) 창이 길면 그만큼 남는다. 그대로 두면 입력창이
+// 화면 한가운데에 떠서, 창 높이에 따라 손이 가는 자리가 달라진다.
+//
+// **입력창과 상태줄은 언제나 맨 아래다.** 홈이 이미 그렇게 그리고 있었고
+// (home.go), 그것을 호스트의 규칙으로 올린다. 앱이 높이를 넘겨 그리면
+// 자르지 않는다 — 잘라서 감추느니 밀려나는 편이 눈에 띈다.
+func padTo(body string, h int) string {
+	if n := strings.Count(body, "\n") + 1; n < h {
+		return body + strings.Repeat("\n", h-n)
+	}
+	return body
+}
+
 func (m Model) bodyHeight() int {
 	// 테두리 친 입력창3 + 상태줄1 + 위아래 여백2
 	w := style.ContentWidth(m.w)
@@ -538,11 +554,11 @@ func (m Model) View() tea.View {
 
 	var b strings.Builder
 	// 본문은 무엇을 하든 그대로다. 팔레트는 입력창 아래에 붙는다.
-	if m.home {
-		b.WriteString(m.viewHome(w, bodyH))
-	} else {
-		b.WriteString(m.app().View(w, bodyH))
+	body := m.viewHome(w, bodyH)
+	if !m.home {
+		body = m.app().View(w, bodyH)
 	}
+	b.WriteString(padTo(body, bodyH))
 	// 로그는 입력창 바로 위, 팔레트는 바로 아래. 둘 다 본문을 밀어내지 않는다.
 	for _, r := range m.logRows(w) {
 		b.WriteString("\n")
