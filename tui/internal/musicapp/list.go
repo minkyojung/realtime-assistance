@@ -27,10 +27,13 @@ type listRow struct {
 	// more 는 "내 라이브러리에 N곡 더 있다"는 줄이다. 고를 수 있고,
 	// enter 로 접힌 구역을 편다.
 	more int
+
+	// gap 은 구역 사이를 띄우는 빈 줄이다. 고를 수 없다.
+	gap bool
 }
 
 // selectable — 머리글에는 커서가 서지 않는다.
-func (r listRow) selectable() bool { return r.header == "" }
+func (r listRow) selectable() bool { return r.header == "" && !r.gap }
 
 func (r listRow) isMore() bool { return r.more > 0 }
 
@@ -200,8 +203,20 @@ func (m Model) renderRow(r listRow, selected bool, w int, widths []int, prevArti
 		}
 		return fill(rail + paint(style.Faint).Render(style.Truncate(label, w-2)))
 	}
+	if r.gap {
+		return ""
+	}
+	// 구역 머리글 — 글자 뒤에 선을 끌어 구역이 여기서 시작한다고 말한다.
+	//
+	// 회색 한 줄로는 목록에 묻혔다. 글자를 한 단계 밝히고, 남는 폭을 딥톤
+	// 선으로 채운다 — docs/03 이 딥톤에 준 자리가 "헤더 구분선"이다.
 	if r.header != "" {
-		return "  " + style.Faint.Render(style.Truncate(r.header, w-2))
+		label := style.Meta.Render(style.Truncate(r.header, w-6))
+		line := ""
+		if d := w - 3 - lipgloss.Width(label); d > 0 {
+			line = " " + style.RuleBrandStyle.Render(strings.Repeat("─", d))
+		}
+		return "  " + label + line
 	}
 
 	if ct := r.catalog; ct != nil {
@@ -359,6 +374,9 @@ func (m Model) searchRows(l *data.Library) []listRow {
 			// 이라, 숨은 것을 지나칠 필요가 없다.
 			out = append(out, listRow{more: hidden})
 		}
+	}
+	if len(out) > 0 {
+		out = append(out, listRow{gap: true}) // 구역끼리 붙어 있으면 한 덩어리로 읽힌다
 	}
 	out = append(out, listRow{header: fmt.Sprintf("Apple Music · %d", len(m.catHits))})
 	return append(out, catalogRows(m.catHits)...)

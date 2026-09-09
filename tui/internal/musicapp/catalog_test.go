@@ -332,7 +332,9 @@ func TestMineFoldsAndExpands(t *testing.T) {
 	}
 }
 
-// 접힌 줄은 건너뛴다. ↓ 로 내려가면 그 다음이 바로 Apple Music 이다.
+// 접힌 줄에서 ↓ 를 누르면 곧장 Apple Music 결과로 간다.
+//
+// 머리글도 빈 줄도 커서가 서지 않으므로, 숨은 73줄을 지나칠 필요가 없다.
 func TestFoldedRowsAreSkipped(t *testing.T) {
 	m := searching(t, "live", 25)
 	rows := m.rows()
@@ -340,8 +342,13 @@ func TestFoldedRowsAreSkipped(t *testing.T) {
 		if !r.isMore() {
 			continue
 		}
-		if i+1 >= len(rows) || !strings.HasPrefix(rows[i+1].header, "Apple Music") {
-			t.Error("접힌 줄 다음이 Apple Music 머리글이 아니다")
+		m.listIdx = i
+		m.move(1)
+		if m.listIdx == i {
+			t.Fatal("접힌 줄에서 아래로 못 간다")
+		}
+		if rows[m.listIdx].catalog == nil {
+			t.Errorf("접힌 줄 다음 커서가 %d번째 — Apple Music 결과여야 한다", m.listIdx)
 		}
 		return
 	}
@@ -369,3 +376,42 @@ func TestSaysWhenCatalogIsOff(t *testing.T) {
 var reAnsiOff = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 func ansiOff(s string) string { return reAnsiOff.ReplaceAllString(s, "") }
+
+// 구역 머리글은 목록에 묻히면 안 된다 — 글자 뒤로 선을 끌고, 구역끼리 띄운다.
+func TestSectionHeadersStandOut(t *testing.T) {
+	m := searching(t, "live", 25)
+	rows := m.rows()
+
+	var gaps int
+	for i, r := range rows {
+		if r.gap {
+			gaps++
+			if r.selectable() {
+				t.Error("빈 줄에 커서가 선다")
+			}
+			if i+1 >= len(rows) || rows[i+1].header == "" {
+				t.Error("빈 줄 다음이 머리글이 아니다")
+			}
+		}
+	}
+	if gaps != 1 {
+		t.Errorf("구역 사이 빈 줄이 %d개 — 하나여야 한다", gaps)
+	}
+
+	// 머리글 줄에는 선이 붙는다.
+	out := ansiOff(m.viewList(78, 20))
+	for _, want := range []string{"Your Library · ", "Apple Music · "} {
+		var found bool
+		for _, l := range strings.Split(out, "\n") {
+			if strings.Contains(l, want) {
+				found = true
+				if !strings.Contains(l, "───") {
+					t.Errorf("%q 머리글에 선이 없다: %q", want, strings.TrimSpace(l))
+				}
+			}
+		}
+		if !found {
+			t.Errorf("%q 머리글이 없다", want)
+		}
+	}
+}
