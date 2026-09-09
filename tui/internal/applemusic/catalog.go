@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -83,6 +84,57 @@ func (c *Client) storefront() string {
 		return "kr"
 	}
 	return c.Storefront
+}
+
+// systemStorefront — 로그인 전까지 쓸 지역을 이 맥에게 묻는다.
+//
+// 확실한 답은 /v1/me/storefront 뿐인데 그것은 사용자 토큰이 있어야 한다.
+// 로그인 전에도 검색은 되어야 하므로(그것이 이 기능의 대부분이다) 그 사이를
+// 메울 짐작이 필요하다. 로그인하는 순간 진짜 값이 이것을 덮는다.
+//
+// LANG 을 보지 않는 이유는 터미널에 따라 비어 있거나 "C" 이기 때문이다.
+// macOS 에서 사람이 고른 지역이 실제로 사는 곳은 AppleLocale 이다.
+func systemStorefront() string {
+	out, err := exec.Command("defaults", "read", "-g", "AppleLocale").Output()
+	if err != nil {
+		return ""
+	}
+	return regionFrom(strings.TrimSpace(string(out)))
+}
+
+// regionFrom — 로케일 문자열에서 나라만 꺼낸다.
+//
+//	ko_KR            → kr
+//	en_US@rg=krzzzz  → kr   (언어는 영어, 지역은 한국으로 따로 고른 경우)
+//	zh-Hans_CN       → cn
+//
+// @rg= 가 먼저다. 그것이 있다는 것은 사용자가 지역을 언어와 따로
+// 골랐다는 뜻이고, 그때는 그쪽이 사람의 뜻에 가깝다.
+func regionFrom(locale string) string {
+	if i := strings.Index(locale, "@rg="); i >= 0 {
+		if r := twoLetters(locale[i+4:]); r != "" {
+			return r
+		}
+	}
+	if i := strings.LastIndex(locale, "_"); i >= 0 {
+		return twoLetters(locale[i+1:])
+	}
+	return ""
+}
+
+// twoLetters — 앞의 두 글자가 나라 코드일 때만 돌려준다.
+// 애플의 스토어프론트 id 는 소문자 두 글자다.
+func twoLetters(s string) string {
+	if len(s) < 2 {
+		return ""
+	}
+	s = strings.ToLower(s[:2])
+	for _, r := range s {
+		if r < 'a' || r > 'z' {
+			return ""
+		}
+	}
+	return s
 }
 
 // Search 는 카탈로그 전곡에서 찾는다. 라이브러리 밖의 곡이 여기 있다.

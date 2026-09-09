@@ -112,7 +112,8 @@ func NewClient(cfg Config) (*Client, error) {
 			return nil, err
 		}
 	}
-	c := &Client{DevToken: dev}
+	// 로그인 전까지의 지역. 로그인하면 LookupStorefront 가 덮는다.
+	c := &Client{DevToken: dev, Storefront: systemStorefront()}
 	if tok, err := LoadUserToken(); err == nil {
 		c.UserToken = tok
 	}

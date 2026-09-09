@@ -40,3 +40,33 @@ func TestWithoutEmbeddedTokenConfigIsRequired(t *testing.T) {
 		t.Fatal("LoadConfig said yes with nothing set")
 	}
 }
+
+// 로그인 전에는 이 맥의 지역이 답이다. 못 읽으면 빈 값이고,
+// 그때는 storefront() 가 kr 로 떨어진다.
+func TestRegionFrom(t *testing.T) {
+	for _, c := range []struct{ locale, want string }{
+		{"ko_KR", "kr"},
+		{"en_KR", "kr"},
+		{"en_US", "us"},
+		{"zh-Hans_CN", "cn"},
+		{"en_US@rg=krzzzz", "kr"}, // 지역을 언어와 따로 고른 경우
+		{"en_US@rg=", "us"},       // 망가진 꼬리는 무시하고 뒤로 물러난다
+		{"C", ""},
+		{"", ""},
+		{"en_1X", ""},
+	} {
+		if got := regionFrom(c.locale); got != c.want {
+			t.Errorf("regionFrom(%q) = %q, want %q", c.locale, got, c.want)
+		}
+	}
+}
+
+// 지역을 모를 때 검색이 멎으면 안 된다. kr 로라도 간다.
+func TestStorefrontFallsBackToKR(t *testing.T) {
+	if got := (&Client{}).storefront(); got != "kr" {
+		t.Errorf("storefront() = %q, want kr", got)
+	}
+	if got := (&Client{Storefront: "us"}).storefront(); got != "us" {
+		t.Errorf("storefront() = %q, want us", got)
+	}
+}
