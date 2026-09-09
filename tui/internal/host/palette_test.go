@@ -19,7 +19,7 @@ func openPalette(t *testing.T, w int) tea.Model {
 	m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 32})
 	// AI 키가 없으면 Search 로 시작한다. 명령은 Ask 모드에서만 열린다.
 	if state(t, m).mode != modePrompt {
-		m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
+		m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	}
 	m, _ = m.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
 	if !state(t, m).commanding() {

@@ -44,7 +44,7 @@ func renderAll() string {
 	for _, c := range []struct{ name, keys string }{
 		{"home", ""},
 		{"default", ""},
-		{"search", "\x06oasis"},
+		{"search", "\x0Eoasis"},
 		{"commands", "/"},
 		{"help", "?"},
 		{"prompt", "something quiet"},
@@ -59,8 +59,8 @@ func renderAll() string {
 		m, _ = m.Update(tea.WindowSizeMsg{Width: 100, Height: 28})
 		for _, r := range c.keys {
 			switch r {
-			case '\x06':
-				m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
+			case '\x0E':
+				m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 			case '\t':
 				m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 			case '\n':

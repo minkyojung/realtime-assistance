@@ -11,20 +11,21 @@ import (
 // 호스트의 도움말이 이것을 그대로 그린다(app.App.Keys). 예전에는 호스트가
 // 우리 키를 문자열로 베껴 적었고, 우리가 키를 바꿔도 호스트는 몰랐다.
 var keys = struct {
-	Section, SectionBack key.Binding
-	Up, Down             key.Binding
-	PlayPause            key.Binding
-	Next, Previous       key.Binding
-	Settings             key.Binding
-	Accept               key.Binding
+	Section        key.Binding
+	Up, Down       key.Binding
+	PlayPause      key.Binding
+	Next, Previous key.Binding
+	Settings       key.Binding
+	Accept         key.Binding
 }{
+	// 다음 칸으로만 간다.
+	//
+	// tab 과 shift+tab 은 어디서나 한 쌍이라 되돌아가는 키를 잠깐 붙였는데,
+	// shift+tab 은 호스트가 모드를 왕복하는 데 쓴다. 한 자리를 두고 다투면
+	// **모드 전환이 훨씬 자주 쓰인다.** 먼 섹션에는 `/` 로 곧장 간다.
 	Section: key.NewBinding(
 		key.WithKeys("tab"),
 		key.WithHelp("tab", "next section — / goes straight to one"),
-	),
-	SectionBack: key.NewBinding(
-		key.WithKeys("shift+tab"),
-		key.WithHelp("shift+tab", "previous section"),
 	),
 	Up: key.NewBinding(
 		key.WithKeys("up", "ctrl+p"),
@@ -71,7 +72,7 @@ var keys = struct {
 func (m Model) Keys() []key.Binding {
 	out := []key.Binding{
 		keys.Up, keys.Down,
-		keys.Section, keys.SectionBack,
+		keys.Section,
 		keys.Previous, keys.PlayPause, keys.Next,
 	}
 	if m.playerErr == music.ErrPermissionDenied {

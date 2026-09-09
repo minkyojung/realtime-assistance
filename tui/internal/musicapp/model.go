@@ -446,14 +446,6 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			m.move(1)
 		case key.Matches(msg, keys.Section):
 			m = m.gotoSection(m.sectionIdx + 1)
-		case key.Matches(msg, keys.SectionBack):
-			// 한 쌍을 돌려준다. 호스트가 모드 전환에 쓰다가 ctrl+f 로
-			// 옮기면서 이 키가 비었다.
-			//
-			// 짝이 없던 동안 tab 은 한 방향으로만 돌았고, 한 칸 지나치면
-			// 목록을 한 바퀴 돌아야 했다. 먼 섹션에는 `/` 로 곧장
-			// 간다(command.go) — 그것은 그대로다.
-			m = m.gotoSection(m.sectionIdx - 1)
 		case key.Matches(msg, keys.PlayPause):
 			// 재생 제어는 shift+화살표 한 가족이다. 수식키+화살표라
 			// 입력창도 한글 조합도 건드리지 않는다 — 알파벳이나 space 를

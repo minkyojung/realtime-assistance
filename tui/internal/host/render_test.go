@@ -102,7 +102,7 @@ func TestSearchModeFiltersList(t *testing.T) {
 	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
-	m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = typeText(m, "oasis")
 
 	out := m.View().Content

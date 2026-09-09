@@ -43,9 +43,17 @@ var keys = keyMap{
 		key.WithKeys("ctrl+j"),
 		key.WithHelp("ctrl+j", "fold the conversation strip"),
 	),
+	// **ctrl+f 가 아니다.** 터미널에서 ctrl+f 는 "커서 오른쪽" 이고,
+	// 우리가 쓰는 textarea 의 기본 키맵에도 그렇게 들어 있다. 호스트가
+	// 그것을 먼저 가로채면 손버릇대로 누른 사람은 커서가 아니라 모드를
+	// 바꾸게 되고, setMode 가 입력을 비우므로 **치던 문장이 통째로 날아간다.**
+	//
+	// 한때 ctrl+f 로 들어가고 shift+tab 으로 왕복했다. 같은 일에 키가
+	// 둘이라 하나로 합쳤는데, 그때 남길 쪽을 잘못 골랐다 — "ctrl+f 는
+	// 찾기" 는 GUI(Cmd+F) 의 관습이지 터미널의 것이 아니다.
 	Mode: key.NewBinding(
-		key.WithKeys("ctrl+f"),
-		key.WithHelp("ctrl+f", "switch between ask and search"),
+		key.WithKeys("shift+tab"),
+		key.WithHelp("shift+tab", "switch between ask and search"),
 	),
 	Back: key.NewBinding(
 		key.WithKeys("esc"),

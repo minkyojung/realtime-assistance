@@ -8,25 +8,25 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-var ctrlF = tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl}
+var shiftTab = tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}
 
-// ctrl+f 는 두 모드를 왕복한다. 한 키로 들어가고 나온다.
+// shift+tab 은 두 모드를 왕복한다. 한 키로 들어가고 나온다.
 //
-// 한때 들어가는 키와 나오는 키가 따로였다. ctrl+f 로는 나올 수 없어서,
-// 검색 중에 누르면 아무 일도 안 일어나는 자리가 있었다.
-func TestCtrlFTogglesMode(t *testing.T) {
+// ctrl+f 로 잠깐 옮겼다가 되돌렸다. 터미널에서 ctrl+f 는 "커서 오른쪽"
+// 이라, 손버릇대로 누른 사람이 치던 문장을 통째로 잃었다(keys.go).
+func TestShiftTabTogglesMode(t *testing.T) {
 	hm := New(musicapp.New())
 	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 
-	m, _ = m.Update(ctrlF)
+	m, _ = m.Update(shiftTab)
 	m = typeText(m, "oasis")
 	if out := m.View().Content; strings.Contains(out, "Peanut butter Sandwich") {
-		t.Error("ctrl+f 를 눌러 검색어를 쳤는데 목록이 걸러지지 않았다")
+		t.Error("shift+tab 을 눌러 검색어를 쳤는데 목록이 걸러지지 않았다")
 	}
 
-	m, _ = m.Update(ctrlF)
+	m, _ = m.Update(shiftTab)
 	out := m.View().Content
 	if strings.Contains(out, "oasis") {
 		t.Error("모드를 나왔는데 검색어가 입력창에 남아 있다")
@@ -46,7 +46,7 @@ func TestPromptSaysMode(t *testing.T) {
 	if out := m.View().Content; !strings.Contains(out, "Ask AI") {
 		t.Error("입력창 앞에 Ask AI 가 없다")
 	}
-	m, _ = m.Update(ctrlF)
+	m, _ = m.Update(shiftTab)
 	out := m.View().Content
 	if !strings.Contains(out, "Search") {
 		t.Error("검색 모드인데 입력창 앞이 Search 가 아니다")
@@ -67,7 +67,7 @@ func TestInputBorderFollowsMode(t *testing.T) {
 	if !strings.Contains(ask, "╭") || !strings.Contains(ask, "╰") {
 		t.Fatal("입력창에 테두리가 없다")
 	}
-	m, _ = m.Update(ctrlF)
+	m, _ = m.Update(shiftTab)
 	if search := m.View().Content; borderLine(ask) == borderLine(search) {
 		t.Error("모드를 바꿨는데 테두리 색이 그대로다")
 	}
@@ -90,11 +90,34 @@ func TestModeKeyOnHomeDoesNothing(t *testing.T) {
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	before := m.View().Content
 
-	m, _ = m.Update(ctrlF)
+	m, _ = m.Update(shiftTab)
 	if state(t, m).mode == modeSearch {
 		t.Error("홈인데 검색 모드로 들어갔다")
 	}
 	if m.View().Content != before {
-		t.Error("홈에서 ctrl+f 에 화면이 달라졌다")
+		t.Error("홈에서 shift+tab 에 화면이 달라졌다")
+	}
+}
+
+// **ctrl+f 는 우리 것이 아니다.**
+//
+// 터미널에서 ctrl+f 는 "커서 오른쪽" 이고 textarea 의 기본 키맵에도 그렇게
+// 들어 있다. 호스트가 먼저 가로채면 손버릇대로 누른 사람은 커서가 아니라
+// 모드를 바꾸게 되고, setMode 가 입력을 비우므로 치던 문장을 통째로 잃는다.
+func TestCtrlFDoesNotEatWhatYouTyped(t *testing.T) {
+	hm := New(musicapp.New())
+	hm.LeaveHome()
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+	m = typeText(m, "quiet")
+
+	before := state(t, m).mode
+	m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
+
+	if got := state(t, m).input.Value(); got != "quiet" {
+		t.Errorf("ctrl+f 에 치던 글이 %q 가 됐다", got)
+	}
+	if state(t, m).mode != before {
+		t.Error("ctrl+f 가 모드를 바꿨다 — 그 키는 커서를 옮기는 것이다")
 	}
 }
