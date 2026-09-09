@@ -83,17 +83,13 @@ func (m Model) viewPlayer(w int) string {
 	return left + "  " + style.Progress(barW, ratio) + style.Faint.Render(timeLabel)
 }
 
-// 지금 재생 중인 곡의 선정 근거. **곡의 속성이므로 앱이 갖는다.**
+// 곡별 근거는 본문에 두지 않는다.
 //
-// 큐 전체에 대한 한 문장(“8곡 31분짜리로 짰어요”)은 대화이므로 로그로 간다.
-// 요청 중이라는 표시와 실패 사유도 호스트가 맡는다.
-func (m Model) viewReason(w int) (string, bool) {
-	it, ok := m.nowPlayingItem()
-	if !ok || it.Reason == nil || *it.Reason == "" {
-		return "", false
-	}
-	return style.Brand.Render("▸ ") + style.Dim.Render(style.Truncate(*it.Reason, w-2)), true
-}
+// 8곡짜리 큐에서 근거 8개를 다 읽는 사람은 없고, 한 줄로 하나만 보여주면
+// 나머지 일곱은 어차피 안 보인다. 큐 전체를 설명하는 한 문장은 이미
+// 로그에 있으므로(app.Say), 곡마다의 근거는 로그를 펼쳤을 때 볼 것으로 미룬다.
+//
+// 데이터는 그대로 남아 있다 — queue_item.reason.
 
 // Status 는 상태줄에 들어갈 한 줄이다. 배경에 있어도 호출된다.
 //

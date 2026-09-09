@@ -199,11 +199,10 @@ func TestPromptToQueue(t *testing.T) {
 
 	out := plain(m.View().Content)
 	for _, want := range []string{
-		"never played since you added it", // 곡별 근거는 앱이 그린다
-		"picked two you never played",     // 큐 전체 설명은 로그로 간다
-		"quiet set",                       // 큐 제목이 상태줄에
-		"Queue · 2",                       // 상태줄이 큐로 옮겨간 것을 보여준다
-		"$0.0074",                         // 사용량
+		"picked two you never played", // 큐 전체 설명은 로그로 간다
+		"quiet set",                   // 큐 제목이 상태줄에
+		"Queue · 2",                   // 상태줄이 큐로 옮겨간 것을 보여준다
+		"$0.0074",                     // 사용량
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("화면에 %q 가 없다", want)

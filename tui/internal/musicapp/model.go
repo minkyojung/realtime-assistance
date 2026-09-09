@@ -318,8 +318,6 @@ func (m Model) listHeight(h int) int {
 	reserved := 3
 	if _, ok := m.viewGateHint(10); ok {
 		reserved++
-	} else if _, ok := m.viewReason(10); ok {
-		reserved++
 	}
 	return style.Min(style.Max(h-reserved, 3), maxListRows)
 }
@@ -339,13 +337,9 @@ func (m Model) View(w, h int) string {
 	b.WriteString("\n")
 	b.WriteString(style.Rule(w))
 
-	// 관문 안내가 있으면 근거 자리를 그것이 쓴다. 둘 다 뜨는 일은 없다.
 	if hint, ok := m.viewGateHint(w); ok {
 		b.WriteString("\n")
 		b.WriteString(hint)
-	} else if reason, ok := m.viewReason(w); ok {
-		b.WriteString("\n")
-		b.WriteString(reason)
 	}
 	return b.String()
 }
