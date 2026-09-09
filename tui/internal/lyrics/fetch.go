@@ -28,19 +28,32 @@ const (
 	timeout = 12 * time.Second
 )
 
-// ErrNotFound — 세 번 물어봤는데 없다.
-var ErrNotFound = errors.New("no lyrics")
+// 서버 주소. 테스트가 갈아끼운다.
+var baseURL = "https://lrclib.net"
+
+var (
+	// ErrNotFound — 사다리를 다 돌았는데 없다. 이건 캐시에 남긴다.
+	ErrNotFound = errors.New("no lyrics")
+	// ErrUnreachable — 물어보지 못했다. **없다는 뜻이 아니므로 캐시에 남기지 않는다.**
+	ErrUnreachable = errors.New("lrclib unreachable")
+)
 
 // Fetch 는 한 곡의 가사를 준다. 캐시가 있으면 그것을 쓴다.
 func Fetch(ctx context.Context, artist, title, album string, durationMs int) (*Lyrics, error) {
 	key := cacheKey(artist, title, durationMs)
-	if l, ok, found := readCache(key); found {
-		if !ok {
+	if l, found := readCache(key); found {
+		if l.Empty() {
 			return nil, ErrNotFound
 		}
 		return l, nil
 	}
+
 	l, err := lookup(ctx, artist, title, album, durationMs)
+	// 못 물어본 것을 "없다"로 못 박지 않는다. 와이파이가 끊긴 동안 지나간
+	// 곡이 영영 가사 없는 곡이 되어 버린다.
+	if errors.Is(err, ErrUnreachable) {
+		return nil, err
+	}
 	writeCache(key, l)
 	if err != nil {
 		return nil, err
@@ -63,6 +76,9 @@ func lookup(ctx context.Context, artist, title, album string, durationMs int) (*
 	clean := Clean(title)
 
 	// 사다리. 위에서 아래로 좁은 것에서 넓은 것으로 간다.
+	// 한 칸이라도 못 물어봤으면 "없다"고 단정하지 않는다.
+	reachable := true
+
 	ladder := []func() []payload{
 		// 1. 제목·아티스트·앨범·길이가 전부 맞는 것. 제일 정확하다.
 		func() []payload {
@@ -72,7 +88,11 @@ func lookup(ctx context.Context, artist, title, album string, durationMs int) (*
 			q.Set("album_name", album)
 			q.Set("duration", fmt.Sprint(durationMs/1000))
 			var one payload
-			if !get(ctx, "https://lrclib.net/api/get?"+q.Encode(), &one) {
+			switch get(ctx, baseURL+"/api/get?"+q.Encode(), &one) {
+			case failed:
+				reachable = false
+				return nil
+			case absent:
 				return nil
 			}
 			// /api/get 은 길이로 걸러 준 답이다. duration 을 안 실어 보내는
@@ -83,18 +103,20 @@ func lookup(ctx context.Context, artist, title, album string, durationMs int) (*
 			return []payload{one}
 		},
 		// 2. 앨범명이 어긋난 곡. 리마스터·디럭스판이 흔하다.
-		func() []payload { return search(ctx, url.Values{"track_name": {title}, "artist_name": {artist}}) },
+		func() []payload {
+			return search(ctx, url.Values{"track_name": {title}, "artist_name": {artist}}, &reachable)
+		},
 		// 3. 제목의 꼬리를 깎는다. "(Live at …)" "(feat. …)"
 		func() []payload {
 			if clean == title {
 				return nil
 			}
-			return search(ctx, url.Values{"track_name": {clean}, "artist_name": {artist}})
+			return search(ctx, url.Values{"track_name": {clean}, "artist_name": {artist}}, &reachable)
 		},
 		// 4. 아티스트 칸이 통째로 빈 곡. 제목 끝에 들어가 있는 경우다.
-		func() []payload { return search(ctx, url.Values{"track_name": {clean}}) },
+		func() []payload { return search(ctx, url.Values{"track_name": {clean}}, &reachable) },
 		// 5. 통째 검색. 표기가 미묘하게 달라 위의 것들이 다 빗나갈 때 걸린다.
-		func() []payload { return search(ctx, url.Values{"q": {clean + " " + artist}}) },
+		func() []payload { return search(ctx, url.Values{"q": {clean + " " + artist}}, &reachable) },
 	}
 
 	var best *payload
@@ -113,13 +135,16 @@ func lookup(ctx context.Context, artist, title, album string, durationMs int) (*
 		}
 	}
 	if best == nil {
+		if !reachable {
+			return nil, ErrUnreachable
+		}
 		return nil, ErrNotFound
 	}
 	return best.lyrics(), nil
 }
 
 // search — 후보를 그대로 돌려준다. 고르는 것은 부르는 쪽의 일이다.
-func search(ctx context.Context, q url.Values) []payload {
+func search(ctx context.Context, q url.Values, reachable *bool) []payload {
 	if q.Get("track_name") == "" && q.Get("q") == "" {
 		return nil
 	}
@@ -127,7 +152,8 @@ func search(ctx context.Context, q url.Values) []payload {
 		q.Del("artist_name") // 빈 값을 실어 보내면 아무것도 안 나온다
 	}
 	var hits []payload
-	if !get(ctx, "https://lrclib.net/api/search?"+q.Encode(), &hits) {
+	if get(ctx, baseURL+"/api/search?"+q.Encode(), &hits) == failed {
+		*reachable = false
 		return nil
 	}
 	return hits
@@ -200,23 +226,40 @@ func (p payload) lyrics() *Lyrics {
 	return l
 }
 
-func get(ctx context.Context, u string, into any) bool {
+// 물어본 결과. **없다** 와 **못 물어봤다** 를 구별해야 한다.
+// 그 둘을 같이 취급하면 와이파이가 끊긴 동안 지나간 곡이 영영
+// "가사 없음"으로 캐시에 박힌다.
+type outcome int
+
+const (
+	answered outcome = iota // 답을 받아 읽었다
+	absent                  // 서버가 없다고 했다
+	failed                  // 못 물어봤다 — 연결·시간초과·깨진 응답
+)
+
+func get(ctx context.Context, u string, into any) outcome {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		return false
+		return failed
 	}
 	req.Header.Set("User-Agent", agent)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return false
+		return failed
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return false
+	switch {
+	case resp.StatusCode == http.StatusNotFound:
+		return absent
+	case resp.StatusCode != http.StatusOK:
+		return failed // 5xx·429. 서버 사정이지 가사가 없는 것이 아니다
 	}
-	return json.NewDecoder(resp.Body).Decode(into) == nil
+	if json.NewDecoder(resp.Body).Decode(into) != nil {
+		return failed
+	}
+	return answered
 }
 
 // Clean 은 제목에서 가사와 무관한 꼬리를 떼어낸다.
@@ -246,24 +289,38 @@ func cacheDir() string {
 	return filepath.Join(dir, "amcli", "lyrics")
 }
 
-// readCache — (가사, 있음, 캐시에 기록이 있음).
-func readCache(key string) (*Lyrics, bool, bool) {
+// 캐시 파일의 모양.
+//
+// **v 를 두는 이유**는 고르는 규칙이 바뀌면 예전에 받아 둔 답도 낡은 것이
+// 되기 때문이다. 실제로 그런 일이 있었다 — 시간표 없는 답에서 멈추던 시절의
+// 캐시가 코드를 고친 뒤에도 그대로 쓰여서, 화면이 안 바뀌었다.
+// 번호를 올리면 손으로 지울 필요 없이 다시 받는다.
+//
+// lines·plain 이 둘 다 비어 있으면 **없다고 확인된 곡**이다.
+type cacheFile struct {
+	V     int      `json:"v"`
+	Lines []Line   `json:"lines,omitempty"`
+	Plain []string `json:"plain,omitempty"`
+}
+
+// 2 — 후보에 점수를 매기기 시작한 판(fetch.go score).
+const cacheVersion = 2
+
+// readCache — (가사, 기록이 있는가).
+func readCache(key string) (*Lyrics, bool) {
 	dir := cacheDir()
 	if dir == "" {
-		return nil, false, false
+		return nil, false
 	}
 	b, err := os.ReadFile(filepath.Join(dir, key+".json"))
 	if err != nil {
-		return nil, false, false
+		return nil, false
 	}
-	if len(b) == 0 {
-		return nil, false, true // 없다고 확인된 곡
+	var f cacheFile
+	if json.Unmarshal(b, &f) != nil || f.V != cacheVersion {
+		return nil, false // 낡았거나 깨졌다. 다시 받는다
 	}
-	var l Lyrics
-	if json.Unmarshal(b, &l) != nil {
-		return nil, false, false
-	}
-	return &l, true, true
+	return &Lyrics{Lines: f.Lines, Plain: f.Plain}, true
 }
 
 func writeCache(key string, l *Lyrics) {
@@ -274,9 +331,13 @@ func writeCache(key string, l *Lyrics) {
 	if os.MkdirAll(dir, 0o755) != nil {
 		return
 	}
-	var b []byte
+	f := cacheFile{V: cacheVersion}
 	if l != nil {
-		b, _ = json.Marshal(l)
+		f.Lines, f.Plain = l.Lines, l.Plain
+	}
+	b, err := json.Marshal(f)
+	if err != nil {
+		return
 	}
 	os.WriteFile(filepath.Join(dir, key+".json"), b, 0o644)
 }
