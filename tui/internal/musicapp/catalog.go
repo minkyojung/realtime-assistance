@@ -268,7 +268,7 @@ func (m Model) applyCatalog(msg tea.Msg) (app.App, tea.Cmd, bool) {
 			return m, nil, true
 		}
 		m.listIdx, m.listTop = 0, 0
-		m.jumpTo(secCatalog)
+		m.jumpTo(secCatalog, "")
 		if len(m.catHits) == 0 {
 			return m, app.Say(m.Name(), "Nothing on Apple Music for "+msg.term), true
 		}

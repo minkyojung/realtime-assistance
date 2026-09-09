@@ -106,7 +106,7 @@ func TestSearchModeFiltersList(t *testing.T) {
 	m = typeText(m, "oasis")
 
 	out := m.View().Content
-	if !strings.Contains(out, "⌕") || !strings.Contains(out, "Search") {
+	if !strings.Contains(out, "Search") {
 		t.Error("검색 중이라는 표시가 없다")
 	}
 	// 재생 바에 뜨는 곡은 목록과 무관하게 남으므로, 재생 중이 아닌 곡으로 확인한다.

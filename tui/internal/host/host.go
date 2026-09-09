@@ -17,9 +17,14 @@ import (
 
 // 입력창은 하나지만 하는 일이 둘이다. 무엇을 하는 중인지 화면이 말해야 한다.
 //
-//	기본     › 프롬프트 — 자연어 요청. 목록을 건드리지 않는다
-//	ctrl+f   ⌕ 검색   — 지금 보고 있는 것을 즉시 거른다
-//	/        › 명령    — 로컬에서 바로 실행
+//	기본       Ask AI — 자연어 요청. 목록을 건드리지 않는다
+//	shift+tab  Search — 지금 보고 있는 것을 즉시 거른다 (ctrl+f 로도 들어간다)
+//	/          Ask AI 에 `/` 로 시작하면 명령 — 로컬에서 바로 실행
+//
+// 모드는 화면을 바꾸지 않고 "친 글자의 뜻"을 바꾼다. 그래서 안 보이면
+// 알아낼 방법이 없다. **입력창 자신이 말한다** — 커서 바로 앞의 글자와
+// 테두리 색이 지금 어느 모드인지다. 아래에 줄을 따로 두지 않는 이유는,
+// 모드를 말할 가장 좋은 자리가 글자를 치는 그 자리이기 때문이다.
 //
 // 창 제목. 터미널 탭에 뜬다.
 const windowTitle = "npm run dev"
@@ -138,21 +143,68 @@ func (m Model) pickCount() int {
 
 func (m Model) picking() bool { return m.pickCount() > 0 }
 
+// 두 프롬프트는 폭이 같다(6글자 + 공백 둘). 모드를 바꿔도 글자가 시작하는
+// 칸이 그대로여서 화면이 흔들리지 않는다.
+const (
+	promptAsk    = "Ask AI  "
+	promptSearch = "Search  "
+)
+
 func (m *Model) applyMode() {
+	styles := m.input.Styles()
+	color := style.ColBrand // 프라이머리는 Ask AI 의 것이다
 	if m.mode == modeSearch {
-		m.input.Prompt = "⌕ "
-		m.input.Placeholder = "Search"
+		m.input.Prompt = promptSearch
+		m.input.Placeholder = "Filter what you are looking at"
+		color = style.ColDim
 	} else {
-		m.input.Prompt = "› "
+		m.input.Prompt = promptAsk
 		m.input.Placeholder = "Ask for anything    /  commands     ?  help"
 	}
+	styles.Focused.Prompt = lipgloss.NewStyle().Foreground(color)
+	styles.Blurred.Prompt = styles.Focused.Prompt
+	m.input.SetStyles(styles)
+	// textarea 는 프롬프트 폭을 빼서 글자 자리를 잡는다. 프롬프트를 바꾼
+	// 뒤에 다시 불러야 한다.
+	m.input.SetWidth(m.inputWidth())
+}
+
+// 입력창은 테두리 안에 들어간다. 양옆 선 두 칸과 안여백 두 칸을 뺀다.
+func (m Model) inputWidth() int { return style.Max(style.ContentWidth(m.w)-4, 10) }
+
+// 테두리 색도 모드를 말한다. 프라이머리(ColBrand)는 글자가 쓰고, 선은 한 단계
+// 짙은 톤을 쓴다 — 브랜드 색이 화면에서 제일 큰 덩어리가 되면 안 된다.
+func (m Model) inputBox(w int) string {
+	color := style.ColBrandDeep
+	if m.mode == modeSearch {
+		color = style.ColRule
+	}
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(color).
+		Padding(0, 1).
+		Width(w). // lipgloss 의 Width 는 테두리와 안여백을 포함한 전체 폭이다
+		Render(m.input.View())
+}
+
+// setMode — 두 모드를 오간다.
+//
+// 들어갈 때도 나올 때도 입력을 비우고 필터를 다시 건다. 남겨 두면 친 글자가
+// 다른 뜻으로 읽히고("조용한 거"가 검색어가 된다), 목록도 왜 걸러졌는지
+// 설명되지 않은 채 남는다.
+func (m *Model) setMode(mode inputMode) {
+	m.mode = mode
+	m.showHelp = false
+	m.input.Reset()
+	m.applyMode()
+	m.apps[m.current] = m.app().Filter("")
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
-		m.input.SetWidth(style.ContentWidth(m.w))
+		m.input.SetWidth(m.inputWidth())
 		return m.forward(app.ResizeMsg{
 			Width:  style.ContentWidth(m.w),
 			Height: m.bodyHeight(),
@@ -354,11 +406,23 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 			m.notice = "Nothing to search here"
 			return true, m, nil
 		}
-		m.showHelp = false
-		m.mode = modeSearch
-		m.input.Reset()
-		m.applyMode()
-		m.apps[m.current] = m.app().Filter("")
+		(&m).setMode(modeSearch)
+		return true, m, nil
+
+	case "shift+tab":
+		// 모드를 바꾼다. 둘뿐이므로 한 키로 왕복한다.
+		//
+		// 앱에게 넘기지 않는다 — 앱의 tab(다음 섹션)에는 짝이 없어졌고,
+		// 먼 섹션에는 `/` 로 곧장 간다.
+		if m.home {
+			m.notice = "Modes work inside the app"
+			return true, m, nil
+		}
+		if m.mode == modeSearch {
+			(&m).setMode(modePrompt)
+		} else {
+			(&m).setMode(modeSearch)
+		}
 		return true, m, nil
 
 	case "esc":
@@ -384,10 +448,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		}
 		m.notice = ""
 		if m.mode == modeSearch {
-			m.mode = modePrompt
-			m.input.Reset()
-			m.applyMode()
-			m.apps[m.current] = m.app().Filter("")
+			(&m).setMode(modePrompt)
 			return true, m, nil
 		}
 		if m.input.Value() != "" {
@@ -462,9 +523,9 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 const framePad = 1
 
 func (m Model) bodyHeight() int {
-	// 입력창1 + 룰1 + 상태줄1 + 위아래 여백2
+	// 테두리 친 입력창3 + 상태줄1 + 위아래 여백2
 	w := style.ContentWidth(m.w)
-	h := m.h - 5 - len(m.overlayRows(w)) - len(m.logRows(w))
+	h := m.h - 6 - len(m.overlayRows(w)) - len(m.logRows(w))
 	return style.Max(h, 3)
 }
 
@@ -491,13 +552,11 @@ func (m Model) View() tea.View {
 	// 입력창이 몇째 줄에 놓이는지는 지금 센다. 본문 높이로 계산하면
 	// 앱이 받은 높이를 다 안 쓸 때(musicapp 의 maxListRows) 어긋난다.
 	inputRow := strings.Count(b.String(), "\n")
-	b.WriteString(m.input.View())
+	b.WriteString(m.inputBox(w))
 	for _, r := range m.overlayRows(w) {
 		b.WriteString("\n")
 		b.WriteString(r)
 	}
-	b.WriteString("\n")
-	b.WriteString(style.Rule(w))
 	b.WriteString("\n")
 	b.WriteString(m.viewStatus(w))
 
@@ -506,8 +565,9 @@ func (m Model) View() tea.View {
 	// 실제 커서를 입력창의 글자 자리에 둔다. 터미널이 한글 조합을 그리는
 	// 자리가 여기다 — 안 알려주면 조합 중인 글자가 엉뚱한 데 뜬다.
 	if c := m.input.Cursor(); c != nil {
-		c.Position.X += framePad
-		c.Position.Y += framePad + inputRow
+		// 테두리 왼쪽 선과 안여백 두 칸, 윗선 한 줄만큼 더 민다.
+		c.Position.X += framePad + 2
+		c.Position.Y += framePad + inputRow + 1
 		v.Cursor = c
 	}
 	// 어깨너머로 제일 먼저 보이는 자리다. 스플래시보다 노출이 크다.

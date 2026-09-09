@@ -105,11 +105,17 @@ func (m Model) matchedCommands() []app.Command {
 	return out
 }
 
+// 고를 수 있는 줄만 센다. 보이지 않는 줄에 커서가 서면 ↓ 를 눌러도
+// 아무 일도 안 일어나고, enter 는 본 적 없는 명령을 실행한다.
 func (m Model) overlayCount() int {
 	if m.showHelp {
 		return len(helpRows)
 	}
-	return len(m.matchedCommands())
+	n := len(m.matchedCommands())
+	if n > maxOverlayRows {
+		return maxOverlayRows - 1 // 마지막 줄은 "+N more" 다
+	}
+	return n
 }
 
 func (m Model) runCommand() (tea.Model, tea.Cmd) {
@@ -176,12 +182,18 @@ func (m Model) overlayRows(w int) []string {
 	if len(cs) == 0 {
 		return []string{"  " + style.Faint.Render("No such command")}
 	}
+	// 잘린 것이 있으면 마지막 줄로 말한다. 말없이 자르면 없는 명령으로 보인다.
+	more := 0
 	if len(cs) > maxOverlayRows {
-		cs = cs[:maxOverlayRows]
+		more = len(cs) - maxOverlayRows + 1
+		cs = cs[:maxOverlayRows-1]
 	}
-	out := make([]string, 0, len(cs))
+	out := make([]string, 0, len(cs)+1)
 	for i, c := range cs {
 		out = append(out, m.renderCommand(i, c, w))
+	}
+	if more > 0 {
+		out = append(out, "  "+style.Faint.Render(fmt.Sprintf("+%d more — keep typing", more)))
 	}
 	return out
 }
@@ -202,11 +214,12 @@ var helpRows = []struct{ key, what string }{
 	{"type", "ask for a queue in your own words"},
 	{"enter", "send the request · play or open what is selected"},
 	{"/", "commands"},
+	{"shift+tab", "switch between ask and search"},
 	{"ctrl+f", "search"},
 	{"ctrl+j", "expand the log"},
 	{"ctrl+o", "show what the last request did"},
 	{"↑ ↓", "move through the list"},
-	{"tab", "next section"},
+	{"tab", "next section · / goes straight to one"},
 	{"shift+← ↓ →", "previous · play / pause · next"},
 	{"esc", "back out one step"},
 	{"ctrl+c", "quit"},

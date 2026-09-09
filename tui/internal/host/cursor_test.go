@@ -51,7 +51,8 @@ func TestCursorSitsAtInput(t *testing.T) {
 			line := ansi.ReplaceAllString(lines[v.Cursor.Position.Y], "")
 
 			// 커서가 가리키는 줄은 입력창이어야 한다.
-			want := strings.Repeat(" ", framePad) + "› " + c.text
+			// 바깥 여백 + 테두리 왼쪽 선 + 안여백 + 모드 프롬프트 + 친 글자.
+			want := strings.Repeat(" ", framePad) + "│ " + promptAsk + c.text
 			if !strings.HasPrefix(line, want) {
 				t.Errorf("커서가 입력창이 아닌 줄(%d)을 가리킨다\n줄: %q", v.Cursor.Position.Y, line)
 			}

@@ -283,11 +283,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 	case clearQueueMsg:
 		m.queue = nil
 		m.queueTitle, m.note, m.notice = "", "", ""
-		m.jumpTo(secRecent)
+		m.jumpTo(secRecent, "")
 		return m, nil
 
 	case jumpMsg:
-		m.jumpTo(msg.kind)
+		m.jumpTo(msg.kind, msg.label)
 		return m, nil
 
 	case errMsg:
@@ -310,11 +310,9 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		case "down", "ctrl+n":
 			m.move(1)
 		case "tab":
+			// 다음 칸으로만 간다. 되돌아가는 shift+tab 은 호스트가
+			// 모드 전환에 쓴다. 먼 섹션에는 `/` 로 곧장 간다(command.go).
 			m.sectionIdx = (m.sectionIdx + 1) % len(m.sections)
-			m.drill = nil
-			m.listIdx, m.listTop = 0, 0
-		case "shift+tab":
-			m.sectionIdx = (m.sectionIdx - 1 + len(m.sections)) % len(m.sections)
 			m.drill = nil
 			m.listIdx, m.listTop = 0, 0
 		case "shift+down":
@@ -361,7 +359,7 @@ func (m Model) applyQueue(res intent.Result) (app.App, tea.Cmd) {
 
 	m.queue = items
 	m.listIdx, m.listTop = 0, 0
-	m.jumpTo(secQueue)
+	m.jumpTo(secQueue, "")
 
 	// 재편성으로 지금 곡이 살아남았으면 다시 틀지 않는다.
 	// 듣던 곡이 처음으로 되감기는 것만큼 짜증나는 것이 없다.
