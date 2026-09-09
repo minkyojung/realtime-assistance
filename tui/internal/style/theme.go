@@ -1,6 +1,25 @@
 package style
 
-import "charm.land/lipgloss/v2"
+import (
+	"image/color"
+
+	"charm.land/lipgloss/v2"
+)
+
+// tint 는 배경 위에 색을 a 만큼 옅게 얹은 결과다.
+//
+// 터미널에는 투명도가 없다. 알파를 넘길 수 없으므로 미리 섞어 불투명한 한
+// 색으로 만든다. 계산해 두면 브랜드 색이 바뀔 때 얹은 색도 따라 바뀐다 —
+// 16진수로 박아 두면 그때부터 둘이 조용히 어긋난다.
+func tint(bg, fg color.Color, a float64) color.Color {
+	br, bgn, bb, _ := bg.RGBA()
+	fr, fgn, fb, _ := fg.RGBA()
+	mix := func(b, f uint32) uint8 {
+		// RGBA() 는 16비트로 돌려준다. 8비트로 내려서 섞는다.
+		return uint8(float64(b>>8)*(1-a) + float64(f>>8)*a)
+	}
+	return color.RGBA{R: mix(br, fr), G: mix(bgn, fgn), B: mix(bb, fb), A: 0xFF}
+}
 
 // 팔레트는 여기 하나다. 화면이 6개로 늘어나도 색은 여기서만 정한다.
 //
@@ -24,12 +43,22 @@ var (
 	ColRule  = lipgloss.Color("#2E2E36")
 	ColWarn  = lipgloss.Color("#E8A33D")
 
-	// 선택된 줄의 배경.
+	// 터미널 배경. 실제 화면을 픽셀로 재서 잡은 값이다.
 	//
-	// 브랜드 색으로 채우지 않는다 — 이 화면에서 채워진 빨강은 "오류"라는
-	// 뜻이다. 중립적인 어두운 회색이면 그 규칙과 부딪히지 않고, 그 위에서
-	// 글자색(재생 중 빨강, 안 들은 곡 흐림)도 그대로 읽힌다.
-	ColRowSel = lipgloss.Color("#26262E")
+	// 우리가 칠하는 색이 아니라 **뒤에 비치는 색**이다. 투명도를 미리 섞어
+	// 두려면 무엇 위에 얹는지를 알아야 해서 여기 적어 둔다.
+	ColBase = lipgloss.Color("#1C1B27")
+
+	// 선택된 줄의 배경 — 브랜드 색을 옅게 얹은 것.
+	//
+	// 터미널에는 투명도가 없다. 그래서 배경 위에 14%만큼 미리 섞어 불투명한
+	// 한 색으로 만든다. 브랜드 색을 그대로 채우지 않는 이유는, 이 화면에서
+	// **채워진 빨강이 "오류"라는 뜻**이기 때문이다(ErrorBadge). 옅게 얹은
+	// 것은 그 규칙과 부딪히지 않는다 — 다른 것은 색조가 아니라 진하기다.
+	//
+	// 14% 는 눈대중이 아니다. 이미 화면에 있는 띠(ColSaidByMe)가 배경보다
+	// 채널당 평균 17 밝은데, 그와 같은 무게가 되는 값이다.
+	ColRowSel = tint(ColBase, ColBrand, 0.14)
 
 	// 대화 띠에서 **내가 친 문장**의 바탕. 답에는 깔지 않는다.
 	//
