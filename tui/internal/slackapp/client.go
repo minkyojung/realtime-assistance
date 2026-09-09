@@ -51,24 +51,14 @@ func (e apiError) Error() string {
 // 사용자가 고칠 수 있는 실패만 우리말로 바꾼다.
 // 나머지는 코드를 그대로 보여주는 편이 검색하기 좋다.
 var errorHints = map[string]string{
-	"invalid_auth":        "토큰이 유효하지 않습니다",
-	"token_revoked":       "토큰이 취소되었습니다. 다시 발급하세요",
-	"account_inactive":    "비활성 계정의 토큰입니다",
-	"missing_scope":       "권한(scope)이 모자랍니다",
+	"invalid_auth":           "토큰이 유효하지 않습니다",
+	"token_revoked":          "토큰이 취소되었습니다. 다시 발급하세요",
+	"account_inactive":       "비활성 계정의 토큰입니다",
+	"missing_scope":          "권한(scope)이 모자랍니다",
 	"not_allowed_token_type": "이 메서드에 맞지 않는 종류의 토큰입니다",
-	"channel_not_found":   "그 대화를 찾을 수 없습니다",
-	"not_in_channel":      "그 채널에 들어가 있지 않습니다",
-	"ratelimited":         "호출이 너무 잦습니다",
-}
-
-// missingScope 는 권한 부족인지 본다. 부족한 권한은 앱을 못 쓰게 만드는
-// 실패가 아니라 "그 칸만 못 채운다"는 뜻이라, 부르는 쪽에서 조용히 넘긴다.
-func missingScope(err error) bool {
-	var e apiError
-	if !asAPIError(err, &e) {
-		return false
-	}
-	return e.Code == "missing_scope" || e.Code == "not_allowed_token_type"
+	"channel_not_found":      "그 대화를 찾을 수 없습니다",
+	"not_in_channel":         "그 채널에 들어가 있지 않습니다",
+	"ratelimited":            "호출이 너무 잦습니다",
 }
 
 func asAPIError(err error, out *apiError) bool {
@@ -171,7 +161,6 @@ func retryAfter(h string) time.Duration {
 
 type authInfo struct {
 	Team   string `json:"team"`
-	User   string `json:"user"`
 	UserID string `json:"user_id"`
 }
 
@@ -183,12 +172,11 @@ func (c webClient) authTest(ctx context.Context) (authInfo, error) {
 
 // rawConversation 은 users.conversations 가 돌려주는 모양 그대로다.
 type rawConversation struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	IsIM      bool   `json:"is_im"`
-	IsMPIM    bool   `json:"is_mpim"`
-	IsPrivate bool   `json:"is_private"`
-	User      string `json:"user"` // IM 일 때 상대방
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	IsIM   bool   `json:"is_im"`
+	IsMPIM bool   `json:"is_mpim"`
+	User   string `json:"user"` // IM 일 때 상대방
 }
 
 // myConversations 는 사용자가 속한 대화를 가져온다.

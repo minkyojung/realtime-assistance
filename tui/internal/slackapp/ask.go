@@ -146,7 +146,8 @@ func decideAction(ctx context.Context, prompt string, convs []Conversation) (act
 	}
 	fmt.Fprintf(&b, "\nrequest: %q", prompt)
 
-	resp, err := openai.NewClient().Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+	client := openai.NewClient()
+	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model:           askModel,
 		ReasoningEffort: shared.ReasoningEffortLow,
 		Messages: []openai.ChatCompletionMessageParamUnion{
