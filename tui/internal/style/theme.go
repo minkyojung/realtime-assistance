@@ -13,10 +13,10 @@ import "charm.land/lipgloss/v2"
 // 터미널에서 빨강은 보통 에러를 뜻하므로, 에러는 색이 아니라
 // 채워진 배지로 구분한다.
 var (
-	ColBrand        = lipgloss.Color("#FF5A75") // Apple Music red
-	ColBrandSoft    = lipgloss.Color("#FF8FA3") // 본문에 얹을 때 읽기 좋은 톤
-	ColBrandDeep    = lipgloss.Color("#A8253F")
-	ColBrandOutline = lipgloss.Color("#1A0509") // 워드마크 외곽선용 — Deep 보다 훨씬 어둡다
+	ColBrand       = lipgloss.Color("#FF5A75") // Apple Music red
+	ColBrandSoft   = lipgloss.Color("#FF8FA3") // 본문에 얹을 때 읽기 좋은 톤
+	ColBrandDeep   = lipgloss.Color("#A8253F")
+	ColBrandShadow = lipgloss.Color("#7A2036") // 워드마크 뒤에 선 그림자 글자
 
 	ColFg    = lipgloss.Color("#E8E8EA")
 	ColDim   = lipgloss.Color("#8A8A92")
@@ -35,12 +35,11 @@ var (
 	RuleStyle      = lipgloss.NewStyle().Foreground(ColRule)
 	RuleBrandStyle = lipgloss.NewStyle().Foreground(ColBrandDeep)
 
-	Brand        = lipgloss.NewStyle().Foreground(ColBrand)
-	BrandBold    = lipgloss.NewStyle().Bold(true).Foreground(ColBrand)
-	BrandSoft    = lipgloss.NewStyle().Foreground(ColBrandSoft)
-	TrackHead    = lipgloss.NewStyle().Foreground(ColBrandDeep)
-	BrandOutline = lipgloss.NewStyle().Foreground(ColBrandOutline)
-	Warn         = lipgloss.NewStyle().Foreground(ColWarn)
+	Brand     = lipgloss.NewStyle().Foreground(ColBrand)
+	BrandBold = lipgloss.NewStyle().Bold(true).Foreground(ColBrand)
+	BrandSoft = lipgloss.NewStyle().Foreground(ColBrandSoft)
+	TrackHead = lipgloss.NewStyle().Foreground(ColBrandDeep)
+	Warn      = lipgloss.NewStyle().Foreground(ColWarn)
 
 	// 에러는 색이 아니라 배지로 구분한다.
 	ErrorBadge = lipgloss.NewStyle().
@@ -49,16 +48,6 @@ var (
 			Bold(true).
 			Padding(0, 1)
 )
-
-// 워드마크 세로 그라데이션. 위는 밝고 아래로 갈수록 짙어져 글자 자체에
-// 입체감이 실린다. ColBrandSoft 에서 ColBrandDeep 까지 5단계로 나눴다.
-var WordmarkGradient = []lipgloss.Style{
-	lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8FA3")),
-	lipgloss.NewStyle().Foreground(lipgloss.Color("#E9758A")),
-	lipgloss.NewStyle().Foreground(lipgloss.Color("#D45A71")),
-	lipgloss.NewStyle().Foreground(lipgloss.Color("#BE4058")),
-	lipgloss.NewStyle().Foreground(ColBrandDeep),
-}
 
 // 앨범 아트 자리. Bubble Tea 는 셀 기반 렌더러라 진짜 이미지를 띄울 수 없어
 // 색 블록으로 대체한다.

@@ -9,10 +9,10 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// wordmark[0] 은 이제 그림자·외곽선까지 얹혀 렌더링되면서 원본 문자열
-// 그대로는 안 나온다(빈 칸 일부가 외곽선 블록으로 바뀐다). 첫 글자
-// 안쪽의 순수 전경 조각만은 색이 안 바뀌므로 그걸로 존재를 확인한다.
-var wordmarkMark = strings.TrimSpace(wordmark[0])[:4]
+// 이름표는 픽셀 그림을 반블록으로 옮긴 것이라 원본 문자열이 그대로
+// 나오지 않는다. 획 속은 위아래 픽셀이 둘 다 차서 꽉 찬 블록이 이어지므로,
+// 그 조각으로 이름표가 그려졌는지만 본다.
+var wordmarkMark = strings.Repeat("█", 7)
 
 func homeHost() tea.Model {
 	hm := New(
@@ -249,7 +249,7 @@ func TestHomeFoldsWordmarkWhenShort(t *testing.T) {
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 12})
 
 	out := m.View().Content
-	if strings.Contains(out, wordmark[0]) {
+	if strings.Contains(out, wordmarkMark) {
 		t.Error("자리가 없는데 이름을 크게 그렸다")
 	}
 	if !strings.Contains(out, "APPLE MUSIC") {

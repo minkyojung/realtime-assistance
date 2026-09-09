@@ -1,6 +1,7 @@
 package host
 
 import (
+	"image/color"
 	"strings"
 
 	"amcli/tui/internal/style"
@@ -31,69 +32,136 @@ import (
 // 이름표. 로고가 아니라 이름을 쓰는 이유는, 어깨너머로 보는 사람에게
 // 이것이 무엇인지 한 번에 읽혀야 하기 때문이다.
 //
-// 두 줄로 쌓는다. 한 줄로 늘이면 68칸이 필요해서 80칸 터미널에서 아슬아슬한데,
-// 쌓으면 38칸이라 어디서든 들어간다. 두 단어짜리 이름에는 그편이 자연스럽기도 하다.
+// 두 줄로 쌓는다. 한 줄로 늘이면 80칸 터미널에서 아슬아슬한데, 쌓으면
+// 45칸이라 어디서든 들어간다. 두 단어짜리 이름에는 그편이 자연스럽기도 하다.
 //
-// 브랜드 색을 쓴다. 입체감은 둘로 낸다 — 글자 자체는 위는 밝고 아래는
-// 짙은 세로 그라데이션(style.WordmarkGradient), 그리고 그 실루엣 바깥으로
-// 한 칸짜리 어두운 외곽선. 오른쪽 아래로 밀어 깐 두꺼운 그림자는 한 번
-// 해봤다가 뺐다 — 획 사이 좁은 틈이 뭉개져 글자가 아니라 얼룩으로 보였다.
-var wordmark = []string{
-	" ████   █████   █████   ██      ██████",
-	"██  ██  ██  ██  ██  ██  ██      ██",
-	"██████  █████   █████   ██      █████",
-	"██  ██  ██      ██      ██      ██",
-	"██  ██  ██      ██      ██████  ██████",
-	"",
-	"██   ██  ██  ██   █████  ██   █████",
-	"███ ███  ██  ██  ██      ██  ██",
-	"██ █ ██  ██  ██   ████   ██  ██",
-	"██   ██  ██  ██      ██  ██  ██",
-	"██   ██   ████   █████   ██   █████",
-}
+// 글자는 픽셀 그림이다. 픽셀 한 칸이 가로 한 칸 × 세로 반 줄이라 거의
+// 정사각형이고, 반블록 문자(▀ ▄)로 한 줄에 픽셀 두 줄을 담는다. 세로
+// 해상도를 두 배로 쓰는 셈인데, 그래야 획을 2픽셀로 굵게 그리고 그 위에
+// 1픽셀짜리 가는 테두리를 얹을 수 있다. 한 칸을 통째로 한 픽셀로 쓰면
+// 획과 테두리가 같은 굵기가 되어 그림자가 "가장자리"가 아니라 "글자 하나
+// 더"로 보인다.
+var wordmarkWords = [][]string{{
+	"#######...#######...#######...##........#######",
+	"#######...#######...#######...##........#######",
+	"##...##...##...##...##...##...##........##.....",
+	"##...##...##...##...##...##...##........##.....",
+	"##...##...##...##...##...##...##........##.....",
+	"#######...#######...#######...##........######.",
+	"#######...#######...#######...##........######.",
+	"##...##...##........##........##........##.....",
+	"##...##...##........##........##........##.....",
+	"##...##...##........##........##........##.....",
+	"##...##...##........##........#######...#######",
+	"##...##...##........##........#######...#######",
+}, {
+	"##.....##...##...##...#######...##...#######",
+	"###...###...##...##...#######...##...#######",
+	"####.####...##...##...##........##...##.....",
+	"##.###.##...##...##...##........##...##.....",
+	"##..#..##...##...##...##........##...##.....",
+	"##.....##...##...##...#######...##...##.....",
+	"##.....##...##...##...#######...##...##.....",
+	"##.....##...##...##........##...##...##.....",
+	"##.....##...##...##........##...##...##.....",
+	"##.....##...##...##........##...##...##.....",
+	"##.....##...#######...#######...##...#######",
+	"##.....##...#######...#######...##...#######",
+}}
 
-// 앞 단어가 끝나는 줄. 두 단어를 나눠 그려야 외곽선이 단어 안에서만 진다 —
-// 뒤 단어 첫 줄에 앞 단어 외곽선이 새어 들면 안 된다.
-const wordmarkSplit = 5
+// 가장 넓은 단어(APPLE)의 픽셀 폭.
+const wordmarkWidth = 47
 
-// 가장 긴 줄. 이만큼도 못 그리는 폭이면 이름을 글자로 적는다.
-const wordmarkWidth = 38
+// 그림자 글자를 미는 픽셀 수 — 오른쪽 dx, 아래 dy. 픽셀이 정사각형에
+// 가까워서 (1, 1) 이 곧 45도, 왼쪽 위에서 오는 빛이다.
+const (
+	wordmarkShadowDX = 1
+	wordmarkShadowDY = 1
+)
 
-// renderWordmarkOutline 은 블록 글자 바깥 윤곽을 한 칸 두께로 둘러
-// 도장처럼 보이게 한다. 외곽선은 글자가 아니면서 상하좌우 네 칸 중
-// 하나라도 글자에 붙어 있는 칸이다 — 글자 사이 틈이 한 칸뿐이면
-// 양쪽에서 외곽선이 붙어 틈이 메워질 수 있지만, 윤곽선이 사방에
-// 안 둘리는 것보다는 낫다.
+// 큰 이름표가 실제로 먹는 폭. 밀린 그림자와 그 바깥 테두리 한 칸이 더 붙는다.
+const wordmarkDrawWidth = wordmarkWidth + wordmarkShadowDX + 1
+
+// 픽셀 한 칸이 어느 겹에 속하는지. 0 은 아무것도 아니라 투명하게 둔다.
+const (
+	wordmarkBlank = iota
+	wordmarkFace
+	wordmarkShadow
+)
+
+// renderWordmark 는 픽셀 그림을 반블록 문자로 옮긴다.
 //
-// fg 는 줄마다 다른 색을 줄 수 있다 — len(fg) 가 len(lines) 보다 짧으면
-// 마지막 색을 반복해 쓴다.
-func renderWordmarkOutline(lines []string, fg []lipgloss.Style, outline lipgloss.Style) []string {
-	grid := make([][]rune, len(lines))
+// 겹은 둘이다. 본 글자는 속을 채우고, 그 뒤에 (dx, dy) 만큼 밀린 그림자
+// 글자가 서는데 속을 비우고 윤곽선만 남긴다 — 윤곽선은 그림자 글자가
+// 아니면서 상하좌우 중 하나가 그림자 글자인 칸, 즉 실루엣 바깥 한 칸이다.
+// 속을 비우므로 그 안은 아무것도 그리지 않고, 터미널 배경이 그대로 비친다.
+// 배경색으로 칠하면 배경이 단색이 아닐 때 사각형 얼룩으로 보인다.
+//
+// 겹치는 칸은 언제나 본 글자가 이긴다.
+func renderWordmark(px []string, dx, dy int, face, shadow color.Color) []string {
+	grid := make([][]rune, len(px))
 	width := 0
-	for i, line := range lines {
-		grid[i] = []rune(line)
+	for i, row := range px {
+		grid[i] = []rune(row)
 		if len(grid[i]) > width {
 			width = len(grid[i])
 		}
 	}
 
 	filled := func(y, x int) bool {
-		if y < 0 || y >= len(lines) || x < 0 || x >= len(grid[y]) {
+		if y < 0 || y >= len(grid) || x < 0 || x >= len(grid[y]) {
 			return false
 		}
-		return grid[y][x] != ' '
+		return grid[y][x] == '#'
+	}
+	// 그림자는 본 글자를 민 것이다. 따로 두지 않고 좌표만 민다.
+	behind := func(y, x int) bool { return filled(y-dy, x-dx) }
+	layer := func(y, x int) int {
+		switch {
+		case filled(y, x):
+			return wordmarkFace
+		case !behind(y, x) && (behind(y-1, x) || behind(y+1, x) || behind(y, x-1) || behind(y, x+1)):
+			return wordmarkShadow
+		}
+		return wordmarkBlank
 	}
 
-	out := make([]string, len(lines))
-	for y := range out {
-		idx := y
-		if idx >= len(fg) {
-			idx = len(fg) - 1
+	// 위/아래 픽셀 조합마다 쓸 문자와 스타일을 미리 정해둔다. 런을 묶을 때
+	// 주소를 비교하므로 스타일은 한 번만 만들어야 한다.
+	col := [3]color.Color{nil, face, shadow}
+	var cellRune [3][3]rune
+	var cellStyle [3][3]lipgloss.Style
+	for t := range col {
+		for b := range col {
+			switch {
+			case t == wordmarkBlank && b == wordmarkBlank:
+				cellRune[t][b] = ' '
+			case t == b:
+				cellRune[t][b] = '█'
+				cellStyle[t][b] = lipgloss.NewStyle().Foreground(col[t])
+			case b == wordmarkBlank:
+				cellRune[t][b] = '▀'
+				cellStyle[t][b] = lipgloss.NewStyle().Foreground(col[t])
+			case t == wordmarkBlank:
+				cellRune[t][b] = '▄'
+				cellStyle[t][b] = lipgloss.NewStyle().Foreground(col[b])
+			default:
+				// 위아래가 서로 다른 색일 때만 배경을 쓴다. 이 칸은 둘 다
+				// 불투명해서 배경이 비칠 일이 없다.
+				cellRune[t][b] = '▀'
+				cellStyle[t][b] = lipgloss.NewStyle().Foreground(col[t]).Background(col[b])
+			}
 		}
-		fgStyle := &fg[idx] // 줄 안에서 색이 안 바뀌니 x 루프 밖에서 한 번만 잡는다
+	}
 
+	// 그림자 윤곽선이 본 글자 바깥으로 한 칸 더 나간다. 그만큼 넓혀 잡지
+	// 않으면 오른쪽과 아래 테두리가 잘린다.
+	rows, cols := len(grid)+dy+1, width+dx+1
+
+	out := make([]string, (rows+1)/2)
+	for r := range out {
 		// 칸이 비어 있으면 지금 진행 중인 색을 그대로 물고 간다 —
-		// 매번 색을 끊으면 원래 한 번에 그리던 줄이 조각나 달라 보인다.
+		// 매번 색을 끊으면 한 번에 그리던 줄이 조각나 달라 보인다.
 		var b strings.Builder
 		var run []rune
 		var runStyle *lipgloss.Style
@@ -108,13 +176,12 @@ func renderWordmarkOutline(lines []string, fg []lipgloss.Style, outline lipgloss
 			}
 			run = run[:0]
 		}
-		for x := 0; x < width; x++ {
+		for x := 0; x < cols; x++ {
+			top, bottom := layer(2*r, x), layer(2*r+1, x)
+
 			var want *lipgloss.Style
-			ch := ' '
-			if filled(y, x) {
-				want, ch = fgStyle, grid[y][x]
-			} else if filled(y-1, x) || filled(y+1, x) || filled(y, x-1) || filled(y, x+1) {
-				want, ch = &outline, '█'
+			if top != wordmarkBlank || bottom != wordmarkBlank {
+				want = &cellStyle[top][bottom]
 			}
 			if want != nil && runStyle != nil && want != runStyle {
 				flush()
@@ -122,10 +189,10 @@ func renderWordmarkOutline(lines []string, fg []lipgloss.Style, outline lipgloss
 			if want != nil {
 				runStyle = want
 			}
-			run = append(run, ch)
+			run = append(run, cellRune[top][bottom])
 		}
 		flush()
-		out[y] = b.String()
+		out[r] = b.String()
 	}
 	return out
 }
@@ -171,20 +238,24 @@ func (m Model) viewHome(w, h int) string {
 	title := "  " + style.Title.Render("APPLE MUSIC")
 	tagline := "  " + style.Faint.Render(style.Truncate(m.app().Tagline(), style.Max(w-2, 0)))
 
-	big := []string{""}
-	for _, line := range renderWordmarkOutline(wordmark[:wordmarkSplit], style.WordmarkGradient, style.BrandOutline) {
-		big = append(big, "  "+line)
+	// 두 단어를 따로 그린다. 한 번에 그리면 앞 단어 그림자가 뒤 단어
+	// 첫 줄까지 새어 든다.
+	var big []string
+	for i, word := range wordmarkWords {
+		if i > 0 {
+			big = append(big, "") // 두 단어 사이. 빈 줄에 색을 입히지 않는다
+		}
+		for _, line := range renderWordmark(word, wordmarkShadowDX, wordmarkShadowDY,
+			style.ColBrand, style.ColBrandShadow) {
+			big = append(big, "  "+line)
+		}
 	}
-	big = append(big, "") // 두 단어 사이. 빈 줄에 색을 입히지 않는다
-	for _, line := range renderWordmarkOutline(wordmark[wordmarkSplit+1:], style.WordmarkGradient, style.BrandOutline) {
-		big = append(big, "  "+line)
-	}
-	big = append(big, "", tagline, "")
+	big = append(big, "", tagline)
 	small := []string{"", title, "", tagline, ""}
 
 	var head []string
 	switch room := h - len(tail); {
-	case w >= wordmarkWidth+2 && room >= len(big):
+	case w >= wordmarkDrawWidth+2 && room >= len(big):
 		head = big
 	case room >= len(small):
 		head = small
