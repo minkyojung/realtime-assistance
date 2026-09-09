@@ -39,8 +39,15 @@ const homeBoxFactIndent = 2
 // 설명에 이만큼도 못 주면 박스를 접는다. 잘린 사실은 사실이 아니다.
 const homeBoxMinDetail = 24
 
-// 내용 위아래로 두는 빈 줄. 테두리에 글자가 붙으면 좁아 보인다.
-const homeBoxPad = 2
+// 안여백 — 내용과 테두리 사이.
+//
+// 테두리에 글자가 붙으면 상자가 꽉 찬 것이 아니라 좁아 보인다. 가로를
+// 세로보다 넉넉히 두는 이유는 칸이 세로로 길기 때문이다 — 한 칸은 폭 1에
+// 높이 2쯤이라, 같은 여백으로 보이려면 가로를 두 배 가까이 줘야 한다.
+const (
+	homeBoxPad     = 3 // 위아래 빈 줄
+	homeBoxSidePad = 4 // 좌우 빈 칸
+)
 
 // 내용이 이만큼도 못 들어가면 접는다 — 마크 여섯 줄에 사실 몇 줄은 있어야
 // 상자라고 부를 만하다.
@@ -79,25 +86,26 @@ func (m Model) homeBoxRows(w, h int) []string {
 	if h < homeBoxMinRows+2 {
 		return nil
 	}
-	// 좌우 테두리 두 칸과 안여백 두 칸은 글자가 못 쓴다. 남는 폭은 그대로
-	// 쓴다 — 입력창이 같은 계산으로 그려지므로(host.go inputBox) 두 상자의
-	// 테두리가 양쪽 모두 정확히 같은 칸에 선다.
-	inner := w - 4
+	// 테두리 두 칸과 좌우 안여백은 글자가 못 쓴다. 바깥 폭은 본문 그대로라
+	// 입력창과 테두리가 양쪽 모두 정확히 같은 칸에 선다(host.go inputBox) —
+	// 여백을 넓혀도 줄어드는 것은 안쪽뿐이다.
+	inner := w - 2 - 2*homeBoxSidePad
 	if inner < homeBoxLeftCol+homeBoxFactIndent+homeBoxNameCol+homeBoxMinDetail {
 		return nil
 	}
 
 	lines := homeBoxBody(facts, inner, h-2)
 
+	side := strings.Repeat(" ", homeBoxSidePad)
 	out := make([]string, 0, h)
-	out = append(out, homeBoxTop(inner+2))
+	out = append(out, homeBoxTop(inner+2*homeBoxSidePad))
 	for _, l := range lines {
-		out = append(out, style.RuleStyle.Render("│")+" "+
+		out = append(out, style.RuleStyle.Render("│")+side+
 			l+strings.Repeat(" ", style.Max(inner-lipgloss.Width(l), 0))+
-			" "+style.RuleStyle.Render("│"))
+			side+style.RuleStyle.Render("│"))
 	}
 	return append(out, style.RuleStyle.Render(
-		"╰"+strings.Repeat("─", inner+2)+"╯"))
+		"╰"+strings.Repeat("─", inner+2*homeBoxSidePad)+"╯"))
 }
 
 // 위 테두리에 이름과 판을 얹는다. 오른쪽에 붙이는 이유는 왼쪽 위가 이미
