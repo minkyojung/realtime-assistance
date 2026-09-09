@@ -122,7 +122,7 @@ Table queue_item {
   track_id      integer  [not null, ref: > track.id]
   turn_id       integer  [null, ref: > turn.id, note: '어느 AI 요청에서 나온 곡인지. 사람이 넣었으면 null']
   position      integer  [not null, note: 'S6 큐 순번']
-  reason        text     [null, note: '★ 곡별 선정 근거 한 줄. 로그를 ctrl+o 로 펼쳤을 때 보인다(S7). AI 가 근거를 못 내면 null 이고 재생은 계속된다']
+  reason        text     [null, note: '★ 곡별 선정 근거 한 줄. 대화 띠에 답과 함께 그대로 보인다(S7). AI 가 근거를 못 내면 null 이고 재생은 계속된다']
   origin        queue_item_origin [not null]
   state         queue_item_state  [not null, default: 'pending']
 

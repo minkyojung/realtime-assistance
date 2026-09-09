@@ -732,8 +732,8 @@ paths:
       summary: 요청 하나의 진행과 결과
       description: |
         `status` 가 `running` 이면 아직이다. `done` 이면 `usage` 와
-        `picks` 가 채워져 있고, 그것이 로그를 `ctrl+o` 로 펼쳤을 때
-        보이는 내용(S7)이다.
+        `picks` 가 채워져 있고, 그것이 대화 띠에 답과 함께 그려지는
+        내용(S7)이다.
       operationId: getTurn
       responses:
         '200':
@@ -1241,7 +1241,7 @@ components:
         reason:
           type: string
           nullable: true
-          description: '★ AI 가 이 곡을 왜 골랐는지 한 줄. 로그를 `ctrl+o` 로 펼치면 보인다(S7). 못 만들면 null 이고 재생은 그대로 간다'
+          description: '★ AI 가 이 곡을 왜 골랐는지 한 줄. 대화 띠에 답과 함께 그대로 보인다(S7). 못 만들면 null 이고 재생은 그대로 간다'
           example: 담아둔 뒤 한 번도 재생한 적이 없습니다
         origin: { $ref: '#/components/schemas/QueueItemOrigin' }
         state: { $ref: '#/components/schemas/QueueItemState' }
