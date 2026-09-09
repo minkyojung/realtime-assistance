@@ -19,8 +19,11 @@ import (
 //	이력   가사가 없을 때 가사 대신 (lyrics.go)
 //
 // 무대는 고르는 것이 아니라 **하려던 일의 결과**다. 문장을 보내면 대화가
-// 서고, esc 로 물러나면 가사로 돌아온다. 그래도 손으로 넘길 길이 있어야
-// 하므로 `/lyrics` `/talk` 를 둔다 — 앱은 자기 키를 만들지 않는다(docs/07 3-1).
+// 서고, esc 로 물러나면 가사로 돌아온다.
+//
+// 그래도 손으로 넘길 길이 있어야 한다 — 저절로만 바뀌면 "그거 좀 다시 보자"를
+// 할 방법이 없다. `ctrl+j` 가 한 칸씩 넘기고(app.CycleMsg), `/lyrics` `/talk`
+// 가 직행한다. 키를 앱이 만들지 않고 호스트에게서 받는 이유는 docs/07 3-1.
 type stage int
 
 const (
@@ -111,7 +114,8 @@ func stageCommands() []app.Command {
 // 말하는 것과 같은 방식이다.
 func (m Model) viewStageTabs(w int) string {
 	left := m.stageTab("♪ Lyrics", stageNowPlaying) + "   " + m.stageTab("▸ Asked", stageTalk)
-	return style.Row(left, style.Faint.Render("/lyrics  /talk"), w)
+	// 넘기는 법을 오른쪽에 적는다. 무대가 있다는 것을 아는 유일한 통로다.
+	return style.Row(left, style.Faint.Render("⌃J"), w)
 }
 
 func (m Model) stageTab(label string, s stage) string {

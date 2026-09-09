@@ -390,6 +390,19 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		m.stage = msg.to
 		return m, nil
 
+	case app.CycleMsg:
+		// ctrl+j — 무대를 한 칸 넘긴다. 둘뿐이라 왕복이다.
+		//
+		// 목록은 넣지 않는다. 섹션이 열 개를 넘어서 들어갈 때 "어느 섹션"
+		// 까지 따라붙는데, 순환에 끼우면 그것을 기억해야 한다. 목록은
+		// 원래 tab 으로 가던 곳이다.
+		if m.stage == stageTalk {
+			m.stage = stageNowPlaying
+		} else {
+			m.stage = stageTalk
+		}
+		return m, nil
+
 	case jumpMsg:
 		m.jumpTo(msg.kind, msg.label)
 		return m, nil

@@ -307,3 +307,19 @@ func TestTalkStageKeepsShape(t *testing.T) {
 		t.Errorf("줄 수 %d, 기대 16", n)
 	}
 }
+
+// ctrl+j — 호스트가 보내는 "한 칸 넘겨". 둘뿐이라 왕복이다.
+func TestCycleFlipsStage(t *testing.T) {
+	m := playingModel()
+	if m.stage != stageNowPlaying {
+		t.Fatal("처음은 가사 무대여야 한다")
+	}
+	next, _ := m.Update(app.CycleMsg{})
+	if next.(Model).stage != stageTalk {
+		t.Error("ctrl+j 가 대화로 안 넘겼다")
+	}
+	back, _ := next.(Model).Update(app.CycleMsg{})
+	if back.(Model).stage != stageNowPlaying {
+		t.Error("한 번 더 눌렀는데 가사로 안 돌아왔다")
+	}
+}

@@ -396,16 +396,22 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		return true, m, nil
 
 	case "ctrl+j":
-		// 로그를 펼쳤다 접는다. 명령 팔레트와 같은 자리, 같은 방식이다.
-		m.logOpen = !m.logOpen
-		return true, m, nil
-
-	case "ctrl+f":
+		// 앱의 화면을 한 칸 넘긴다. 앱 하나가 본문을 여러 가지로 나눠 쓸 때
+		// (음악은 가사·대화·이력) 손으로 넘길 길이다.
+		//
+		// 원래는 로그를 펼치는 키였다. 앱이 자기 대화를 본문에 펼쳐 보여주게
+		// 되면서 그 자리가 비었고, "무엇을 보여줘"라는 뜻은 그대로 남았다.
+		// 호스트 로그의 상세는 ctrl+o 가 계속 맡는다.
+		//
+		// 홈에는 넘길 화면이 없다. 안 보이는 앱의 무대를 넘기면, 돌아갔을 때
+		// 고르지도 않은 화면이 서 있다.
 		if m.home {
-			// 홈에는 거를 목록이 없다. 조용히 무시하면 고장으로 보인다.
-			m.notice = "Nothing to search here"
 			return true, m, nil
 		}
+		mm, cmd := m.forward(app.CycleMsg{})
+		return true, mm, cmd
+
+	case "ctrl+f":
 		(&m).setMode(modeSearch)
 		return true, m, nil
 
