@@ -6,6 +6,7 @@ package musicapp
 import (
 	"context"
 	"errors"
+	"image"
 	"strconv"
 	"strings"
 	"time"
@@ -88,6 +89,10 @@ type Model struct {
 	catSeq   int
 	catBusy  bool
 	catLogin bool
+
+	// 앨범 커버. 곡이 바뀔 때만 다시 읽는다 — artwork.go
+	art    image.Image
+	artPID string
 
 	// 검색어가 마지막으로 바뀐 때. 타이핑이 멎었는지 재는 데만 쓴다.
 	filterAt time.Time
@@ -275,7 +280,25 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 					m.ensureQueued(t)
 				}
 			}
+			// 곡이 바뀌었으면 커버를 새로 읽는다. 폴링마다 읽으면
+			// Music.app 이 1초에 한 번씩 1200×1200 을 퍼낸다.
+			if id := msg.state.PersistentID; id != m.artPID {
+				m.artPID, m.art = id, nil
+				if id != "" {
+					return m, cmdArtwork(id)
+				}
+			}
 		}
+		return m, nil
+
+	case artMsg:
+		// 답이 오는 사이에 곡이 바뀌었으면 버린다.
+		if msg.pid != m.artPID {
+			return m, nil
+		}
+		// 커버가 없는 곡도 있다. 실패가 아니라 상태이므로 조용히 접는다 —
+		// 화면은 한 줄짜리 재생 바로 돌아간다.
+		m.art = msg.img
 		return m, nil
 
 	case app.AskMsg:
@@ -590,6 +613,9 @@ func (m *Model) clampList() {
 const maxListRows = 14
 
 // 본문 세로 예산: 재생바1 + 룰1 + 목록 + 룰1 + 근거(0|1)
+// 머리가 몇 줄을 먹었나. 한 줄짜리 재생 바면 1 이다.
+func headHeight(head string) int { return strings.Count(head, "\n") + 1 }
+
 func (m Model) listHeight(h int) int {
 	reserved := 3
 	if _, ok := m.viewGateHint(10); ok {
@@ -602,11 +628,17 @@ func (m Model) listHeight(h int) int {
 
 // View 는 본문을 그린다. 크기는 호스트가 알려주므로 기억하지 않는다.
 func (m Model) View(w, h int) string {
-	listH := m.listHeight(h)
+	head, big := m.viewNowPlaying(w, h)
+	if !big {
+		// 커버를 못 그리는 사정이면(좁거나·낮거나·커버가 없거나·관문)
+		// 예전처럼 한 줄로 물러난다. artwork.go
+		head = m.viewPlayer(w)
+	}
+	listH := m.listHeight(h - headHeight(head) + 1)
 
 	var b strings.Builder
-	// 지금 재생 중인 곡이 본문의 첫 줄이다.
-	b.WriteString(m.viewPlayer(w))
+	// 지금 듣고 있는 것이 본문의 주인공이다. 목록은 그 아래다.
+	b.WriteString(head)
 	b.WriteString("\n")
 	b.WriteString(style.RuleBrand(w))
 	b.WriteString("\n")
