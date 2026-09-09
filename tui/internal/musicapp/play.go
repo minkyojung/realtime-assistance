@@ -82,3 +82,35 @@ func (m Model) playOne(t api.Track) (Model, tea.Cmd) {
 	}
 	return m.playFrom([]listRow{{track: &t}}, 0, t.Title)
 }
+
+// Hint 는 지금 커서가 놓인 줄에서 enter 가 하는 일이다.
+//
+// 자리마다 뜻이 다르던 시절에는 누르기 전에 무엇이 일어날지 알 수 없었다.
+// 뜻은 이제 하나지만(위), **그 하나가 무엇인지는 화면이 말해야 한다** —
+// 카탈로그 줄에서 "담고 재생"임을 모르면 눌러 보기 전에는 알 길이 없다.
+//
+// 큐에서만 /remove 를 덧붙인다. 커서가 가리키는 것을 빼는 일이라 그 자리에서만
+// 뜻이 있고, 다른 목록에서 내놓으면 무엇이 빠지는지가 모호해진다.
+func (m Model) Hint() string {
+	rows := m.rows()
+	if m.listIdx < 0 || m.listIdx >= len(rows) {
+		return ""
+	}
+	switch r := rows[m.listIdx]; {
+	case r.isMore():
+		return "enter  show the rest"
+	case r.catalog != nil:
+		if inLibrary(*r.catalog) {
+			return "enter  play"
+		}
+		return "enter  add it and play"
+	case r.group != nil:
+		return "enter  open"
+	case r.track != nil:
+		if m.sections[m.sectionIdx].kind == secQueue {
+			return "enter  play from here     /remove  drop it"
+		}
+		return "enter  play from here"
+	}
+	return ""
+}

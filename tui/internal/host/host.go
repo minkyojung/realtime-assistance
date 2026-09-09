@@ -152,24 +152,50 @@ const (
 	promptSearch = "Search  "
 )
 
+// placeholder 는 입력창이 비어 있을 때 그 자리에 놓을 말이다.
+//
+// **그릴 때 정한다.** applyMode 는 모드가 바뀔 때만 불리는데, 이 말은 커서가
+// 한 줄 움직이기만 해도 달라진다. 목록 스크롤을 그릴 때 다시 맞추는 것과
+// 같은 이유다 — 상태를 미리 적어 두면 언젠가 갱신을 빠뜨린다.
+func (m Model) placeholder() string {
+	if m.mode == modeSearch {
+		return "Filter what you are looking at"
+	}
+	// 왼쪽은 **지금 이 줄에서만 참인 것**, 오른쪽은 언제나 참인 길이다.
+	//
+	// "Ask for anything" 은 언제나 참이라 아무것도 안 알려준다. 앱의 말은
+	// 커서가 놓인 줄에서 enter 가 하는 일이라, 눌러 보기 전에 알 수 있다.
+	head := "Ask for anything"
+	if !m.home {
+		if h := m.app().Hint(); h != "" {
+			head = h
+		}
+	}
+	tail := "/  commands     ?  help"
+
+	// 키가 없다고 모드를 없애지도, 기본값을 바꾸지도 않는다. Search 로
+	// 시작하면 AI 가 있다는 것 자체를 모르고 지나간다.
+	//
+	// **켜는 법을 오른쪽에 둔다.** 왼쪽을 통째로 차지하면 AI 가 꺼져 있는
+	// 내내 enter 가 무슨 일을 하는지 못 보게 되는데, enter 는 키 없이도
+	// 멀쩡히 동작한다. 둘 다 참이므로 둘 다 말한다.
+	if !secrets.HasOpenAIKey() {
+		if head == "Ask for anything" {
+			head = "AI is off" // 물어봐도 답이 없다. 그 자리에서 거짓말하지 않는다
+		}
+		tail = "/ai <key>  to turn AI on"
+	}
+	return head + "    " + tail
+}
+
 func (m *Model) applyMode() {
 	styles := m.input.Styles()
 	color := style.ColBrand // 프라이머리는 Ask AI 의 것이다
 	if m.mode == modeSearch {
 		m.input.Prompt = promptSearch
-		m.input.Placeholder = "Filter what you are looking at"
 		color = style.ColDim
 	} else {
 		m.input.Prompt = promptAsk
-		m.input.Placeholder = "Ask for anything    /  commands     ?  help"
-		if !secrets.HasOpenAIKey() {
-			// 모드를 없애지도, 기본값을 바꾸지도 않는다.
-			//
-			// 키가 없다고 Search 로 시작하면 AI 가 있다는 것 자체를 모르고
-			// 지나간다. 자리는 그대로 두고 **왜 못 쓰는지와 무엇을 하면
-			// 되는지**를 그 자리가 말한다 — 카탈로그가 꺼졌을 때와 같다.
-			m.input.Placeholder = "AI is off    /ai <key>  to turn it on"
-		}
 	}
 	styles.Focused.Prompt = lipgloss.NewStyle().Foreground(color)
 	styles.Blurred.Prompt = styles.Focused.Prompt
@@ -185,6 +211,9 @@ func (m Model) inputWidth() int { return style.Max(style.ContentWidth(m.w)-4, 10
 // 테두리 색도 모드를 말한다. 프라이머리(ColBrand)는 글자가 쓰고, 선은 한 단계
 // 짙은 톤을 쓴다 — 브랜드 색이 화면에서 제일 큰 덩어리가 되면 안 된다.
 func (m Model) inputBox(w int) string {
+	// m 은 값이라 여기서 고쳐도 모델에 남지 않는다. 그릴 때의 커서 자리로
+	// 안내문을 정하는 것이 목적이다 — placeholder 의 주석을 보라.
+	m.input.Placeholder = m.placeholder()
 	color := style.ColBrandDeep
 	if m.mode == modeSearch {
 		color = style.ColRule

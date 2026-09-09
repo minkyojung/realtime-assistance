@@ -19,6 +19,7 @@ type stubApp struct {
 	name  string
 	reply string
 	badge int
+	hint  string
 	ready error
 
 	// 앱이 자기 안에 물러날 단계를 갖고 있는 척한다. esc 사슬을 보려면 필요하다.
@@ -42,6 +43,7 @@ func (s stubApp) Init(func(tea.Msg)) tea.Cmd { return nil }
 func (s stubApp) Ready() error               { return s.ready }
 func (s stubApp) Spend() string              { return s.spend }
 func (s stubApp) Badge() int                 { return s.badge }
+func (s stubApp) Hint() string               { return s.hint }
 func (s stubApp) Status() string             { return s.name }
 func (s stubApp) Filter(string) app.App      { return s }
 func (s stubApp) Back() (app.App, bool)      { return s, s.back }

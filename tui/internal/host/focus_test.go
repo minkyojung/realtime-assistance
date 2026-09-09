@@ -25,6 +25,7 @@ func (f focusApp) Init(func(tea.Msg)) tea.Cmd { return nil }
 func (f focusApp) Ready() error               { return nil }
 func (f focusApp) Spend() string              { return "" }
 func (f focusApp) Badge() int                 { return 0 }
+func (f focusApp) Hint() string               { return "" }
 func (f focusApp) Status() string             { return f.name }
 func (f focusApp) Filter(string) app.App      { return f }
 func (f focusApp) Back() (app.App, bool)      { return f, false }
