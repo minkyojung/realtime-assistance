@@ -97,6 +97,11 @@ func (m Model) viewPlayer(w int) string {
 // 갈 수 있는 곳은 `/` 가 보여주므로 여기서는 말하지 않는다.
 func (m Model) Status() string {
 	where := m.sections[m.sectionIdx].label
+	// 파고들었으면 어디서 들어왔는지까지 말한다. 이름만 쓰면 같은 이름의
+	// 플레이리스트와 구별이 안 된다.
+	if m.drill != nil {
+		where += " › " + m.drill.Name
+	}
 	if m.searching() {
 		where = "Search"
 	}

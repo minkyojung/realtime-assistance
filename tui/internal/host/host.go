@@ -382,6 +382,12 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 			return true, m, nil
 		}
 		if !m.home {
+			// 앱이 자기 안에 물러날 단계를 갖고 있으면 그것이 먼저다.
+			// 파고든 목록에서 esc 를 눌렀는데 앱 밖으로 튕겨 나가면 안 된다.
+			if next, ok := m.app().Back(); ok {
+				m.apps[m.current] = next
+				return true, m, nil
+			}
 			// 앱에서 물러나면 홈이다. 앱은 계속 살아 있고 화면만 떠난다.
 			// current 는 그대로 두므로 다시 enter 면 방금 있던 곳이다.
 			blur, blurCmd := m.app().Update(app.BlurMsg{})

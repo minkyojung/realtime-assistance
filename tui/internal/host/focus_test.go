@@ -26,6 +26,7 @@ func (f focusApp) Ready() error               { return nil }
 func (f focusApp) Badge() int                 { return 0 }
 func (f focusApp) Status() string             { return f.name }
 func (f focusApp) Filter(string) app.App      { return f }
+func (f focusApp) Back() (app.App, bool)      { return f, false }
 func (f focusApp) Commands() []app.Command    { return nil }
 func (f focusApp) Ask(string) tea.Cmd         { return nil }
 func (f focusApp) View(w, h int) string       { return strings.Repeat("\n", h-1) }

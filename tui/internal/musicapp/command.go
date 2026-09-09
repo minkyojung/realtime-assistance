@@ -58,6 +58,7 @@ func (m *Model) jumpTo(kind sectionKind) {
 	for i, s := range m.sections {
 		if s.kind == kind {
 			m.sectionIdx = i
+			m.drill = nil
 			m.listIdx, m.listTop = 0, 0
 			return
 		}

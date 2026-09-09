@@ -20,6 +20,9 @@ type stubApp struct {
 	badge int
 	ready error
 
+	// 앱이 자기 안에 물러날 단계를 갖고 있는 척한다. esc 사슬을 보려면 필요하다.
+	back bool
+
 	// 포커스 신호를 센다. 화면 앞에 있는 앱만 장치를 잡게 하는 통로라
 	// 새거나 빠지면 안 보는 동안에도 카메라 불이 켜져 있게 된다.
 	focus, blur *int
@@ -33,6 +36,7 @@ func (s stubApp) Ready() error               { return s.ready }
 func (s stubApp) Badge() int                 { return s.badge }
 func (s stubApp) Status() string             { return s.name }
 func (s stubApp) Filter(string) app.App      { return s }
+func (s stubApp) Back() (app.App, bool)      { return s, s.back }
 func (s stubApp) Commands() []app.Command    { return nil }
 func (s stubApp) View(w, h int) string       { return strings.Repeat("\n", h-1) }
 func (s stubApp) Ask(string) tea.Cmd {
@@ -202,5 +206,33 @@ func TestDetailToggle(t *testing.T) {
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	if out := plain(m.View().Content); strings.Contains(out, "candidates 195") {
 		t.Error("esc 를 눌렀는데 상세가 남아 있다")
+	}
+}
+
+// esc 는 호스트의 키지만 물러나는 순서에는 앱도 끼어 있다.
+// 앱이 자기 안에 단계를 갖고 있으면 그것부터다 — 파고든 목록에서
+// esc 를 눌렀는데 앱 밖으로 튕겨 나가면 안 된다.
+func TestEscAsksTheAppFirst(t *testing.T) {
+	hm := New(stubApp{name: "alpha", back: true})
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 28})
+	m, _ = m.Update(switchAppMsg{index: 0})
+
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	if hm, _ := m.(Model); hm.home {
+		t.Fatal("앱이 물러날 단계를 갖고 있는데 홈으로 나가 버렸다")
+	}
+}
+
+// 앱이 물러날 곳이 없다고 하면 호스트가 자기 차례를 이어서 밟는다.
+func TestEscFallsThroughWhenAppHasNoStep(t *testing.T) {
+	hm := New(stubApp{name: "alpha"})
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 28})
+	m, _ = m.Update(switchAppMsg{index: 0})
+
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	if hm, _ := m.(Model); !hm.home {
+		t.Error("앱이 물러날 곳이 없다는데 홈으로 안 왔다")
 	}
 }

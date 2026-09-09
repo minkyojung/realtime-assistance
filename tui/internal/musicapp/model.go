@@ -28,6 +28,16 @@ type Model struct {
 	listIdx int
 	listTop int
 
+	// 파고든 묶음. nil 이면 섹션이 정한 목록을 그대로 본다.
+	//
+	// Artists·Albums 는 곡이 아니라 묶음을 보여준다. 그 안으로 들어갈 길이
+	// 없으면 커서는 서는데 enter 가 아무 일도 안 하는 줄이 된다 —
+	// "고를 수 없는 줄에는 서지 않는다"(docs/07)의 예외가 생겨 버린다.
+	drill *data.Group
+
+	// 파고들기 전의 커서. esc 로 그 자리에 돌아온다.
+	drillIdx, drillTop int
+
 	// 호스트가 검색어를 넣어준다. 비어 있으면 필터가 없다.
 	filter string
 
@@ -254,9 +264,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			m.move(1)
 		case "tab":
 			m.sectionIdx = (m.sectionIdx + 1) % len(m.sections)
+			m.drill = nil
 			m.listIdx, m.listTop = 0, 0
 		case "shift+tab":
 			m.sectionIdx = (m.sectionIdx - 1 + len(m.sections)) % len(m.sections)
+			m.drill = nil
 			m.listIdx, m.listTop = 0, 0
 		case "shift+right":
 			return m, cmdNext()
@@ -332,6 +344,10 @@ func (m Model) playSelected() (app.App, tea.Cmd) {
 	if ct := rows[m.listIdx].catalog; ct != nil {
 		return m.playCatalog(*ct)
 	}
+	// 묶음은 트는 것이 아니라 여는 것이다. 안에 곡이 들어 있다.
+	if g := rows[m.listIdx].group; g != nil {
+		return m.enterGroup(*g)
+	}
 	if rows[m.listIdx].track == nil {
 		return m, nil
 	}
@@ -345,6 +361,34 @@ func (m Model) playSelected() (app.App, tea.Cmd) {
 		return m, cmdPlayTrack(*t.PersistentId)
 	}
 	return m, nil
+}
+
+// enterGroup — 묶음 안으로 한 단계 들어간다.
+//
+// 곡 목록은 이미 그 행이 들고 있다(data.Group.Tracks). 다시 훑을 필요가 없다.
+func (m Model) enterGroup(g data.Group) (app.App, tea.Cmd) {
+	if len(g.Tracks) == 0 {
+		return m, nil
+	}
+	m.drillIdx, m.drillTop = m.listIdx, m.listTop
+	m.drill = &g
+	m.listIdx, m.listTop = 0, 0
+	m.clampList()
+	return m, nil
+}
+
+// Back — esc 가 왔다. 파고든 것이 있으면 그 한 단계를 물러난다.
+//
+// 나온 자리에 커서를 되돌린다. 훑던 중이었으므로 목록 맨 위로 튕기면
+// 어디를 보고 있었는지 잃는다.
+func (m Model) Back() (app.App, bool) {
+	if m.drill == nil {
+		return m, false
+	}
+	m.drill = nil
+	m.listIdx, m.listTop = m.drillIdx, m.drillTop
+	m.clampList()
+	return m, true
 }
 
 // 큐에 없는 곡이면 근거 없이 넣는다 — 사람이 직접 고른 것이므로 근거가 없다.

@@ -34,6 +34,10 @@ func (m Model) rows() []listRow {
 	if m.searching() {
 		return m.searchRows(l)
 	}
+	// 파고든 묶음이 있으면 섹션보다 그것이 먼저다.
+	if m.drill != nil {
+		return trackRows(m.drill.Tracks)
+	}
 
 	switch s := m.sections[m.sectionIdx]; s.kind {
 	case secRecent:

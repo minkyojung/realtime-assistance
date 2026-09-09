@@ -200,7 +200,7 @@ func (m Model) renderCommand(i int, c app.Command, w int) string {
 
 var helpRows = []struct{ key, what string }{
 	{"type", "ask for a queue in your own words"},
-	{"enter", "send the request · play the selected track"},
+	{"enter", "send the request · play or open what is selected"},
 	{"/", "commands"},
 	{"ctrl+f", "search"},
 	{"ctrl+j", "expand the log"},
