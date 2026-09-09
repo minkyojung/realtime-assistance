@@ -61,6 +61,10 @@ type Model struct {
 	// Music.app 이 말해주는 것 그대로. 라이브러리에 없는 곡도 여기 담긴다.
 	live music.PlayerState
 
+	// 우리가 곡을 끊었다는 표시. 다음 폴링이 집어 간다 — plays.go
+	endHint   data.EndedBy
+	endHintAt time.Time
+
 	// 의도 층 — 자연어 한 줄이 큐가 되는 경로.
 	//
 	// 도는 요청은 turn 한 덩어리로 들고 있는다. 번호·손잡이·기다림이
@@ -318,6 +322,10 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		m.polledAt = time.Now()
 		m.playerErr = msg.err
 		if msg.err == nil {
+			// m.live 를 갈아끼우기 **전에** 부른다. 직전 곡이 얼마나
+			// 흘렀는지는 옛 상태에만 있다(plays.go).
+			var noted tea.Cmd
+			m, noted = m.notePlayback(msg.state)
 			m.live = msg.state
 			m.playing = msg.state.Playing
 			m.positionMs = msg.state.PositionMs
@@ -339,11 +347,13 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 				if id != "" {
 					title, artist, album, dur := m.nowPlayingMeta()
 					return m, tea.Batch(
+						noted,
 						cmdArtwork(id),
 						cmdLyrics(id, artist, title, album, dur),
 					)
 				}
 			}
+			return m, noted
 		}
 		return m, nil
 
@@ -495,7 +505,9 @@ func (m Model) applyQueue(res intent.Result) (app.App, tea.Cmd) {
 	}
 	// 플레이리스트를 새로 쓸 때까지는 화면과 Music.app 이 어긋난 상태다.
 	m.queuePID = ""
-	return m, cmdWriteQueue(ids, start, pos)
+	// **우리가 끊는 것이다.** 표시해 두지 않으면 다음 폴링이 이것을
+	// "사용자가 넘겼다"로 읽고, 우리가 만든 행동이 취향으로 쌓인다.
+	return m.hintEnd(data.EndedRequeue), cmdWriteQueue(ids, start, pos)
 }
 
 var (
@@ -530,6 +542,8 @@ func (m Model) playSelected() (app.App, tea.Cmd) {
 		return m, nil
 	}
 	t := *rows[m.listIdx].track
+	// 듣던 곡은 사용자가 다른 것을 골라서 끝난다. 넘긴 것과 뜻이 다르다.
+	m = m.hintEnd(data.EndedPicked)
 
 	// 큐 안의 곡이면 플레이리스트의 그 자리에서 튼다. 곡 하나만 틀면
 	// 끝나는 순간 Music.app 이 큐 밖으로 나가 버린다.
@@ -583,6 +597,10 @@ func (m Model) dropAt(at int) (Model, tea.Cmd) {
 	// 지금 나오는 곡을 빼면 다음 곡으로 넘어간다. 조용해지는 것이 아니다 —
 	// "이거 별로야"는 다음 걸 틀라는 뜻이다.
 	playing := m.queue[at].Track.Id == m.nowPlayingID
+	if playing {
+		// 곡을 지목해서 뺀 것이다. 넘긴 것보다 분명한 거절이다.
+		m = m.hintEnd(data.EndedRemoved)
+	}
 
 	m.queue = append(append([]api.QueueItem{}, m.queue[:at]...), m.queue[at+1:]...)
 	m.clampList()
