@@ -120,6 +120,9 @@ type Model struct {
 	// 마지막 폴링 시각. 폴링 사이를 메워 가사가 제때 넘어가게 한다.
 	polledAt time.Time
 
+	// 검색 결과에서 내 라이브러리 구역을 펼쳤나. 검색어가 바뀌면 다시 접힌다.
+	searchAll bool
+
 	// 검색어가 마지막으로 바뀐 때. 타이핑이 멎었는지 재는 데만 쓴다.
 	filterAt time.Time
 
@@ -219,6 +222,7 @@ func (m Model) Filter(q string) app.App {
 	if m.filter != q {
 		m.listIdx, m.listTop = 0, 0
 		m.filterAt = time.Now()
+		m.searchAll = false // 새 검색어는 접힌 채로 시작한다
 	}
 	m.filter = q
 	return m
@@ -300,7 +304,12 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		return m.applyLibrary(msg)
 
 	case tickMsg:
-		return m, tea.Batch(fetchStatus, tick(), m.maybeSearchCatalog())
+		// 한 줄로 쓰지 않는다. `return m, tea.Batch(…, m.maybeSearchCatalog())`
+		// 는 m 을 복사하는 시점과 메서드가 m 을 고치는 시점의 순서를 Go 명세가
+		// 보장하지 않는다. 어긋나면 검색 번호가 모델에 안 남아 답이 조용히
+		// 버려진다 — 증상은 "카탈로그 검색이 안 된다"로만 보인다.
+		search := m.maybeSearchCatalog()
+		return m, tea.Batch(fetchStatus, tick(), search)
 
 	case statusMsg:
 		m.polled = true
@@ -499,6 +508,12 @@ var (
 func (m Model) playSelected() (app.App, tea.Cmd) {
 	rows := m.rows()
 	if m.listIdx < 0 || m.listIdx >= len(rows) {
+		return m, nil
+	}
+	// 접힌 구역을 편다. 커서는 펼친 자리에 그대로 둔다.
+	if rows[m.listIdx].isMore() {
+		m.searchAll = true
+		m.clampList()
 		return m, nil
 	}
 	// 카탈로그 곡은 아직 내 것이 아니다. 담아야 틀 수 있다.

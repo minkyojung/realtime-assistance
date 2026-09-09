@@ -184,6 +184,15 @@ func (m Model) viewCatalogHint(w int) (string, bool) {
 		return style.Brand.Render("▸ ") + style.Dim.Render(style.Truncate(
 			"Adding \""+m.adding.track.Title+"\" — will play once it shows up in Music", w-2)), true
 	}
+	// 검색 중인데 카탈로그가 꺼져 있으면 그 말을 한다.
+	//
+	// 설정이 없는 것은 실패가 아니라 상태라서 조용히 넘겼는데, 그 대가로
+	// **왜 라이브러리 안에서만 걸러지는지 알 방법이 없었다.** 검색은 바깥을
+	// 찾는 일이므로, 바깥이 닫혀 있으면 그때만 말해준다.
+	if m.searching() && m.cat == nil {
+		return style.Faint.Render(style.Truncate(
+			"Apple Music search is off  ·  needs AM_P8, AM_KEY_ID, AM_TEAM_ID", w)), true
+	}
 	if m.sectionIdx >= len(m.sections) || m.sections[m.sectionIdx].kind != secCatalog {
 		return "", false
 	}

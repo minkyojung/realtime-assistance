@@ -23,10 +23,16 @@ type listRow struct {
 	group   *data.Group
 	catalog *api.CatalogTrack
 	header  string // 검색 결과를 두 구역으로 가르는 줄. 고를 수 없다
+
+	// more 는 "내 라이브러리에 N곡 더 있다"는 줄이다. 고를 수 있고,
+	// enter 로 접힌 구역을 편다.
+	more int
 }
 
 // selectable — 머리글에는 커서가 서지 않는다.
 func (r listRow) selectable() bool { return r.header == "" }
+
+func (r listRow) isMore() bool { return r.more > 0 }
 
 func (m Model) rows() []listRow {
 	l := data.Lib()
@@ -186,6 +192,14 @@ func (m Model) renderRow(r listRow, selected bool, w int, widths []int, prevArti
 	}
 
 	// 구역 머리글 — 고를 수 없는 줄이라 밝히지 않는다.
+	// 접힌 줄 — 고를 수 있다. 골랐을 때만 무엇을 하면 되는지 말한다.
+	if r.isMore() {
+		label := fmt.Sprintf("+ %d more in Your Library", r.more)
+		if selected {
+			label = style.Row(label, "enter to show", w-2)
+		}
+		return fill(rail + paint(style.Faint).Render(style.Truncate(label, w-2)))
+	}
 	if r.header != "" {
 		return "  " + style.Faint.Render(style.Truncate(r.header, w-2))
 	}
@@ -316,6 +330,13 @@ func (m Model) catalogCells(ct api.CatalogTrack, widths []int, prevArtist *strin
 // 위는 이미 내 것, 아래는 아직 내 것이 아닌 것. 같은 화면에 두어야
 // "내가 가진 게 이것뿐이구나"와 "바깥에는 이런 게 있구나"가 한눈에 붙는다.
 // 아래쪽은 타이핑을 멈춘 뒤에야 채워진다 — 글자마다 요청을 보낼 수는 없다.
+//
+// **위 구역에 상한을 둔다.** 둘을 한 줄로 이어 놓았더니 앞이 길면 뒤가
+// 화면 밖으로 밀렸다 — `a` 한 글자에 라이브러리 193곡이 걸리면 Apple Music
+// 머리글이 194번째 줄이다. 결과는 오는데 아무도 못 본다.
+//
+// 자리를 지켜주는 쪽이 Apple Music 인 이유는 **거기가 검색으로만 닿는 곳**
+// 이기 때문이다. 내 라이브러리는 /songs·/artists·섹션으로도 간다.
 func (m Model) searchRows(l *data.Library) []listRow {
 	mine := trackRows(l.Search(m.filter))
 
@@ -325,11 +346,31 @@ func (m Model) searchRows(l *data.Library) []listRow {
 		return mine
 	}
 
-	out := make([]listRow, 0, len(mine)+len(m.catHits)+2)
+	out := make([]listRow, 0, len(mine)+len(m.catHits)+3)
 	if len(mine) > 0 {
-		out = append(out, listRow{header: "Your Library"})
-		out = append(out, mine...)
+		shown, hidden := mine, 0
+		if cap := m.mineCap(); len(mine) > cap {
+			shown, hidden = mine[:cap], len(mine)-cap
+		}
+		out = append(out, listRow{header: fmt.Sprintf("Your Library · %d", len(mine))})
+		out = append(out, shown...)
+		if hidden > 0 {
+			// 접힌 줄은 건너뛴다. ↓ 로 내려가면 이 줄 다음이 바로 Apple Music
+			// 이라, 숨은 것을 지나칠 필요가 없다.
+			out = append(out, listRow{more: hidden})
+		}
 	}
-	out = append(out, listRow{header: "Apple Music"})
+	out = append(out, listRow{header: fmt.Sprintf("Apple Music · %d", len(m.catHits))})
 	return append(out, catalogRows(m.catHits)...)
+}
+
+// mineCap — 검색 결과에서 내 라이브러리가 차지할 최대 줄 수.
+//
+// 창의 1/4. 크면 내 것도 넉넉히 보이고, 작으면 Apple Music 자리를 먼저
+// 지킨다. 펼쳤으면 상한이 없다.
+func (m Model) mineCap() int {
+	if m.searchAll {
+		return 1 << 30
+	}
+	return style.Clamp(m.bodyH/4, 3, 8)
 }

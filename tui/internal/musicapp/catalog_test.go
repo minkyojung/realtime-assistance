@@ -1,6 +1,9 @@
 package musicapp
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -160,11 +163,14 @@ func TestUnifiedSearchSplitsIntoTwoSections(t *testing.T) {
 			headers = append(headers, r.header)
 		}
 	}
-	if len(headers) != 2 || headers[0] != "Your Library" || headers[1] != "Apple Music" {
+	// 머리글에는 그 구역이 몇 개인지도 적힌다.
+	if len(headers) != 2 ||
+		!strings.HasPrefix(headers[0], "Your Library · ") ||
+		!strings.HasPrefix(headers[1], "Apple Music · ") {
 		t.Fatalf("구역 머리글: %v", headers)
 	}
 	// 내 것이 먼저, 바깥이 나중이어야 한다.
-	if rows[0].header != "Your Library" {
+	if !strings.HasPrefix(rows[0].header, "Your Library") {
 		t.Error("내 라이브러리가 위에 있어야 한다")
 	}
 	if rows[len(rows)-1].catalog == nil {
@@ -243,3 +249,123 @@ func TestCatalogSearchWaitsForTypingToStop(t *testing.T) {
 		t.Error("같은 검색어로 또 나갔다")
 	}
 }
+
+// ── 두 구역의 자리 배분 ──────────────────────────────────────────────
+
+func searching(t *testing.T, q string, hits int) Model {
+	t.Helper()
+	m := New()
+	m.synced, m.bodyH = true, 26
+	m.cat = &applemusic.Client{DevToken: "x"}
+	mm := m.Filter(q).(Model)
+	mm.catTerm = q
+	for i := 0; i < hits; i++ {
+		mm.catHits = append(mm.catHits, api.CatalogTrack{
+			Title: fmt.Sprintf("Catalog %d", i), ArtistName: "Someone"})
+	}
+	return mm
+}
+
+// 이것이 이 변경의 이유다. 라이브러리에 많이 걸려도 Apple Music 은 화면 안에.
+//
+// 전에는 두 구역이 한 줄로 이어져 있어서 `a` 한 글자에 193곡이 걸리면
+// Apple Music 머리글이 194번째 줄이었다. 결과는 오는데 아무도 못 봤다.
+func TestAppleMusicStaysOnScreen(t *testing.T) {
+	for _, q := range []string{"a", "e", "live", "the"} {
+		m := searching(t, q, 25)
+		mine := len(data.Lib().Search(q))
+		if mine < 10 {
+			continue // 접힐 일이 없는 검색어
+		}
+		out := ansiOff(m.View(78, 26))
+		if !strings.Contains(out, "Apple Music · 25") {
+			t.Errorf("%q — 라이브러리 %d곡에 밀려 Apple Music 이 화면 밖이다", q, mine)
+		}
+		if !strings.Contains(out, "Catalog 0") {
+			t.Errorf("%q — Apple Music 결과가 한 줄도 안 보인다", q)
+		}
+	}
+}
+
+// 넘치는 만큼은 한 줄로 접고, 그 줄에서 enter 면 펼친다.
+func TestMineFoldsAndExpands(t *testing.T) {
+	m := searching(t, "live", 25)
+	mine := len(data.Lib().Search("live"))
+	if mine <= m.mineCap() {
+		t.Skip("접힐 만큼 안 걸린다")
+	}
+
+	rows := m.rows()
+	var more int
+	for _, r := range rows {
+		if r.isMore() {
+			more = r.more
+		}
+	}
+	if more != mine-m.mineCap() {
+		t.Fatalf("접힌 수가 %d — %d여야 한다", more, mine-m.mineCap())
+	}
+
+	// 접힌 줄에서 enter.
+	for i, r := range rows {
+		if r.isMore() {
+			m.listIdx = i
+		}
+	}
+	next, _ := m.playSelected()
+	opened := next.(Model)
+	if !opened.searchAll {
+		t.Fatal("enter 를 눌렀는데 안 펼쳐졌다")
+	}
+	if n := len(opened.rows()); n <= len(rows) {
+		t.Error("펼쳤는데 줄이 안 늘었다")
+	}
+	for _, r := range opened.rows() {
+		if r.isMore() {
+			t.Error("펼쳤는데 접힌 줄이 남아 있다")
+		}
+	}
+
+	// 검색어를 바꾸면 다시 접힌다.
+	if again := opened.Filter("oasis").(Model); again.searchAll {
+		t.Error("새 검색어인데 펼친 채로 남았다")
+	}
+}
+
+// 접힌 줄은 건너뛴다. ↓ 로 내려가면 그 다음이 바로 Apple Music 이다.
+func TestFoldedRowsAreSkipped(t *testing.T) {
+	m := searching(t, "live", 25)
+	rows := m.rows()
+	for i, r := range rows {
+		if !r.isMore() {
+			continue
+		}
+		if i+1 >= len(rows) || !strings.HasPrefix(rows[i+1].header, "Apple Music") {
+			t.Error("접힌 줄 다음이 Apple Music 머리글이 아니다")
+		}
+		return
+	}
+	t.Skip("접힐 만큼 안 걸린다")
+}
+
+// 카탈로그가 꺼져 있으면 검색 중에 그 말을 한다. 조용히 라이브러리만
+// 걸러 놓으면 왜 그런지 알 방법이 없다.
+func TestSaysWhenCatalogIsOff(t *testing.T) {
+	m := New()
+	m.synced, m.bodyH = true, 26
+	m = m.Filter("oasis").(Model) // cat 은 nil 그대로
+	out := ansiOff(m.View(78, 26))
+	if !strings.Contains(out, "Apple Music search is off") {
+		t.Error("카탈로그가 꺼져 있는데 아무 말도 안 한다")
+	}
+	// 검색 중이 아닐 때는 말하지 않는다. 안 쓸 기능의 실패를 읽게 할 이유가 없다.
+	idle := New()
+	idle.synced, idle.bodyH = true, 26
+	if strings.Contains(ansiOff(idle.View(78, 26)), "Apple Music search is off") {
+		t.Error("검색 중도 아닌데 설정 이야기를 한다")
+	}
+}
+
+var reAnsiOff = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func ansiOff(s string) string { return reAnsiOff.ReplaceAllString(s, "") }
