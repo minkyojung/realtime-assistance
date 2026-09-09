@@ -59,10 +59,11 @@ const wordmarkSplit = 5
 // 가장 긴 줄. 이만큼도 못 그리는 폭이면 이름을 글자로 적는다.
 const wordmarkWidth = 38
 
-// renderWordmarkOutline 은 블록 글자에 외곽선을 둘러 도장처럼 보이게 한다.
-// 외곽선은 글자가 아니면서 바로 위나 아래 칸에 글자가 있는 칸이다.
-// 위아래만 보는 이유는 좌우까지 보면 글자 사이 좁은 틈(예: M 가운데)이
-// 양쪽에서 메워져 글자가 얼룩으로 뭉개지기 때문이다.
+// renderWordmarkOutline 은 블록 글자 바깥 윤곽을 한 칸 두께로 둘러
+// 도장처럼 보이게 한다. 외곽선은 글자가 아니면서 상하좌우 네 칸 중
+// 하나라도 글자에 붙어 있는 칸이다 — 글자 사이 틈이 한 칸뿐이면
+// 양쪽에서 외곽선이 붙어 틈이 메워질 수 있지만, 윤곽선이 사방에
+// 안 둘리는 것보다는 낫다.
 //
 // fg 는 줄마다 다른 색을 줄 수 있다 — len(fg) 가 len(lines) 보다 짧으면
 // 마지막 색을 반복해 쓴다.
@@ -76,11 +77,11 @@ func renderWordmarkOutline(lines []string, fg []lipgloss.Style, outline lipgloss
 		}
 	}
 
-	at := func(y, x int) rune {
-		if y >= 0 && y < len(lines) && x >= 0 && x < len(grid[y]) {
-			return grid[y][x]
+	filled := func(y, x int) bool {
+		if y < 0 || y >= len(lines) || x < 0 || x >= len(grid[y]) {
+			return false
 		}
-		return 0
+		return grid[y][x] != ' '
 	}
 
 	out := make([]string, len(lines))
@@ -110,9 +111,9 @@ func renderWordmarkOutline(lines []string, fg []lipgloss.Style, outline lipgloss
 		for x := 0; x < width; x++ {
 			var want *lipgloss.Style
 			ch := ' '
-			if r := at(y, x); r != ' ' && r != 0 {
-				want, ch = fgStyle, r
-			} else if at(y-1, x) != ' ' && at(y-1, x) != 0 || at(y+1, x) != ' ' && at(y+1, x) != 0 {
+			if filled(y, x) {
+				want, ch = fgStyle, grid[y][x]
+			} else if filled(y-1, x) || filled(y+1, x) || filled(y, x-1) || filled(y, x+1) {
 				want, ch = &outline, '█'
 			}
 			if want != nil && runStyle != nil && want != runStyle {
