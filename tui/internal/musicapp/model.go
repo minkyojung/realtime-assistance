@@ -326,7 +326,6 @@ func (m Model) listHeight(h int) int {
 
 // View 는 본문을 그린다. 크기는 호스트가 알려주므로 기억하지 않는다.
 func (m Model) View(w, h int) string {
-	listW := w - sidebarWidth - 1
 	listH := m.listHeight(h)
 
 	var b strings.Builder
@@ -336,10 +335,7 @@ func (m Model) View(w, h int) string {
 	b.WriteString(style.RuleBrand(w))
 	b.WriteString("\n")
 
-	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top,
-		m.viewSidebar(listH),
-		style.RuleStyle.Render(strings.Repeat("│\n", listH)),
-		m.viewList(listW, listH)))
+	b.WriteString(m.viewList(w, listH))
 	b.WriteString("\n")
 	b.WriteString(style.Rule(w))
 

@@ -10,17 +10,12 @@ import (
 // 화면이 6개로 늘어나도 이 뼈대는 바뀌지 않는다.
 // 헤더 · 본문 · 입력창 · 상태줄 중 본문만 갈아끼운다. docs/03 6절.
 
-const MaxContentWidth = 84
-
+// 폭 상한을 두지 않는다.
+//
+// 산문이라면 긴 줄이 읽기 어렵지만 이 화면의 본문은 표다. 표는 넓을수록
+// 좋다. 상한을 두면 창을 넓혀도 정보가 아니라 여백만 늘어난다.
 func ContentWidth(termWidth int) int {
-	w := termWidth - 2
-	if w > MaxContentWidth {
-		w = MaxContentWidth
-	}
-	if w < 30 {
-		w = 30
-	}
-	return w
+	return Max(termWidth-2, 30)
 }
 
 // Row 는 왼쪽과 오른쪽을 폭 안에서 양끝으로 벌린다.

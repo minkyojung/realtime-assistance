@@ -109,30 +109,30 @@ func (m Model) viewReason(w int) (string, bool) {
 }
 
 // Status 는 상태줄에 들어갈 한 줄이다. 배경에 있어도 호출된다.
+//
+// 사이드바를 없앴으므로 **"지금 어디인지"를 말해줄 곳이 여기밖에 없다.**
+// 갈 수 있는 곳은 `/` 가 보여주므로 여기서는 말하지 않는다.
 func (m Model) Status() string {
-	left := style.Faint.Render("no queue yet")
-	if n := len(m.queue); n > 0 {
-		total, never := 0, 0
-		for _, it := range m.queue {
-			total += it.Track.DurationMs
-			if it.Track.LastPlayedAt == nil {
-				never++
-			}
-		}
-		label := fmt.Sprintf("%d tracks · %d min", n, total/60000)
-		if m.queueTitle != "" {
-			label = style.Truncate(m.queueTitle, 42) + style.Faint.Render("  ·  ") + label
-		}
-		left = style.Dim.Render(label) +
-			style.Faint.Render(fmt.Sprintf(" · %d never played", never))
+	where := m.sections[m.sectionIdx].label
+	if m.searching() {
+		where = "Search"
+	}
+	left := style.Dim.Render(where) +
+		style.Faint.Render(fmt.Sprintf(" · %d", m.rowCount()))
+
+	if n := len(m.queue); n > 0 && m.sections[m.sectionIdx].kind != secQueue {
+		left += style.Faint.Render(fmt.Sprintf("   queue %d", n))
+	}
+	if m.queueTitle != "" && m.sections[m.sectionIdx].kind == secQueue {
+		left += style.Faint.Render("   " + style.Truncate(m.queueTitle, 40))
 	}
 
 	u := m.usage
-	if u.PromptTokens == 0 && u.CompletionTokens == 0 {
-		return style.Faint.Render(left)
+	if u.PromptTokens > 0 || u.CompletionTokens > 0 {
+		left += style.Faint.Render(fmt.Sprintf("   ↑%s ↓%s  $%.4f",
+			style.Tokens(u.PromptTokens), style.Tokens(u.CompletionTokens), u.CostUsd))
 	}
-	return left + "   " + style.Faint.Render(fmt.Sprintf("↑%s ↓%s  $%.4f",
-		style.Tokens(u.PromptTokens), style.Tokens(u.CompletionTokens), u.CostUsd))
+	return left
 }
 
 func (m Model) nowPlaying() (api.Track, bool) {

@@ -2,6 +2,7 @@ package host
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -38,11 +39,9 @@ func TestViewShowsLibraryAndPlayer(t *testing.T) {
 	out := m.View().Content
 
 	for _, want := range []string{
-		"LIBRARY",   // 사이드바
-		"Songs",     // 라이브러리 섹션
-		"PLAYLISTS", // 플레이리스트 섹션
-		"Perth",     // 재생 바의 현재 곡
-		"Bon Iver",
+		"Recently Added", // 상태줄이 지금 어디인지 말한다
+		"Please Wait for Me",
+		"Busker Busker",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("화면에 %q 가 없다", want)
@@ -62,6 +61,11 @@ func TestTabSwitchesSection(t *testing.T) {
 		t.Error("tab 을 눌렀는데 목록이 그대로다")
 	}
 }
+
+// plain 은 색 코드를 벗긴다. 스타일이 낀 문자열은 그대로 비교할 수 없다.
+var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func plain(s string) string { return ansi.ReplaceAllString(s, "") }
 
 func typeText(m tea.Model, s string) tea.Model {
 	for _, r := range s {
@@ -96,7 +100,7 @@ func TestSearchModeFiltersList(t *testing.T) {
 	m = typeText(m, "oasis")
 
 	out := m.View().Content
-	if !strings.Contains(out, "⌕ Search") {
+	if !strings.Contains(out, "⌕") || !strings.Contains(out, "Search") {
 		t.Error("검색 중이라는 표시가 없다")
 	}
 	// 재생 바에 뜨는 곡은 목록과 무관하게 남으므로, 재생 중이 아닌 곡으로 확인한다.
@@ -184,11 +188,11 @@ func TestPromptToQueue(t *testing.T) {
 		Usage: api.Usage{PromptTokens: 10000, CompletionTokens: 500, CostUsd: 0.0074},
 	}, nil))
 
-	out := m.View().Content
+	out := plain(m.View().Content)
 	for _, want := range []string{
 		"never played since you added it", // 근거가 뜬다
 		"quiet set",                       // 큐 제목이 상태줄에
-		"2 tracks",                        // 큐 요약
+		"Queue · 2",                       // 상태줄이 큐로 옮겨간 것을 보여준다
 		"$0.0074",                         // 사용량
 	} {
 		if !strings.Contains(out, want) {
@@ -211,7 +215,7 @@ func TestQueueFailureShowsBadge(t *testing.T) {
 	if !strings.Contains(out, "FAILED") || !strings.Contains(out, "model unavailable") {
 		t.Error("실패 사유가 화면에 없다")
 	}
-	if !strings.Contains(out, "LIBRARY") {
-		t.Error("실패했다고 화면이 사라지면 안 된다")
+	if !strings.Contains(out, "Please Wait for Me") {
+		t.Error("실패했다고 목록이 사라지면 안 된다")
 	}
 }
