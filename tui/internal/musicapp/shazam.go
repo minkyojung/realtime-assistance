@@ -23,12 +23,27 @@ import (
 // 라이브러리에 있는데 한 번도 안 들은 곡이면, 그 사실을 로그에 적는다.
 
 type (
+	shazamReadyMsg   struct{ ok bool }
 	shazamStartedMsg struct{}
 	shazamMsg        struct {
 		res shazam.Result
 		err error
 	}
 )
+
+// cmdShazamInit — 헬퍼가 옆에 있는지 한 번만 본다.
+//
+// Cmd 로 미루는 이유는 cmdCatalogInit 과 같다 — New() 가 파일 시스템을
+// 읽으면 골든 화면이 개발자 기계에 종속된다.
+//
+// 헬퍼는 배포물에 안 들어간다. ShazamKit 은 제한 엔타이틀먼트라
+// 프로비저닝 프로파일이 있어야 서명되는데, 그 관문을 배포 경로에
+// 끼워 넣지 않기로 했다(helper/README.md). 그래서 배포판에서는 이 답이
+// 언제나 false 이고, `/shazam` 은 아예 나타나지 않는다.
+func cmdShazamInit() tea.Msg {
+	_, err := shazam.HelperPath()
+	return shazamReadyMsg{ok: err == nil}
+}
 
 func cmdShazam() tea.Msg {
 	res, err := shazam.Listen(context.Background())
@@ -56,6 +71,10 @@ var errListening = errors.New("Already listening")
 // applyShazam — 인식 관련 메시지를 한자리에서 처리한다 (applyCatalog 와 같은 꼴).
 func (m Model) applyShazam(msg tea.Msg) (app.App, tea.Cmd, bool) {
 	switch msg := msg.(type) {
+	case shazamReadyMsg:
+		m.shzOK = msg.ok
+		return m, nil, true
+
 	case shazamStartedMsg:
 		m.shzBusy = true
 		return m, nil, true

@@ -24,7 +24,7 @@ func (m Model) Commands() []app.Command {
 	// 라이브러리에 따라 액션이 통째로 밀려난다.
 	fixed, playlists := m.jumpCommands()
 	fixed = append(fixed, m.modeCommands()...)
-	return append(append(fixed, []app.Command{
+	actions := []app.Command{
 		{Name: "/save", Arg: "<name>", Help: "save the queue as an Apple Music playlist",
 			Run: m.saveCmd},
 		{Name: "/pause", Help: "play or pause — same as shift+↓",
@@ -37,9 +37,16 @@ func (m Model) Commands() []app.Command {
 			Run: m.reloadCmd},
 		{Name: "/login", Help: "connect your Apple Music account (opens a browser)",
 			Run: m.loginCmd},
-		{Name: "/shazam", Help: "listen for a few seconds and name what is playing",
-			Run: m.shazamCmd},
-	}...), playlists...)
+	}
+	// 헬퍼가 없으면 내지 않는다. 배포판이 그렇다 — 못 하는 일을 팔레트에
+	// 올려 두면 눌러 본 사람에게 빨간 줄로 답하게 된다.
+	if m.shzOK {
+		actions = append(actions, app.Command{
+			Name: "/shazam", Help: "listen for a few seconds and name what is playing",
+			Run: m.shazamCmd,
+		})
+	}
+	return append(append(fixed, actions...), playlists...)
 }
 
 // 액션 명령의 이름. 섹션 이름이 여기에 겹치지 않게 하는 데 쓴다.

@@ -108,6 +108,7 @@ type Model struct {
 	// shazam.go
 	shzHits []api.CatalogTrack
 	shzBusy bool
+	shzOK   bool // 헬퍼가 옆에 있는가. 없으면 /shazam 을 내지 않는다
 
 	// 앨범 커버. 곡이 바뀔 때만 다시 읽는다 — artwork.go
 	art    image.Image
@@ -165,7 +166,8 @@ func (m Model) Tagline() string { return "only what you own" }
 // 음악은 폴링이라 아직 쓰지 않지만, 계약이 그렇게 되어 있다.
 func (m Model) Init(send func(tea.Msg)) tea.Cmd {
 	// 캐시는 몇 ms, 실물은 몇 초다. 둘 다 띄우고 먼저 오는 것을 그린다.
-	return tea.Batch(m.spinner.Tick, fetchStatus, tick(), cmdLoadCache, cmdDumpLibrary(false), cmdCatalogInit)
+	return tea.Batch(m.spinner.Tick, fetchStatus, tick(), cmdLoadCache, cmdDumpLibrary(false),
+		cmdCatalogInit, cmdShazamInit)
 }
 
 func (m Model) Ready() error { return m.playerErr }

@@ -136,3 +136,37 @@ func runCmd(cmd tea.Cmd) tea.Msg {
 	}
 	return msg
 }
+
+func hasCommand(m Model, name string) bool {
+	for _, c := range m.Commands() {
+		if c.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+// 헬퍼가 없으면 /shazam 이 팔레트에 없어야 한다. 배포판이 그 상태다 —
+// 못 하는 일을 올려 두면 눌러 본 사람이 빨간 줄을 받는다.
+func TestShazamHiddenWithoutHelper(t *testing.T) {
+	m := New()
+	if hasCommand(m, "/shazam") {
+		t.Error("헬퍼를 확인하기도 전에 /shazam 이 나왔다")
+	}
+
+	next, _, handled := m.applyShazam(shazamReadyMsg{ok: false})
+	if !handled {
+		t.Fatal("shazamReadyMsg 를 아무도 안 받았다")
+	}
+	if hasCommand(next.(Model), "/shazam") {
+		t.Error("헬퍼가 없는데 /shazam 이 나왔다")
+	}
+}
+
+// 있으면 그대로 나와야 한다. 개발 빌드의 동작은 바뀌지 않는다.
+func TestShazamAppearsWithHelper(t *testing.T) {
+	next, _, _ := New().applyShazam(shazamReadyMsg{ok: true})
+	if !hasCommand(next.(Model), "/shazam") {
+		t.Error("헬퍼가 있는데 /shazam 이 안 나왔다")
+	}
+}
