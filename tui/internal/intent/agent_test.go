@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"amcli/tui/internal/api"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 // Chat 은 값이다. 복사가 곧 스냅샷이라 걸음마다 들고 다닐 수 있고, 도중에
@@ -80,4 +81,19 @@ func itoa(n int64) string {
 		n /= 10
 	}
 	return string(b)
+}
+
+// 도구를 쥐여주는 호출은 추론을 꺼야 한다.
+//
+// 실기로 만난 400 이다:
+//
+//	Function tools with reasoning_effort are not supported for gpt-5.4-mini
+//	in /v1/chat/completions.
+//
+// 다른 층은 low 를 쓰므로 여기도 그래야 할 것처럼 보이고, 그래서 되돌리기
+// 쉽다. 되돌리면 모든 요청이 400 으로 죽는다.
+func TestToolCallsMustNotAskForReasoning(t *testing.T) {
+	if agentEffort != shared.ReasoningEffortNone {
+		t.Errorf("도구를 쓰는 층의 추론이 %q 다 — none 이어야 400 이 안 난다", agentEffort)
+	}
 }

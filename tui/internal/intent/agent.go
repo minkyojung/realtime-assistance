@@ -29,6 +29,19 @@ var errNoChoices = errors.New("the response had no choices")
 // 이 층은 고르기만 한다. 무거운 일은 도구 안에서 벌어지므로 작은 모델로 족하다.
 const agentModel = openai.ChatModelGPT5_4Mini
 
+// 추론을 끈다. **끄지 않으면 도구를 못 쓴다.**
+//
+//	Function tools with reasoning_effort are not supported for gpt-5.4-mini
+//	in /v1/chat/completions. (400, 실기 확인)
+//
+// 다른 층(선곡·라우터)은 구조화 출력만 쓰므로 low 로 둔다. 도구를 쥐여주는
+// 것은 여기뿐이고, 여기만 none 이어야 한다. 이 상수를 low 로 되돌리면
+// 모든 요청이 400 으로 죽는다.
+//
+// 잃는 것도 없다. 이 층이 하는 일은 "무엇을 부를까"를 고르는 분류이지
+// 따져 보는 일이 아니다.
+const agentEffort = shared.ReasoningEffortNone
+
 // EditModel 은 첫 화면이 무엇으로 고치는지 적을 때 쓴다. Model 의 짝이다.
 //
 // 이름이 "고치는 모델"인 것은 이 층이 큐를 고치는 말을 받아내던 시절의
@@ -124,7 +137,7 @@ func (c Chat) Step(ctx context.Context, tools []Tool) (Chat, Step, error) {
 	client := openai.NewClient()
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model:           agentModel,
-		ReasoningEffort: shared.ReasoningEffortLow,
+		ReasoningEffort: agentEffort,
 		Messages:        c.msgs,
 		Tools:           defs,
 	})
