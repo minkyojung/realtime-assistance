@@ -435,8 +435,10 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		case "down", "ctrl+n":
 			m.move(1)
 		case "tab":
-			// 다음 칸으로만 간다. 되돌아가는 shift+tab 은 호스트가
-			// 모드 전환에 쓴다. 먼 섹션에는 `/` 로 곧장 간다(command.go).
+			// 다음 칸으로만 간다. 먼 섹션에는 `/` 로 곧장 간다(command.go).
+			//
+			// 되돌아가는 shift+tab 은 지금 비어 있다. 호스트가 모드 전환에
+			// 쓰다가 ctrl+f 로 옮겼다 — 붙이는 것은 따로 한다.
 			m.sectionIdx = (m.sectionIdx + 1) % len(m.sections)
 			m.drill = nil
 			m.listIdx, m.listTop = 0, 0

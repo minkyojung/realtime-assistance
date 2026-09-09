@@ -20,7 +20,7 @@ func askHost(t *testing.T, hint string) tea.Model {
 	t.Helper()
 	m, _ := twoAppHost()
 	if state(t, m).mode != modePrompt {
-		m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
+		m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
 	}
 	return setHint(t, m, hint)
 }

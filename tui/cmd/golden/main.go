@@ -16,9 +16,20 @@ import (
 //
 // **아래 시나리오 목록은 internal/host/golden_test.go 와 같아야 한다.**
 // 실제 Music.app 상태에 의존하지 않도록 폴링 결과는 넣지 않는다.
+// 골든은 AI 가 **켜진** 화면이다.
+//
+// 시작 모드가 키 유무로 갈린다(host.New). 키체인을 보는 값이라 기계마다
+// 다르고, 그러면 "기계와 무관해야 한다"는 이 파일의 전제가 깨진다 — 키를
+// 가진 사람과 아닌 사람이 서로 다른 골든을 떠 왔다.
+//
+// 환경 변수가 키체인보다 먼저다(secrets.OpenAIKey). 가짜를 하나 심어 켜진
+// 쪽으로 고정한다. 그리기만 하므로 이 값으로 어디에도 붙지 않는다.
+func fixKeyState() { os.Setenv("OPENAI_API_KEY", "golden-fixture") }
+
 func main() {
 	// 골든은 기계·시각과 무관해야 한다. 픽스처를 고정으로 심는다.
 	data.Set(fixture.Lib())
+	fixKeyState()
 
 	var b strings.Builder
 	for _, c := range []struct {

@@ -19,7 +19,7 @@ import (
 // 입력창은 하나지만 하는 일이 둘이다. 무엇을 하는 중인지 화면이 말해야 한다.
 //
 //	기본       Ask AI — 자연어 요청. 목록을 건드리지 않는다
-//	shift+tab  Search — 지금 보고 있는 것을 즉시 거른다 (ctrl+f 로도 들어간다)
+//	ctrl+f     Search — 지금 보고 있는 것을 즉시 거른다. 같은 키로 돌아온다
 //	/          Ask AI 에 `/` 로 시작하면 명령 — 로컬에서 바로 실행
 //
 // 모드는 화면을 바꾸지 않고 "친 글자의 뜻"을 바꾼다. 그래서 안 보이면
@@ -159,7 +159,9 @@ const (
 // 같은 이유다 — 상태를 미리 적어 두면 언젠가 갱신을 빠뜨린다.
 func (m Model) placeholder() string {
 	if m.mode == modeSearch {
-		return "Filter what you are looking at"
+		// 나가는 길을 여기서 말한다. 들어올 때만 알려주면, 검색을 켜 놓고
+		// 왜 물어봐도 답이 없는지 모르는 자리가 생긴다.
+		return "Filter what you are looking at    ctrl+f  back to Ask"
 	}
 	// 왼쪽은 **지금 이 줄에서만 참인 것**, 오른쪽은 언제나 참인 길이다.
 	//
@@ -171,7 +173,7 @@ func (m Model) placeholder() string {
 			head = h
 		}
 	}
-	tail := "/  commands     ?  help"
+	tail := "ctrl+f  search    /  commands"
 
 	// 키가 없다고 모드를 없애지도, 기본값을 바꾸지도 않는다. Search 로
 	// 시작하면 AI 가 있다는 것 자체를 모르고 지나간다.
@@ -183,7 +185,7 @@ func (m Model) placeholder() string {
 		if head == "Ask for anything" {
 			head = "AI is off" // 물어봐도 답이 없다. 그 자리에서 거짓말하지 않는다
 		}
-		tail = "/ai <key>  to turn AI on"
+		tail = "ctrl+f  search    /ai <key>  turn AI on"
 	}
 	return head + "    " + tail
 }
@@ -457,18 +459,17 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		return true, m, nil
 
 	case "ctrl+f":
-		(&m).setMode(modeSearch)
-		return true, m, nil
-
-	case "shift+tab":
 		// 모드를 바꾼다. 둘뿐이므로 한 키로 왕복한다.
 		//
-		// 앱에게 넘기지 않는다 — 앱의 tab(다음 섹션)에는 짝이 없어졌고,
-		// 먼 섹션에는 `/` 로 곧장 간다.
-		if m.home {
-			m.notice = "Modes work inside the app"
-			return true, m, nil
-		}
+		// 한때 들어가는 키(ctrl+f)와 왕복하는 키(shift+tab)가 따로 있었다.
+		// ctrl+f 는 shift+tab 이 하는 일의 절반이었고, Search 에서 누르면
+		// 아무 일도 안 일어났다 — 이미 거기였기 때문이다.
+		//
+		// **남긴 쪽이 ctrl+f 인 이유는 shift+tab 이 남의 짝이기 때문이다.**
+		// tab 과 shift+tab 은 어디서나 한 쌍인데, 여기서는 tab 이 섹션을
+		// 넘기고(musicapp) shift+tab 은 상관없는 일을 했다. 찾기라는 뜻이
+		// 박힌 키를 쓰면 아무 짝도 뺏지 않는다.
+		// 홈은 여기까지 오지 않는다. 위 관문이 먼저 삼킨다.
 		if m.mode == modeSearch {
 			(&m).setMode(modePrompt)
 		} else {

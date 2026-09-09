@@ -8,22 +8,25 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-var shiftTab = tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}
+var ctrlF = tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl}
 
-// shift+tab 은 두 모드를 왕복한다. 한 키로 들어가고 나온다.
-func TestShiftTabTogglesMode(t *testing.T) {
+// ctrl+f 는 두 모드를 왕복한다. 한 키로 들어가고 나온다.
+//
+// 한때 들어가는 키와 나오는 키가 따로였다. ctrl+f 로는 나올 수 없어서,
+// 검색 중에 누르면 아무 일도 안 일어나는 자리가 있었다.
+func TestCtrlFTogglesMode(t *testing.T) {
 	hm := New(musicapp.New())
 	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 
-	m, _ = m.Update(shiftTab)
+	m, _ = m.Update(ctrlF)
 	m = typeText(m, "oasis")
 	if out := m.View().Content; strings.Contains(out, "Peanut butter Sandwich") {
-		t.Error("shift+tab 을 눌러 검색어를 쳤는데 목록이 걸러지지 않았다")
+		t.Error("ctrl+f 를 눌러 검색어를 쳤는데 목록이 걸러지지 않았다")
 	}
 
-	m, _ = m.Update(shiftTab)
+	m, _ = m.Update(ctrlF)
 	out := m.View().Content
 	if strings.Contains(out, "oasis") {
 		t.Error("모드를 나왔는데 검색어가 입력창에 남아 있다")
@@ -43,7 +46,7 @@ func TestPromptSaysMode(t *testing.T) {
 	if out := m.View().Content; !strings.Contains(out, "Ask AI") {
 		t.Error("입력창 앞에 Ask AI 가 없다")
 	}
-	m, _ = m.Update(shiftTab)
+	m, _ = m.Update(ctrlF)
 	out := m.View().Content
 	if !strings.Contains(out, "Search") {
 		t.Error("검색 모드인데 입력창 앞이 Search 가 아니다")
@@ -64,7 +67,7 @@ func TestInputBorderFollowsMode(t *testing.T) {
 	if !strings.Contains(ask, "╭") || !strings.Contains(ask, "╰") {
 		t.Fatal("입력창에 테두리가 없다")
 	}
-	m, _ = m.Update(shiftTab)
+	m, _ = m.Update(ctrlF)
 	if search := m.View().Content; borderLine(ask) == borderLine(search) {
 		t.Error("모드를 바꿨는데 테두리 색이 그대로다")
 	}
@@ -81,17 +84,17 @@ func borderLine(view string) string {
 }
 
 // 모드는 앱 안에서만 뜻이 있다. 홈은 그 키를 삼킨다.
-func TestShiftTabOnHomeDoesNothing(t *testing.T) {
+func TestModeKeyOnHomeDoesNothing(t *testing.T) {
 	hm := New(musicapp.New())
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	before := m.View().Content
 
-	m, _ = m.Update(shiftTab)
+	m, _ = m.Update(ctrlF)
 	if state(t, m).mode == modeSearch {
 		t.Error("홈인데 검색 모드로 들어갔다")
 	}
 	if m.View().Content != before {
-		t.Error("홈에서 shift+tab 에 화면이 달라졌다")
+		t.Error("홈에서 ctrl+f 에 화면이 달라졌다")
 	}
 }
