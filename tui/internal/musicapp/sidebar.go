@@ -57,14 +57,7 @@ func (m Model) viewSidebar(height int) string {
 
 	// 검색·명령·도움말 중에는 사이드바 맨 위에 임시 항목이 뜬다.
 	// 목록에 왜 다른 것이 보이는지가 여기서 설명된다.
-	switch {
-	case m.showHelp:
-		write(style.Brand.Render("▌") + style.BrandBold.Render(" ? Help"))
-		write("")
-	case m.commanding():
-		write(style.Brand.Render("▌") + style.BrandBold.Render(" / Commands"))
-		write("")
-	case m.mode == modeSearch:
+	if m.searching() {
 		write(style.Brand.Render("▌") + style.BrandBold.Render(" ⌕ Search"))
 		write("")
 	}
@@ -81,7 +74,7 @@ func (m Model) viewSidebar(height int) string {
 
 		label := style.Truncate(s.label, sidebarWidth-2)
 		// 다른 것을 보고 있을 때는 섹션 선택 표시를 죽인다.
-		if i == m.sectionIdx && !m.overlaying() {
+		if i == m.sectionIdx && !m.searching() {
 			write(style.Brand.Render("▌") + style.BrandBold.Render(" "+label))
 		} else {
 			write("  " + style.Faint.Render(label))

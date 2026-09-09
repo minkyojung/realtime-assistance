@@ -1,4 +1,4 @@
-package musicapp
+package host
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 	"amcli/tui/internal/data"
 	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
+	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -17,7 +18,8 @@ import (
 // 어느 줄도 화면 폭을 넘지 않는지 자동으로 확인한다.
 func TestViewFitsWidth(t *testing.T) {
 	for _, w := range []int{70, 80, 96, 120, 200} {
-		var m tea.Model = New()
+		hm := New(musicapp.New())
+		var m tea.Model = &hm
 		m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 32})
 
 		for i, line := range strings.Split(m.View().Content, "\n") {
@@ -30,7 +32,8 @@ func TestViewFitsWidth(t *testing.T) {
 
 // 기본 화면에 라이브러리와 재생 바가 실제로 그려지는지.
 func TestViewShowsLibraryAndPlayer(t *testing.T) {
-	var m tea.Model = New()
+	hm := New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	out := m.View().Content
 
@@ -49,7 +52,8 @@ func TestViewShowsLibraryAndPlayer(t *testing.T) {
 
 // tab 으로 섹션을 옮기면 목록이 실제로 바뀌는지.
 func TestTabSwitchesSection(t *testing.T) {
-	var m tea.Model = New()
+	hm := New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	first := m.View().Content
 
@@ -69,7 +73,8 @@ func typeText(m tea.Model, s string) tea.Model {
 // 입력창은 늘 활성이어야 한다. 이게 깨지면 아무것도 칠 수 없다.
 // 그리고 프롬프트 모드에서는 목록을 건드리지 않아야 한다.
 func TestPromptDoesNotFilterList(t *testing.T) {
-	var m tea.Model = New()
+	hm := New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	m = typeText(m, "something quiet")
 
@@ -84,7 +89,8 @@ func TestPromptDoesNotFilterList(t *testing.T) {
 
 // ctrl+f 로 들어간 검색 모드에서만 목록이 걸러져야 한다.
 func TestSearchModeFiltersList(t *testing.T) {
-	var m tea.Model = New()
+	hm := New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
 	m = typeText(m, "oasis")
@@ -104,17 +110,18 @@ func TestSearchModeFiltersList(t *testing.T) {
 
 // Music.app 폴링 결과가 화면에 반영되는지.
 func TestStatusUpdatesPlayer(t *testing.T) {
-	var m tea.Model = New()
+	hm := New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 
 	// library.json 에 실재하는 곡의 persistent ID 로 상태를 흘려보낸다.
 	track := data.Lib().Tracks[0]
-	m, _ = m.Update(statusMsg{state: music.PlayerState{
+	m, _ = m.Update(musicapp.StatusMsgFor(music.PlayerState{
 		Playing:      true,
 		PersistentID: *track.PersistentId,
 		PositionMs:   30_000,
 		DurationMs:   track.DurationMs,
-	}})
+	}, nil))
 
 	out := m.View().Content
 	if !strings.Contains(out, track.Title) {
@@ -136,9 +143,10 @@ func TestFirstRunGates(t *testing.T) {
 		{music.ErrNotRunning, "MUSIC APP", "open -a Music"},
 	}
 	for _, c := range cases {
-		var m tea.Model = New()
+		hm := New(musicapp.New())
+		var m tea.Model = &hm
 		m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
-		m, _ = m.Update(statusMsg{err: c.err})
+		m, _ = m.Update(musicapp.StatusMsgFor(music.PlayerState{}, c.err))
 
 		out := m.View().Content
 		if !strings.Contains(out, c.badge) {
@@ -153,7 +161,8 @@ func TestFirstRunGates(t *testing.T) {
 // 프롬프트를 보내면 Thinking 이 뜨고, 결과가 오면 큐로 바뀌는지.
 // 실제 API 는 부르지 않는다 — queueMsg 를 직접 흘려보낸다.
 func TestPromptToQueue(t *testing.T) {
-	var m tea.Model = New()
+	hm := New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	m = typeText(m, "quiet")
 
@@ -166,14 +175,14 @@ func TestPromptToQueue(t *testing.T) {
 	}
 
 	l := data.Lib()
-	m, _ = m.Update(queueMsg{res: intent.Result{
+	m, _ = m.Update(musicapp.QueueMsgFor(intent.Result{
 		Title: "quiet set",
 		Picks: []intent.Pick{
 			{TrackID: l.Tracks[0].Id, Reason: "never played since you added it"},
 			{TrackID: l.Tracks[1].Id, Reason: "same record"},
 		},
 		Usage: api.Usage{PromptTokens: 10000, CompletionTokens: 500, CostUsd: 0.0074},
-	}})
+	}, nil))
 
 	out := m.View().Content
 	for _, want := range []string{
@@ -193,9 +202,10 @@ func TestPromptToQueue(t *testing.T) {
 
 // 요청이 실패해도 화면이 살아 있어야 한다.
 func TestQueueFailureShowsBadge(t *testing.T) {
-	var m tea.Model = New()
+	hm := New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
-	m, _ = m.Update(queueMsg{err: errors.New("model unavailable")})
+	m, _ = m.Update(musicapp.QueueMsgFor(intent.Result{}, errors.New("model unavailable")))
 
 	out := m.View().Content
 	if !strings.Contains(out, "FAILED") || !strings.Contains(out, "model unavailable") {

@@ -17,30 +17,13 @@ import (
 type listRow struct {
 	track *api.Track
 	group *data.Group
-	cmd   *command
-	help  int // helpRows 인덱스 + 1. 0 이면 도움말 행이 아니다
 }
 
 func (m Model) rows() []listRow {
 	l := data.Lib()
 
-	if m.showHelp {
-		out := make([]listRow, len(helpRows))
-		for i := range helpRows {
-			out[i] = listRow{help: i + 1}
-		}
-		return out
-	}
-	if m.commanding() {
-		cs := m.matchedCommands()
-		out := make([]listRow, len(cs))
-		for i := range cs {
-			out[i] = listRow{cmd: &cs[i]}
-		}
-		return out
-	}
 	if m.searching() {
-		return trackRows(l.Search(m.input.Value()))
+		return trackRows(l.Search(m.filter))
 	}
 
 	s := m.sections[m.sectionIdx]
@@ -88,14 +71,8 @@ func (m Model) viewList(w, h int) string {
 	rows := m.rows()
 	if len(rows) == 0 {
 		msg := "Nothing here yet"
-		if m.commanding() {
-			msg = "No such command"
-		}
-		if m.mode == modeSearch {
+		if m.searching() {
 			msg = "No matches"
-			if strings.TrimSpace(m.input.Value()) == "" {
-				msg = "Type to search your library"
-			}
 		}
 		return lipgloss.NewStyle().Width(w).Height(h).Render(style.Faint.Render(msg))
 	}
@@ -127,12 +104,6 @@ func (m Model) viewList(w, h int) string {
 }
 
 func (m Model) renderRow(r listRow, selected bool, w int) string {
-	if r.help > 0 {
-		return m.renderHelpRow(r.help-1, w)
-	}
-	if r.cmd != nil {
-		return m.renderCommand(*r.cmd, selected, w)
-	}
 	// 선택 표시는 왼쪽 레일이다. 배경을 채우면 채워진 빨강 = 오류 규칙과 부딪힌다.
 	rail := "  "
 	if selected {

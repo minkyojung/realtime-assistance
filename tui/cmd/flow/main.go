@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"amcli/tui/internal/host"
 	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
@@ -16,7 +17,8 @@ func main() {
 		prompt = strings.Join(os.Args[1:], " ")
 	}
 
-	var m tea.Model = musicapp.New()
+	hm := host.New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 100, Height: 28})
 	m, _ = m.Update(musicapp.ProbeStatus())
 

@@ -1,19 +1,24 @@
-// Apple Music CLI — 터미널 클라이언트
+// Apple Music CLI — 터미널 안의 앱 하나.
 //
-// 지금은 화면만 있다. 서버·Music.app 연동 없이 더미 데이터로 렌더한다.
-// 목적은 산출물 ①(PDF)에 넣을 와이어프레임 캡처를 뽑는 것이다.
+// 호스트가 껍데기를 갖고, 앱이 본문을 그린다. docs/07-호스트-계약.md
 package main
 
 import (
 	"fmt"
 	"os"
 
+	"amcli/tui/internal/host"
 	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
 
 func main() {
-	if _, err := tea.NewProgram(musicapp.New()).Run(); err != nil {
+	m := host.New(musicapp.New())
+	p := tea.NewProgram(&m)
+	// 앱이 이벤트 루프 밖에서 메시지를 넣을 통로를 준다.
+	m.SetSend(func(msg tea.Msg) { p.Send(msg) })
+
+	if _, err := p.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "실행 실패:", err)
 		os.Exit(1)
 	}

@@ -1,4 +1,4 @@
-package musicapp
+package host
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -31,7 +32,8 @@ func renderAll() string {
 		{"help", "?"},
 		{"prompt", "something quiet"},
 	} {
-		var m tea.Model = New()
+		hm := New(musicapp.New())
+		var m tea.Model = &hm
 		m, _ = m.Update(tea.WindowSizeMsg{Width: 100, Height: 28})
 		for _, r := range c.keys {
 			if r == '\x06' {

@@ -1,106 +1,54 @@
 package musicapp
 
 import (
-	"amcli/tui/internal/style"
-	"fmt"
-	"strings"
-
+	"amcli/tui/internal/api"
+	"amcli/tui/internal/app"
 	"amcli/tui/internal/data"
 	tea "charm.land/bubbletea/v2"
 )
 
-// 슬래시 명령.
+// 이 앱이 등록하는 슬래시 명령.
 //
-// `/` 를 치면 목록 패널이 명령 목록으로 바뀐다. 검색과 같은 방식이라
-// 화면이 늘어나지 않고, 무엇을 칠 수 있는지가 눈앞에 보인다.
+// 앱은 자기 키 바인딩을 만들지 않는다. 하고 싶은 것이 있으면 여기 등록한다.
+// 호스트가 전부 모아 하나의 팔레트로 보여준다 — docs/07-호스트-계약.md 3-1.
 //
-// **명령은 모델을 거치지 않는다.** 이것이 체감 속도를 지탱하는 장치다.
-
-type command struct {
-	name string
-	arg  string
-	help string
-}
-
-var commands = []command{
-	{"/queue", "", "jump to the current queue"},
-	{"/unplayed", "", "tracks you added but never played"},
-	{"/save", "<name>", "save the queue as an Apple Music playlist"},
-	{"/clear", "", "empty the queue"},
-	{"/cost", "", "what this session has spent"},
-	{"/help", "", "keys and commands"},
-}
-
-// commanding — 입력이 `/` 로 시작하면 명령 모드다. 별도 상태를 두지 않는다.
-func (m Model) commanding() bool {
-	return m.mode == modePrompt && strings.HasPrefix(m.input.Value(), "/")
-}
-
-// 입력한 것으로 시작하는 명령만 남긴다.
-func (m Model) matchedCommands() []command {
-	typed := strings.ToLower(strings.Fields(m.input.Value() + " ")[0])
-	out := make([]command, 0, len(commands))
-	for _, c := range commands {
-		if strings.HasPrefix(c.name, typed) {
-			out = append(out, c)
-		}
+// 명령이 모델을 거치지 않는 것이 체감 속도를 지탱한다.
+func (m Model) Commands() []app.Command {
+	return []app.Command{
+		{Name: "/queue", Help: "jump to the current queue",
+			Run: m.jumpCmd(secQueue)},
+		{Name: "/unplayed", Help: "tracks you added but never played",
+			Run: m.jumpCmd(secUnplayed)},
+		{Name: "/save", Arg: "<name>", Help: "save the queue as an Apple Music playlist",
+			Run: m.saveCmd},
+		{Name: "/clear", Help: "empty the queue",
+			Run: func(string) tea.Cmd { return send(clearQueueMsg{}) }},
 	}
-	return out
 }
 
-func (m Model) renderCommand(c command, selected bool, w int) string {
-	rail := "  "
-	if selected {
-		rail = style.Brand.Render("▌ ")
-	}
-	left := style.Body.Render(c.name)
-	if c.arg != "" {
-		left += style.Faint.Render(" " + c.arg)
-	}
-	return rail + style.Row(left, style.Faint.Render(c.help), w-2)
+// 명령의 결과는 메시지로 돌아온다. 그래야 Update 한 곳에서만 상태가 바뀐다.
+type (
+	clearQueueMsg struct{}
+	jumpMsg       struct{ kind sectionKind }
+)
+
+func send(msg tea.Msg) tea.Cmd { return func() tea.Msg { return msg } }
+
+func (m Model) jumpCmd(kind sectionKind) func(string) tea.Cmd {
+	return func(string) tea.Cmd { return send(jumpMsg{kind: kind}) }
 }
 
-// runCommand 는 명령을 실행한다. 모르는 명령은 조용히 무시하지 않고 말한다.
-func (m Model) runCommand(line string) (Model, tea.Cmd) {
-	fields := strings.Fields(line)
-	if len(fields) == 0 {
-		return m, nil
+func (m Model) saveCmd(arg string) tea.Cmd {
+	if arg == "" {
+		return send(errMsg{errNoName})
 	}
-	name, arg := fields[0], strings.TrimSpace(strings.TrimPrefix(line, fields[0]))
-
-	// 목록에서 골라 실행한 경우, 인자가 필요한 명령은 이름만 남겨 둔다.
-	m.input.Reset()
-	m.intentErr = nil
-
-	switch name {
-	case "/queue":
-		m.jumpTo(secQueue)
-	case "/unplayed":
-		m.jumpTo(secUnplayed)
-	case "/clear":
-		m.queue = nil
-		m.queueTitle, m.note = "", ""
-		m.jumpTo(secRecent)
-	case "/cost":
-		m.notice = m.costLine()
-	case "/help":
-		m.showHelp = true
-	case "/save":
-		if arg == "" {
-			m.input.SetValue("/save ")
-			m.input.CursorEnd()
-			return m, nil
-		}
-		if len(m.queue) == 0 {
-			m.intentErr = errNoQueue
-			return m, nil
-		}
-		return m, cmdSavePlaylist(arg, m.queueTracks())
-	default:
-		m.intentErr = fmt.Errorf("모르는 명령입니다: %s", name)
+	if len(m.queue) == 0 {
+		return send(errMsg{errNoQueue})
 	}
-	return m, nil
+	return cmdSavePlaylist(arg, m.queueTracks())
 }
+
+type errMsg struct{ err error }
 
 func (m *Model) jumpTo(kind sectionKind) {
 	for i, s := range m.sections {
@@ -112,34 +60,7 @@ func (m *Model) jumpTo(kind sectionKind) {
 	}
 }
 
-func (m Model) costLine() string {
-	u := m.usage
-	if u.PromptTokens == 0 && u.CompletionTokens == 0 {
-		return "No requests yet this session"
-	}
-	return fmt.Sprintf("%d in · %d out · $%.4f this session",
-		u.PromptTokens, u.CompletionTokens, u.CostUsd)
-}
-
-// 도움말은 목록 패널을 잠시 빌려 쓴다. 오버레이를 따로 만들지 않는다.
-var helpRows = []struct{ key, what string }{
-	{"type", "ask for a queue in your own words"},
-	{"enter", "send the request · play the selected track"},
-	{"/", "commands"},
-	{"ctrl+f", "search your library"},
-	{"↑ ↓", "move through the list"},
-	{"tab", "next section"},
-	{"shift+← →", "previous / next track"},
-	{"esc", "back out one step"},
-	{"ctrl+c", "quit"},
-}
-
-func (m Model) renderHelpRow(i int, w int) string {
-	r := helpRows[i]
-	return "  " + style.Row(style.BrandSoft.Render(r.key), style.Faint.Render(r.what), w-2)
-}
-
-// UnplayedTracks — 담아두고 한 번도 재생하지 않은 곡.
+// unplayedTracks — 담아두고 한 번도 재생하지 않은 곡.
 // 이 서비스가 말하려는 것이 목록 하나로 보이는 자리다.
 func unplayedTracks(l *data.Library) []listRow {
 	var out []listRow
@@ -151,3 +72,5 @@ func unplayedTracks(l *data.Library) []listRow {
 	}
 	return out
 }
+
+var _ = api.Track{}

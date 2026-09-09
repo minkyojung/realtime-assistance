@@ -107,3 +107,16 @@ func cmdSavePlaylist(name string, tracks []api.Track) tea.Cmd {
 		return savedMsg{name: name, err: music.CreatePlaylist(name, ids)}
 	}
 }
+
+// 아래 둘은 테스트에서 앱 안쪽 상태를 흘려보내기 위한 것이다.
+// 실제 API 나 Music.app 을 부르지 않고 화면을 확인할 수 있게 한다.
+
+// StatusMsgFor 는 Music.app 폴링 결과를 흉내 낸다.
+func StatusMsgFor(state music.PlayerState, err error) tea.Msg {
+	return statusMsg{state: state, err: err}
+}
+
+// QueueMsgFor 는 의도 층의 결과를 흉내 낸다.
+func QueueMsgFor(res intent.Result, err error) tea.Msg {
+	return queueMsg{res: res, err: err}
+}

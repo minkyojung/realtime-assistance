@@ -108,14 +108,11 @@ func (m Model) viewReason(w int) (string, bool) {
 	return style.Brand.Render("▸ ") + style.Dim.Render(style.Truncate(*it.Reason, w-2)), true
 }
 
-// 하단 상태줄 — 왼쪽은 큐 요약, 오른쪽은 누적 사용량.
-// 사용량을 상시 노출하는 것은 agentic CLI 의 관례이자,
-// 사용자가 AI 사용량을 스스로 통제할 수 있게 하는 장치다.
-func (m Model) viewStatus(w int) string {
+// Status 는 상태줄에 들어갈 한 줄이다. 배경에 있어도 호출된다.
+func (m Model) Status() string {
 	left := style.Faint.Render("no queue yet")
 	if n := len(m.queue); n > 0 {
-		total := 0
-		never := 0
+		total, never := 0, 0
 		for _, it := range m.queue {
 			total += it.Track.DurationMs
 			if it.Track.LastPlayedAt == nil {
@@ -124,7 +121,7 @@ func (m Model) viewStatus(w int) string {
 		}
 		label := fmt.Sprintf("%d tracks · %d min", n, total/60000)
 		if m.queueTitle != "" {
-			label = style.Truncate(m.queueTitle, w/2) + style.Faint.Render("  ·  ") + label
+			label = style.Truncate(m.queueTitle, 42) + style.Faint.Render("  ·  ") + label
 		}
 		left = style.Dim.Render(label) +
 			style.Faint.Render(fmt.Sprintf(" · %d never played", never))
@@ -132,16 +129,11 @@ func (m Model) viewStatus(w int) string {
 
 	u := m.usage
 	if u.PromptTokens == 0 && u.CompletionTokens == 0 {
-		return style.Faint.Render(style.Truncate(stripStyle(left), w))
+		return style.Faint.Render(left)
 	}
-	right := style.Faint.Render(fmt.Sprintf("↑%s ↓%s  $%.4f",
+	return left + "   " + style.Faint.Render(fmt.Sprintf("↑%s ↓%s  $%.4f",
 		style.Tokens(u.PromptTokens), style.Tokens(u.CompletionTokens), u.CostUsd))
-	return style.Row(left, right, w)
 }
-
-// 스타일이 섞인 문자열을 그대로 자르면 escape 가 깨진다.
-// 사용량이 없을 때는 왼쪽만 쓰므로 그대로 돌려준다.
-func stripStyle(s string) string { return s }
 
 func (m Model) nowPlaying() (api.Track, bool) {
 	it, ok := m.nowPlayingItem()

@@ -63,6 +63,17 @@ type App interface {
 	Commands() []Command
 }
 
+// ResizeMsg 는 호스트가 앱에게 **본문** 크기를 알려준다.
+//
+// View 가 크기를 받으므로 그리는 데는 필요 없다. 다만 스크롤 위치처럼
+// 키 입력 시점에 높이를 알아야 하는 계산이 있어서, 그 용도로만 쓴다.
+// 레이아웃의 근거는 언제나 View 의 인자다.
+type ResizeMsg struct{ Width, Height int }
+
+// AskMsg 는 호스트가 자연어 요청을 앱에게 넘길 때 쓴다.
+// 라우터가 이 앱을 지목했다는 뜻이다.
+type AskMsg struct{ Prompt string }
+
 // Command 는 슬래시 명령 하나다.
 type Command struct {
 	Name string // "/queue" — 앱 이름을 접두어로 붙이지 않는다

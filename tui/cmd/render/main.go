@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"amcli/tui/internal/host"
 	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
@@ -17,7 +18,8 @@ func main() {
 			w = n
 		}
 	}
-	var m tea.Model = musicapp.New()
+	hm := host.New(musicapp.New())
+	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: w, Height: 26})
 	// 실제 Music.app 상태를 한 번 읽어 반영한다.
 	if cmd := m.Init(); cmd != nil {
