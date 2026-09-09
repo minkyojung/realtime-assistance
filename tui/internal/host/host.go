@@ -102,7 +102,7 @@ func (m *Model) applyMode() {
 		m.input.Placeholder = "Search your library"
 	} else {
 		m.input.Prompt = "› "
-		m.input.Placeholder = "What do you want to hear?    /  commands     ?  help"
+		m.input.Placeholder = "Ask for anything    /  commands     ?  help"
 	}
 }
 
