@@ -21,6 +21,17 @@ const (
 	keychainAccount = "music-user-token"
 )
 
+// EmbeddedToken — 배포 빌드가 박아 넣는 개발자 토큰.
+//
+//	go build -ldflags "-X amcli/tui/internal/applemusic.EmbeddedToken=$TOKEN"
+//
+// p8 은 개인 키라 배포물에 넣을 수 없다. 넣으면 누구나 뽑아서 우리 명의로
+// API 를 쓴다. 그래서 배포되는 것은 그 키로 **미리 서명해 둔 토큰**이다 —
+// 유효기간이 최대 6개월이고, 새더라도 만료되면 끝이다.
+//
+// 비어 있으면 개발 빌드다. 그때는 지금까지처럼 p8 로 직접 서명한다.
+var EmbeddedToken string
+
 // Config 는 p8 과 두 개의 ID 다. 환경변수로 받는다.
 type Config struct {
 	P8Path string // AM_P8
@@ -33,6 +44,11 @@ func LoadConfig() (Config, error) {
 		P8Path: os.Getenv("AM_P8"),
 		KeyID:  os.Getenv("AM_KEY_ID"),
 		TeamID: os.Getenv("AM_TEAM_ID"),
+	}
+	// 박아 넣은 토큰이 있으면 p8 이 필요 없다. 배포판 사용자에게
+	// 없는 파일을 내놓으라고 할 수는 없다.
+	if EmbeddedToken != "" {
+		return c, nil
 	}
 	if c.P8Path == "" || c.KeyID == "" || c.TeamID == "" {
 		return c, errors.New("set AM_P8, AM_KEY_ID and AM_TEAM_ID")
@@ -52,13 +68,16 @@ func LoadConfig() (Config, error) {
 // 사용자 토큰이 없어도 클라이언트는 돌아간다. 카탈로그 검색은 그것 없이 되고,
 // 검색이 되는 것만으로 이 기능의 대부분이 산다.
 func NewClient(cfg Config) (*Client, error) {
-	p8, err := os.ReadFile(cfg.P8Path)
-	if err != nil {
-		return nil, err
-	}
-	dev, err := DeveloperToken(p8, cfg.KeyID, cfg.TeamID, 180*24*time.Hour)
-	if err != nil {
-		return nil, err
+	dev := EmbeddedToken
+	if dev == "" {
+		p8, err := os.ReadFile(cfg.P8Path)
+		if err != nil {
+			return nil, err
+		}
+		dev, err = DeveloperToken(p8, cfg.KeyID, cfg.TeamID, 180*24*time.Hour)
+		if err != nil {
+			return nil, err
+		}
 	}
 	c := &Client{DevToken: dev}
 	if tok, err := LoadUserToken(); err == nil {

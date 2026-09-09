@@ -64,6 +64,11 @@ func (c *Client) do(ctx context.Context, method, path string, q url.Values) ([]b
 	}
 	switch {
 	case res.StatusCode == http.StatusUnauthorized:
+		// 배포판 사용자는 key ID 도 team ID 도 갖고 있지 않다. 그들이 할 수
+		// 있는 일은 업데이트뿐이므로 그렇게 말해야 한다.
+		if EmbeddedToken != "" {
+			return nil, errors.New("this build's Apple Music token has expired — update yarrr")
+		}
 		return nil, errors.New("developer token rejected (401) — check key ID, team ID and expiry")
 	case res.StatusCode == http.StatusForbidden:
 		return nil, fmt.Errorf("%w: 403", ErrUserTokenRejected)
