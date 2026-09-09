@@ -120,10 +120,20 @@ func (m Model) spinnerRows(waiting []string, w int) []string {
 // 칠하는 쪽을 내 말로 정한 이유는, 답이 길고 내 말이 짧기 때문이다.
 // 긴 쪽을 칠하면 화면의 절반이 색면이 된다.
 func (m Model) renderLogEntry(e logEntry, w int) []string {
-	mark, mine := style.Faint.Render("› "), true
+	// 조각마다 바탕색을 같이 준다. 밖에서 한 번 감싸면 안 된다 —
+	// 조각 안쪽의 리셓(\x1b[m)이 글자색과 함께 **바탕색까지 끈다.**
+	// 그러면 첫 조각이 끝나는 자리에서 색이 두세 칸 만에 사라진다.
+	tint := func(st lipgloss.Style) lipgloss.Style { return st }
+	if e.who == "" {
+		tint = func(st lipgloss.Style) lipgloss.Style {
+			return st.Background(style.ColSaidByMe)
+		}
+	}
+
+	mark := tint(style.Faint).Render("› ")
 	name := ""
 	if e.who != "" {
-		mark, mine = style.Brand.Render("▸ "), false
+		mark = style.Brand.Render("▸ ")
 		if e.err {
 			mark = style.Warn.Render("▸ ")
 		}
@@ -138,27 +148,29 @@ func (m Model) renderLogEntry(e logEntry, w int) []string {
 	out := make([]string, 0, len(lines))
 	for i, l := range lines {
 		// 이어지는 줄은 기호도 이름도 반복하지 않는다. 자리만 비워 맞춘다.
-		head, who := mark, style.Faint.Render(name)
+		head, who := mark, tint(style.Faint).Render(name)
 		if i > 0 {
-			head, who = "  ", strings.Repeat(" ", lipgloss.Width(name))
+			head = tint(lipgloss.NewStyle()).Render("  ")
+			who = tint(lipgloss.NewStyle()).Render(strings.Repeat(" ", lipgloss.Width(name)))
 		}
-		row := head + who + style.Dim.Render(l)
-		if mine {
-			row = fill(row, w)
+		row := head + who + tint(style.Dim).Render(l)
+		if e.who == "" {
+			row += fill(w - lipgloss.Width(row))
 		}
 		out = append(out, row)
 	}
 	return out
 }
 
-// fill — 줄 오른쪽 끝까지 바탕색을 채운다.
+// fill — 줄 오른쪽 끝을 바탕색으로 채운다.
 //
 // 색이 글자 뒤에서 끊기면 덩어리가 아니라 얼룩으로 보인다.
-func fill(s string, w int) string {
-	if pad := w - lipgloss.Width(s); pad > 0 {
-		s += strings.Repeat(" ", pad)
+func fill(pad int) string {
+	if pad <= 0 {
+		return ""
 	}
-	return lipgloss.NewStyle().Background(style.ColSaidByMe).Render(s)
+	return lipgloss.NewStyle().Background(style.ColSaidByMe).
+		Render(strings.Repeat(" ", pad))
 }
 
 // 상세는 들여쓰고 흐리게. 본문이 아니라 주석이라는 뜻이다.

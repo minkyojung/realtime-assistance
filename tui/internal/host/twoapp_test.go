@@ -6,6 +6,7 @@ import (
 
 	"amcli/tui/internal/app"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // 앱 두 개짜리 경로 — 라우터가 지목한 앱들에게 동시에 묻고,
@@ -395,23 +396,74 @@ func TestLongAnswerWraps(t *testing.T) {
 	}
 }
 
-// 내가 한 말에만 바탕색이 깔린다. 둘 다 칠하면 둘이 구별되지 않는다.
+// 내가 한 말에만 바탕색이 깔리고, **줄 끝까지** 이어져야 한다.
+//
+// 조각마다 색을 주지 않고 밖에서 한 번 감싸면, 조각 안쪽의 리셋이
+// 바탕색까지 꺼서 두세 칸 만에 색이 사라진다. 실제로 그렇게 났었다.
 func TestOnlyMyWordsAreFilled(t *testing.T) {
 	m, _ := twoAppHost()
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
-	m = typeText(m, "조용한 거")
+	long := "조용한 거 25분치로 골라줘, 담아두고 한 번도 안 들은 곡 위주로 " +
+		"부탁하고 같은 아티스트가 연달아 나오지 않게 사이도 좀 벌려줘"
+	m = typeText(m, long)
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요", Detail: []string{"195 → 6 tracks"}})
 
+	var mineRows int
 	for _, l := range strings.Split(m.View().Content, "\n") {
-		filled := strings.Contains(l, "48;2;")
+		p := plain(l)
 		switch {
-		case strings.Contains(plain(l), "조용한 거") && !filled:
-			t.Error("내가 한 말에 바탕색이 없다")
-		case strings.Contains(plain(l), "골랐어요") && filled:
-			t.Error("답에 바탕색이 깔렸다")
-		case strings.Contains(plain(l), "195 → 6 tracks") && filled:
-			t.Error("근거에 바탕색이 깔렸다 — 답의 일부이므로 없어야 한다")
+		case strings.Contains(p, "조용한 거 25분치") || strings.Contains(p, "사이도 좀"):
+			mineRows++
+			if !strings.Contains(l, "48;2;") {
+				t.Errorf("내 말에 바탕색이 없다: %q", strings.TrimSpace(p))
+			}
+			// 색이 줄 끝까지 가야 한다. 칠해진 칸 수를 실제로 세어 본다.
+			// 프레임 좌우 여백 한 칸씩은 호스트 바깥이라 안 칠해지는 것이 맞다.
+			if painted, total := paintedWidth(l); painted < total-2*framePad {
+				t.Errorf("바탕색이 %d/%d 칸에서 끊겼다: %q", painted, total, strings.TrimSpace(p))
+			}
+		case strings.Contains(p, "골랐어요"), strings.Contains(p, "195 → 6 tracks"):
+			if strings.Contains(l, "48;2;") {
+				t.Errorf("답·근거에 바탕색이 깔렸다: %q", strings.TrimSpace(p))
+			}
 		}
 	}
+	if mineRows < 2 {
+		t.Errorf("내 말이 %d줄 — 접혀서 두 줄 이상이어야 한다", mineRows)
+	}
+}
+
+// paintedWidth — 그 줄에서 바탕색이 켜진 채로 그려진 칸 수와 전체 칸 수.
+//
+// 리셋(\x1b[m)은 글자색만이 아니라 바탕색도 끈다. 조각마다 색을 다시
+// 주지 않으면 첫 리셋에서 끊기는데, 눈으로는 "안 들어갔다"로 보인다.
+// 그 착시를 테스트가 대신 본다.
+func paintedWidth(l string) (painted, total int) {
+	on := false
+	for i := 0; i < len(l); {
+		if l[i] == 0x1b {
+			j := strings.IndexByte(l[i:], 'm')
+			if j < 0 {
+				break
+			}
+			seq := l[i : i+j+1]
+			switch {
+			case strings.Contains(seq, "48;2;"):
+				on = true
+			case seq == "\x1b[m" || seq == "\x1b[0m":
+				on = false
+			}
+			i += j + 1
+			continue
+		}
+		r := []rune(l[i:])[0]
+		wid := lipgloss.Width(string(r))
+		total += wid
+		if on {
+			painted += wid
+		}
+		i += len(string(r))
+	}
+	return painted, total
 }
