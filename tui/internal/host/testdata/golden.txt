@@ -121,10 +121,6 @@
  [48;2;67;38;52m  [m[38;2;232;232;234;48;2;67;38;52mPlease Wait for Me                                        [m[48;2;67;38;52m  [m[38;2;85;85;94;48;2;67;38;52mBusker Busker            [m[48;2;67;38;52m  [m[38;2;85;85;94;48;2;67;38;52m177[m[48;2;67;38;52m  [m[38;2;85;85;94;48;2;67;38;52m1:21[m 
    [38;2;232;232;234mPeanut butter Sandwich                                    [m  [38;2;85;85;94mjisokuryClub             [m  [38;2;85;85;94m 36[m  [38;2;85;85;94m3:51[m 
    [38;2;232;232;234mCalifornia Sober (feat. Chris Stapleton)                  [m  [38;2;85;85;94mPost Malone              [m  [38;2;85;85;94m 23[m  [38;2;85;85;94m3:24[m 
-   [38;2;138;138;146mSitting, Waiting, Wishing - Jack Johnson                  [m  [38;2;85;85;94m                         [m  [38;2;85;85;94m  ·[m  [38;2;85;85;94m4:54[m 
-   [38;2;232;232;234mWelcome to the Black Parade                               [m  [38;2;85;85;94mMy Chemical Romance      [m  [38;2;85;85;94m  4[m  [38;2;85;85;94m5:11[m 
-   [38;2;232;232;234m라라라                                                    [m  [38;2;85;85;94mSG Wannabe               [m  [38;2;85;85;94m  4[m  [38;2;85;85;94m4:36[m 
-   [38;2;138;138;146mBabys (AIR Studios – 4AD/Jagjaguwar Session)              [m  [38;2;85;85;94mBon Iver                 [m  [38;2;85;85;94m  ·[m  [38;2;85;85;94m6:13[m 
  [38;2;46;46;54m──────────────────────────────────────────────────────────────────────────────────────────────────[m 
                                                                                                     
                                                                                                     
@@ -132,15 +128,20 @@
  [38;2;168;37;63m│[m [38;2;255;90;117mAsk AI  [m[38;2;85;85;94me[m[38;2;85;85;94mnter  play from here    ctrl+f  search    /  commands[m                                 [38;2;168;37;63m│[m 
  [38;2;168;37;63m╰────────────────────────────────────────────────────────────────────────────────────────────────╯[m 
    [38;2;255;143;163mtype[m                                                           [38;2;85;85;94mask for a queue in your own words[m 
-   [38;2;255;143;163menter[m                                           [38;2;85;85;94msend the request · play or open what is selected[m 
    [38;2;255;143;163m/[m                                                                                       [38;2;85;85;94mcommands[m 
+   [38;2;255;143;163menter[m                                           [38;2;85;85;94msend the request · play or open what is selected[m 
    [38;2;255;143;163mctrl+f[m                                                             [38;2;85;85;94mswitch between ask and search[m 
    [38;2;255;143;163mctrl+j[m                                                               [38;2;85;85;94mfold the conversation strip[m 
-   [38;2;255;143;163m↑ ↓[m                                                                        [38;2;85;85;94mmove through the list[m 
-   [38;2;255;143;163mtab · shift+tab[m                                 [38;2;85;85;94mnext · previous section — / goes straight to one[m 
-   [38;2;255;143;163mshift+← ↓ →[m                                                       [38;2;85;85;94mprevious · play / pause · next[m 
+   [38;2;255;143;163m?[m                                                                                      [38;2;85;85;94mthis list[m 
    [38;2;255;143;163mesc[m                                                                            [38;2;85;85;94mback out one step[m 
    [38;2;255;143;163mctrl+c[m                                                                                      [38;2;85;85;94mquit[m 
+   [38;2;255;143;163m↑ · ctrl+p[m                                                                      [38;2;85;85;94mmove up the list[m 
+   [38;2;255;143;163m↓ · ctrl+n[m                                                                    [38;2;85;85;94mmove down the list[m 
+   [38;2;255;143;163mtab[m                                                        [38;2;85;85;94mnext section — / goes straight to one[m 
+   [38;2;255;143;163mshift+tab[m                                                                       [38;2;85;85;94mprevious section[m 
+   [38;2;255;143;163mshift+←[m                                                                           [38;2;85;85;94mprevious track[m 
+   [38;2;255;143;163mshift+↓[m                                                                             [38;2;85;85;94mplay / pause[m 
+   [38;2;255;143;163mshift+→[m                                                                               [38;2;85;85;94mnext track[m 
  [38;2;138;138;146mRecently Added[m[38;2;85;85;94m · 157[m                                                                               
                                                                                                     
 === prompt ===

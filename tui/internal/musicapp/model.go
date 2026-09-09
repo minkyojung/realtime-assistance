@@ -21,6 +21,7 @@ import (
 	"amcli/tui/internal/music"
 	"amcli/tui/internal/secrets"
 	"amcli/tui/internal/style"
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -431,19 +432,21 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "ctrl+g":
+		// 문자열이 아니라 묶음으로 가른다. 같은 값이 호스트의 도움말을
+		// 그린다(keys.go).
+		switch {
+		case key.Matches(msg, keys.Settings):
 			// 권한이 막혀 있을 때 시스템 설정을 연다.
 			if m.playerErr == music.ErrPermissionDenied {
 				return m, cmdOpenSettings()
 			}
-		case "up", "ctrl+p":
+		case key.Matches(msg, keys.Up):
 			m.move(-1)
-		case "down", "ctrl+n":
+		case key.Matches(msg, keys.Down):
 			m.move(1)
-		case "tab":
+		case key.Matches(msg, keys.Section):
 			m = m.gotoSection(m.sectionIdx + 1)
-		case "shift+tab":
+		case key.Matches(msg, keys.SectionBack):
 			// 한 쌍을 돌려준다. 호스트가 모드 전환에 쓰다가 ctrl+f 로
 			// 옮기면서 이 키가 비었다.
 			//
@@ -451,16 +454,16 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			// 목록을 한 바퀴 돌아야 했다. 먼 섹션에는 `/` 로 곧장
 			// 간다(command.go) — 그것은 그대로다.
 			m = m.gotoSection(m.sectionIdx - 1)
-		case "shift+down":
+		case key.Matches(msg, keys.PlayPause):
 			// 재생 제어는 shift+화살표 한 가족이다. 수식키+화살표라
 			// 입력창도 한글 조합도 건드리지 않는다 — 알파벳이나 space 를
 			// 쓸 수 없는 이유가 그것이다(docs/07 2절).
 			return m, cmdPlayPause()
-		case "shift+right":
+		case key.Matches(msg, keys.Next):
 			return m, cmdNext()
-		case "shift+left":
+		case key.Matches(msg, keys.Previous):
 			return m, cmdPrevious()
-		case "enter":
+		case key.Matches(msg, keys.Accept):
 			return m.playSelected()
 		}
 	}

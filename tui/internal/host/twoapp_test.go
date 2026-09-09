@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"amcli/tui/internal/app"
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 )
@@ -20,6 +21,9 @@ type stubApp struct {
 	reply string
 	badge int
 	hint  string
+
+	// 이 앱이 내는 키. 호스트의 도움말이 이것을 이어 붙인다.
+	keys  []key.Binding
 	ready error
 
 	// 앱이 자기 안에 물러날 단계를 갖고 있는 척한다. esc 사슬을 보려면 필요하다.
@@ -44,6 +48,7 @@ func (s stubApp) Ready() error               { return s.ready }
 func (s stubApp) Spend() string              { return s.spend }
 func (s stubApp) Badge() int                 { return s.badge }
 func (s stubApp) Hint() string               { return s.hint }
+func (s stubApp) Keys() []key.Binding        { return s.keys }
 func (s stubApp) Status() string             { return s.name }
 func (s stubApp) Filter(string) app.App      { return s }
 func (s stubApp) Back() (app.App, bool)      { return s, s.back }

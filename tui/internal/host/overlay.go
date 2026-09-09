@@ -110,7 +110,7 @@ func (m Model) matchedCommands() []app.Command {
 // 아무 일도 안 일어나고, enter 는 본 적 없는 명령을 실행한다.
 func (m Model) overlayCount() int {
 	if m.showHelp {
-		return len(helpRows)
+		return len(m.helpRows())
 	}
 	// 보이는 줄이 아니라 **고를 수 있는 줄**을 센다. 화면에 여덟 줄만
 	// 보여도 ↓ 로 끝까지 갈 수 있어야 한다 — 예전에는 여기서 멈춰서,
@@ -169,8 +169,9 @@ const maxOverlayRows = 8
 
 func (m Model) overlayRows(w int) []string {
 	if m.showHelp {
-		out := make([]string, 0, len(helpRows))
-		for i, r := range helpRows {
+		rows := m.helpRows()
+		out := make([]string, 0, len(rows))
+		for i, r := range rows {
 			out = append(out, m.renderHelp(i, r, w))
 		}
 		return out
@@ -228,19 +229,43 @@ func (m Model) renderCommand(i int, c app.Command, w int) string {
 	return rail + left + pad + style.Faint.Render(style.Truncate(c.Help, rest))
 }
 
-var helpRows = []struct{ key, what string }{
-	{"type", "ask for a queue in your own words"},
-	{"enter", "send the request · play or open what is selected"},
-	{"/", "commands"},
-	{"ctrl+f", "switch between ask and search"},
-	{"ctrl+j", "fold the conversation strip"},
-	{"↑ ↓", "move through the list"},
-	{"tab · shift+tab", "next · previous section — / goes straight to one"},
-	{"shift+← ↓ →", "previous · play / pause · next"},
-	{"esc", "back out one step"},
-	{"ctrl+c", "quit"},
+// helpRow 는 도움말 한 줄이다.
+type helpRow struct{ key, what string }
+
+// helpRows 는 지금 화면에서 **실제로 묶여 있는** 키를 모은다.
+//
+// 예전에는 이 자리가 손으로 적은 표였다. 코드와 아무 관계가 없어서
+// 한쪽만 고치면 조용히 어긋났고, 셋이 어긋나 있었다 — 그중 ctrl+o 는
+// 받는 코드가 아예 없는데 도움말만 계속 약속하고 있었다.
+//
+// 이제 키와 설명은 한 값이다(keys.go). 여기서는 그 값들을 줄로 펼 뿐이라
+// **없는 키를 적을 자리가 없다.**
+//
+// 호스트 다음에 앱의 것이 온다. 앱의 키는 앱이 낸다(app.App.Keys) — 남의
+// 키를 여기서 베껴 적던 것이 ctrl+o 를 남긴 길이다.
+func (m Model) helpRows() []helpRow {
+	out := make([]helpRow, 0, 16)
+	for _, r := range notKeys {
+		out = append(out, helpRow{r.key, r.what})
+	}
+	binds := keys.helpOrder()
+	if !m.home {
+		binds = append(binds, m.app().Keys()...)
+	}
+	for _, b := range binds {
+		// 꺼진 키는 안 낸다. 도움말이 스스로 관리된다는 것이 이 구조의 값이다.
+		if !b.Enabled() {
+			continue
+		}
+		h := b.Help()
+		if h.Key == "" || h.Desc == "" {
+			continue // 설명이 없는 것은 다른 줄이 이미 말하고 있다
+		}
+		out = append(out, helpRow{h.Key, h.Desc})
+	}
+	return out
 }
 
-func (m Model) renderHelp(i int, r struct{ key, what string }, w int) string {
+func (m Model) renderHelp(i int, r helpRow, w int) string {
 	return "  " + style.Row(style.BrandSoft.Render(r.key), style.Faint.Render(r.what), w-2)
 }

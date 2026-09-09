@@ -101,7 +101,7 @@ func TestOfflineNoticeDoesNotEatTheHint(t *testing.T) {
 func TestHintYieldsToTyping(t *testing.T) {
 	m := askHost(t, "enter  play from here")
 	for _, r := range "play" {
-		m, _ = key(m, r)
+		m, _ = press(m, r)
 	}
 	if out := plain(m.View().Content); strings.Contains(out, "enter  play from here") {
 		t.Error("치는 중에도 안내문이 남아 글자와 겹친다")

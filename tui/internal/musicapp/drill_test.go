@@ -26,7 +26,7 @@ func atSection(t *testing.T, kind sectionKind) Model {
 }
 
 // key 는 키를 하나 먹이고 모델을 돌려준다.
-func key(t *testing.T, m Model, k tea.KeyPressMsg) Model {
+func press(t *testing.T, m Model, k tea.KeyPressMsg) Model {
 	t.Helper()
 	next, _ := m.Update(k)
 	mm, ok := next.(Model)
@@ -55,7 +55,7 @@ func TestEnterOpensAGroup(t *testing.T) {
 	}
 	want := g.TrackCount
 
-	m = key(t, m, enter)
+	m = press(t, m, enter)
 
 	if m.drill == nil {
 		t.Fatal("enter 를 눌렀는데 묶음이 안 열렸다")
@@ -79,7 +79,7 @@ func TestBackReturnsToWhereYouWere(t *testing.T) {
 		t.Skip("아티스트가 하나뿐이라 커서를 옮길 수 없다")
 	}
 
-	m = key(t, m, enter)
+	m = press(t, m, enter)
 	if m.drill == nil {
 		t.Fatal("묶음이 안 열렸다")
 	}
@@ -108,18 +108,18 @@ func TestBackDoesNothingWhenNotDrilled(t *testing.T) {
 // 섹션을 옮기면 파고든 것은 없던 일이 된다. 안 그러면 Songs 를 보고 있는데
 // 목록은 아까 그 아티스트인 상태가 된다.
 func TestChangingSectionLeavesTheGroup(t *testing.T) {
-	m := key(t, atSection(t, secArtists), enter)
+	m := press(t, atSection(t, secArtists), enter)
 	if m.drill == nil {
 		t.Fatal("묶음이 안 열렸다")
 	}
-	if m = key(t, m, tab); m.drill != nil {
+	if m = press(t, m, tab); m.drill != nil {
 		t.Error("tab 으로 섹션을 옮겼는데 파고든 상태가 남아 있다")
 	}
 }
 
 // 상태줄이 어디를 보고 있는지 말한다. 사이드바가 없으므로 여기밖에 없다.
 func TestStatusNamesTheGroup(t *testing.T) {
-	m := key(t, atSection(t, secArtists), enter)
+	m := press(t, atSection(t, secArtists), enter)
 
 	got := m.Status()
 	if !strings.Contains(got, m.drill.Name) || !strings.Contains(got, "Artists") {
@@ -137,11 +137,11 @@ func TestShiftTabWalksBack(t *testing.T) {
 	m.bodyH = 20
 	start := m.sectionIdx
 
-	m = key(t, m, tab)
+	m = press(t, m, tab)
 	if m.sectionIdx == start {
 		t.Fatal("tab 에 섹션이 안 넘어갔다")
 	}
-	m = key(t, m, shiftTab)
+	m = press(t, m, shiftTab)
 	if m.sectionIdx != start {
 		t.Errorf("shift+tab 으로 돌아와야 하는데 %d 에 있다", m.sectionIdx)
 	}
@@ -153,7 +153,7 @@ func TestShiftTabWrapsAtTheStart(t *testing.T) {
 	m.bodyH = 20
 	m.sectionIdx = 0
 
-	m = key(t, m, shiftTab)
+	m = press(t, m, shiftTab)
 	if want := len(m.sections) - 1; m.sectionIdx != want {
 		t.Errorf("첫 칸에서 뒤로 가면 %d 여야 하는데 %d 다", want, m.sectionIdx)
 	}
@@ -163,13 +163,13 @@ func TestShiftTabWrapsAtTheStart(t *testing.T) {
 // 섹션마다 줄 수가 달라 자리를 물려주면 없는 줄을 가리킨다.
 func TestMovingSectionsResetsTheCursor(t *testing.T) {
 	m := atSection(t, secArtists)
-	m = key(t, m, enter) // 묶음을 편다
+	m = press(t, m, enter) // 묶음을 편다
 	if m.drill == nil {
 		t.Fatal("묶음이 안 열렸다")
 	}
 	m.listIdx = 3
 
-	m = key(t, m, shiftTab)
+	m = press(t, m, shiftTab)
 	if m.drill != nil {
 		t.Error("섹션을 옮겼는데 파고든 것이 남아 있다")
 	}

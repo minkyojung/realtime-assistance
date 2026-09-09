@@ -10,6 +10,7 @@ import (
 	"amcli/tui/internal/app"
 	"amcli/tui/internal/secrets"
 	"amcli/tui/internal/style"
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
@@ -439,17 +440,18 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		}
 	}
 
-	switch msg.String() {
-	case "ctrl+c":
+	// 문자열이 아니라 묶음으로 가른다. 같은 값이 도움말도 그린다(keys.go).
+	switch {
+	case key.Matches(msg, keys.Quit):
 		return true, m, tea.Quit
 
-	case "?":
+	case key.Matches(msg, keys.Help):
 		if m.input.Value() == "" {
 			m.showHelp, m.pick = true, 0
 			return true, m, nil
 		}
 
-	case "ctrl+j":
+	case key.Matches(msg, keys.Fold):
 		// 대화 띠를 접었다 편다.
 		//
 		// 기본이 펼침이다. 답과 곡별 근거가 눌러야 보이던 시절에는 이 키가
@@ -458,7 +460,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		m.logShut = !m.logShut
 		return true, m, nil
 
-	case "ctrl+f":
+	case key.Matches(msg, keys.Mode):
 		// 모드를 바꾼다. 둘뿐이므로 한 키로 왕복한다.
 		//
 		// 한때 들어가는 키(ctrl+f)와 왕복하는 키(shift+tab)가 따로 있었다.
@@ -477,7 +479,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		}
 		return true, m, nil
 
-	case "esc":
+	case key.Matches(msg, keys.Back):
 		// 한 단계씩 물러난다 — 요청 → 도움말 → 검색 → 입력 비우기 → 홈 → 종료.
 		//
 		// 방금 시킨 일이 아직 돌고 있으면 그것이 첫 칸이다. 선곡이 7초라
@@ -515,18 +517,18 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		}
 		return true, m, tea.Quit
 
-	case "up", "ctrl+p":
+	case key.Matches(msg, keys.Up):
 		if m.picking() {
 			m.pick = style.Max(m.pick-1, 0)
 			return true, m, nil
 		}
-	case "down", "ctrl+n":
+	case key.Matches(msg, keys.Down):
 		if m.picking() {
 			m.pick = style.Min(m.pick+1, m.pickCount()-1)
 			return true, m, nil
 		}
 
-	case "enter":
+	case key.Matches(msg, keys.Accept):
 		mm, cmd := m.handleEnter()
 		return true, mm, cmd
 	}

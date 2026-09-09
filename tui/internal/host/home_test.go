@@ -42,7 +42,7 @@ func state(t *testing.T, m tea.Model) Model {
 	return hm
 }
 
-func key(m tea.Model, r rune) (tea.Model, tea.Cmd) {
+func press(m tea.Model, r rune) (tea.Model, tea.Cmd) {
 	return m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 }
 
@@ -164,7 +164,7 @@ func TestHomeShowsNameGateAndReason(t *testing.T) {
 // 홈은 스플래시다. 글자는 삼켜진다 — 보이지 않는 입력창에 쌓이면
 // 앱에 들어간 순간 친 적 없는 문장이 거기 들어 있다.
 func TestTypingIsSwallowedAtHome(t *testing.T) {
-	m, _ := key(homeHost(), 'a')
+	m, _ := press(homeHost(), 'a')
 
 	hm := state(t, m)
 	if !hm.home {
