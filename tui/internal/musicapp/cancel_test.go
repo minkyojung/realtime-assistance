@@ -16,7 +16,7 @@ func TestCancelStopsWaiting(t *testing.T) {
 	m := askedSomething(t)
 
 	next, _ := m.Update(app.CancelMsg{})
-	if next.(Model).thinking {
+	if next.(Model).ask.live {
 		t.Error("그만뒀는데 아직 기다린다고 표시한다")
 	}
 }
@@ -25,7 +25,7 @@ func TestCancelStopsWaiting(t *testing.T) {
 // 취소했는데 잠시 뒤 큐가 통째로 갈리는 것이 제일 나쁜 상태다.
 func TestCancelledRequestCannotTouchTheScreen(t *testing.T) {
 	m := askedSomething(t)
-	late := queueMsg{seq: m.askSeq, res: intent.Result{Title: "생기면 안 되는 큐"}}
+	late := queueMsg{seq: m.ask.seq, res: intent.Result{Title: "생기면 안 되는 큐"}}
 
 	next, _ := m.Update(app.CancelMsg{})
 	after, _ := next.(Model).Update(late)
@@ -40,7 +40,7 @@ func TestCancelledRequestCannotTouchTheScreen(t *testing.T) {
 func TestAnswerLandsWhenNotCancelled(t *testing.T) {
 	m := askedSomething(t)
 
-	after, _ := m.Update(queueMsg{seq: m.askSeq, res: intent.Result{Title: "조용한 큐"}})
+	after, _ := m.Update(queueMsg{seq: m.ask.seq, res: intent.Result{Title: "조용한 큐"}})
 	if got := after.(Model).queueTitle; got != "조용한 큐" {
 		t.Errorf("멀쩡한 답이 화면에 안 앉았다: %q", got)
 	}
@@ -61,7 +61,7 @@ func askedSomething(t *testing.T) Model {
 	if !ok {
 		t.Fatalf("Update 가 Model 을 안 돌려줬다: %T", next)
 	}
-	if !mm.thinking {
+	if !mm.ask.live {
 		t.Fatal("물었는데 기다린다는 표시가 없다")
 	}
 	return mm

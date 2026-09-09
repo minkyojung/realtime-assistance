@@ -134,7 +134,7 @@ func StatusMsgFor(state music.PlayerState, err error) tea.Msg {
 func QueueMsgFor(a app.App, res intent.Result, err error) tea.Msg {
 	seq := 0
 	if m, ok := a.(Model); ok {
-		seq = m.askSeq
+		seq = m.ask.seq
 	}
 	return queueMsg{seq: seq, res: res, err: err}
 }

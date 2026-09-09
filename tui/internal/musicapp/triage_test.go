@@ -31,6 +31,23 @@ func withQueue(t *testing.T) Model {
 	return mm
 }
 
+// asked 는 문장을 하나 던져 턴을 연 모델이다.
+//
+// 판단 결과를 직접 흘려보내려면 턴이 열려 있어야 한다. 기다리지 않는데
+// 도착한 답은 언제나 늦은 답으로 버려지기 때문이다(turn.go).
+func asked(t *testing.T, m Model, prompt string) Model {
+	t.Helper()
+	next, cmd := m.Update(app.AskMsg{Prompt: prompt})
+	if cmd == nil {
+		t.Fatal("물었는데 아무 일도 안 일어났다")
+	}
+	mm := next.(Model)
+	if !mm.ask.live {
+		t.Fatal("물었는데 기다린다는 표시가 없다")
+	}
+	return mm
+}
+
 func queueIDs(m Model) []int64 {
 	out := make([]int64, 0, len(m.queue))
 	for _, it := range m.queue {
@@ -41,10 +58,10 @@ func queueIDs(m Model) []int64 {
 
 // AI 가 지목한 곡이 빠져야 한다.
 func TestTriageRemovesWhatTheModelPointedAt(t *testing.T) {
-	m := withQueue(t)
+	m := asked(t, withQueue(t), "이 곡 빼줘")
 	want := queueIDs(m)[2] // 3번 곡만 남기고 확인할 대상
 
-	next, _ := m.Update(triagedMsg{seq: m.askSeq, edit: intent.Edit{
+	next, _ := m.Update(triagedMsg{seq: m.ask.seq, edit: intent.Edit{
 		Kind: intent.EditRemove, TrackIDs: []int64{want}, Note: "뺐습니다",
 	}})
 
@@ -64,11 +81,11 @@ func TestTriageRemovesWhatTheModelPointedAt(t *testing.T) {
 // 앞에서 빼면 그 뒤 곡들의 자리가 밀려, 두 번째 곡을 지울 때 엉뚱한 줄을
 // 가리킨다. 이 테스트가 그 한 줄을 지킨다.
 func TestRemovingSeveralKeepsTheRightOnes(t *testing.T) {
-	m := withQueue(t)
+	m := asked(t, withQueue(t), "1번이랑 3번 빼줘")
 	ids := queueIDs(m)
 
 	// 1번과 3번을 뺀다. 2번과 4번이 남아야 한다.
-	next, _ := m.Update(triagedMsg{seq: m.askSeq, edit: intent.Edit{
+	next, _ := m.Update(triagedMsg{seq: m.ask.seq, edit: intent.Edit{
 		Kind: intent.EditRemove, TrackIDs: []int64{ids[0], ids[2]},
 	}})
 
@@ -80,27 +97,17 @@ func TestRemovingSeveralKeepsTheRightOnes(t *testing.T) {
 
 // 판단이 실패하면 새로 짜는 쪽으로 간다. 느릴 뿐 틀리지는 않는다.
 func TestTriageFailureFallsBackToBuilding(t *testing.T) {
-	m := withQueue(t)
+	m := asked(t, withQueue(t), "조용한 거")
 	before := len(m.queue)
 
-	// 진짜 경로를 밟는다 — 물어보면 기다림이 켜지고 판단이 먼저 나간다.
-	asked, cmd := m.Update(app.AskMsg{Prompt: "조용한 거"})
-	if cmd == nil {
-		t.Fatal("물었는데 아무 일도 안 일어났다")
-	}
-	m = asked.(Model)
-	if !m.thinking {
-		t.Fatal("물었는데 기다린다는 표시가 없다")
-	}
-
 	next, cmd := m.Update(triagedMsg{
-		seq: m.askSeq, prompt: "조용한 거", err: errors.New("model unavailable"),
+		seq: m.ask.seq, prompt: "조용한 거", err: errors.New("model unavailable"),
 	})
 	if cmd == nil {
 		t.Fatal("판단이 실패했는데 아무 일도 안 한다")
 	}
 	after := next.(Model)
-	if !after.thinking {
+	if !after.ask.live {
 		t.Error("아직 답을 기다리는 중인데 기다림을 껐다")
 	}
 	if len(after.queue) != before {
@@ -110,10 +117,10 @@ func TestTriageFailureFallsBackToBuilding(t *testing.T) {
 
 // 그만둔 뒤 늦게 온 판단은 큐를 건드리면 안 된다.
 func TestStaleTriageIsIgnored(t *testing.T) {
-	m := withQueue(t)
+	m := asked(t, withQueue(t), "빼줘")
 	ids := queueIDs(m)
 
-	next, _ := m.Update(triagedMsg{seq: m.askSeq - 1, edit: intent.Edit{
+	next, _ := m.Update(triagedMsg{seq: m.ask.seq - 1, edit: intent.Edit{
 		Kind: intent.EditRemove, TrackIDs: []int64{ids[0]},
 	}})
 
@@ -124,10 +131,10 @@ func TestStaleTriageIsIgnored(t *testing.T) {
 
 // 새로 짜라는 판단이면 큐를 건드리지 않고 선곡으로 넘어간다.
 func TestTriageNewLeavesTheQueueAlone(t *testing.T) {
-	m := withQueue(t)
+	m := asked(t, withQueue(t), "신나는 걸로")
 	before := queueIDs(m)
 
-	next, cmd := m.Update(triagedMsg{seq: m.askSeq, prompt: "신나는 걸로", edit: intent.Edit{Kind: intent.EditNew}})
+	next, cmd := m.Update(triagedMsg{seq: m.ask.seq, prompt: "신나는 걸로", edit: intent.Edit{Kind: intent.EditNew}})
 	if cmd == nil {
 		t.Fatal("새로 짜라는데 선곡을 시작하지 않았다")
 	}

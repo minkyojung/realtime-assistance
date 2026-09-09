@@ -63,11 +63,9 @@ type Model struct {
 
 	// 의도 층 — 자연어 한 줄이 큐가 되는 경로.
 	//
-	// cancelAsk 는 도는 요청을 끊는 손잡이다. askSeq 는 그렇게 끊긴 요청의
-	// 답이 뒤늦게 와도 화면을 건드리지 못하게 하는 번호다.
-	cancelAsk  context.CancelFunc
-	askSeq     int
-	thinking   bool
+	// 도는 요청은 turn 한 덩어리로 들고 있는다. 번호·손잡이·기다림이
+	// 언제나 함께 움직여야 하기 때문이다 — turn.go
+	ask        turn
 	spinner    spinner.Model
 	queueTitle string
 	note       string
@@ -167,18 +165,13 @@ func (m Model) Ask(prompt string) tea.Cmd {
 // 다시 읽을 이유가 없는 말인데, Build 는 언제나 목록 전체를 돌려주므로
 // 한 곡을 빼려고 나머지를 전부 다시 고르게 된다(intent/edit.go).
 func (m Model) startAsk(prompt string) (Model, tea.Cmd) {
-	// 앞의 요청은 버린다. 한 번에 하나만 기다린다.
-	if m.cancelAsk != nil {
-		m.cancelAsk()
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), askTimeout)
-	m.cancelAsk = cancel
-	m.askSeq++
+	var ctx context.Context
+	m.ask, ctx = m.ask.start(askTimeout)
 
 	if len(m.queue) > 0 {
-		return m, cmdTriage(ctx, m.askSeq, prompt, m.current())
+		return m, cmdTriage(ctx, m.ask.seq, prompt, m.current())
 	}
-	return m, cmdBuildQueue(ctx, m.askSeq, prompt, data.Lib().Tracks, m.current())
+	return m, cmdBuildQueue(ctx, m.ask.seq, prompt, data.Lib().Tracks, m.current())
 }
 
 // current 는 모델에게 보여줄 "지금 화면의 큐"다.
@@ -190,19 +183,14 @@ func (m Model) current() intent.Current {
 	}
 }
 
-// stopAsk 는 도는 요청을 끊는다. 번호를 올려 늦게 오는 답도 버린다.
+// stopAsk 는 도는 요청을 버린다. 번호를 올려 늦게 오는 답도 못 앉게 한다.
 func (m Model) stopAsk() Model {
-	if m.cancelAsk != nil {
-		m.cancelAsk()
-		m.cancelAsk = nil
-	}
-	m.askSeq++
-	m.thinking = false
+	m.ask = m.ask.stop()
 	return m
 }
 
 // Thinking 은 호스트가 스피너를 대신 그릴지 판단할 때 쓴다.
-func (m Model) Thinking() bool { return m.thinking }
+func (m Model) Thinking() bool { return m.ask.live }
 
 // Filter 는 검색어를 받는다. 즉시 반영되어야 하므로 Cmd 를 돌려주지 않는다.
 // Filter 는 계약상 Cmd 를 못 돌려준다 — 글자마다 불리기 때문이다.
@@ -259,7 +247,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 
 	case triagedMsg:
 		// 그만뒀거나 더 새 물음이 떠 있으면 늦게 온 답이다. 버린다.
-		if msg.seq != m.askSeq {
+		if !m.ask.fresh(msg.seq) {
 			return m, nil
 		}
 		m.usage.PromptTokens += msg.edit.Usage.PromptTokens
@@ -271,23 +259,23 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			if errors.Is(msg.err, context.Canceled) {
 				return m, nil
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), askTimeout)
-			m.cancelAsk = cancel
-			return m, cmdBuildQueue(ctx, m.askSeq, msg.prompt, data.Lib().Tracks, m.current())
+			// 같은 물음의 두 번째 걸음이다. 번호를 그대로 두므로 여기서
+			// 그만두면 판단과 선곡이 함께 버려진다.
+			var ctx context.Context
+			m.ask, ctx = m.ask.extend(askTimeout)
+			return m, cmdBuildQueue(ctx, m.ask.seq, msg.prompt, data.Lib().Tracks, m.current())
 		}
 
 		// 고치라는 말이었다. 사람이 /remove 를 눌렀을 때와 **같은 문**으로 간다.
-		m.thinking = false
-		m.cancelAsk = nil
+		m.ask = m.ask.done()
 		return m.removeTracks(msg.edit.TrackIDs, msg.edit.Note)
 
 	case queueMsg:
 		// 그만뒀거나 더 새 물음이 떠 있으면 늦게 온 답이다. 버린다.
-		if msg.seq != m.askSeq {
+		if !m.ask.fresh(msg.seq) {
 			return m, nil
 		}
-		m.thinking = false
-		m.cancelAsk = nil
+		m.ask = m.ask.done()
 		if msg.err != nil {
 			// 그만둔 것은 실패가 아니다. 호스트가 이미 로그에 남겼다.
 			if errors.Is(msg.err, context.Canceled) {
@@ -364,7 +352,6 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 
 	case app.AskMsg:
 		// 호스트가 넘긴 자연어 요청. 기다린다는 표시는 호스트가 한다.
-		m.thinking = true
 		return m.startAsk(msg.Prompt)
 
 	case queueWrittenMsg:
