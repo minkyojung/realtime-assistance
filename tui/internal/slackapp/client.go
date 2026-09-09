@@ -34,6 +34,9 @@ func newClient(token string) webClient {
 	return webClient{token: token, hc: &http.Client{Timeout: callTimeout}}
 }
 
+// unauthenticated 는 OAuth 흐름 전용이다. 토큰을 받기 전에 부르는 곳.
+func unauthenticated() webClient { return newClient("") }
+
 // apiError 는 HTTP 는 200 인데 ok:false 로 온 실패다.
 // Slack 은 오류를 상태 코드가 아니라 본문으로 말한다.
 type apiError struct {
@@ -114,7 +117,11 @@ func (c webClient) post(ctx context.Context, method string, form url.Values) ([]
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		// oauth.v2.access 는 토큰을 받으러 가는 길이라 보낼 토큰이 없다.
+		// 빈 Bearer 를 보내면 Slack 이 invalid_auth 로 막는다.
+		if c.token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.token)
+		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
 
 		resp, err := c.hc.Do(req)

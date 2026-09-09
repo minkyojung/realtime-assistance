@@ -1,6 +1,13 @@
 package slackapp
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -24,7 +31,7 @@ func sample() []Conversation {
 
 func loaded(t *testing.T) Model {
 	t.Helper()
-	m := Model{token: "xoxp-test", appToken: "xapp-test", users: map[string]string{}, bodyH: 20}
+	m := Model{creds: creds{Access: "xoxp-test"}, appToken: "xapp-test", users: map[string]string{}, bodyH: 20}
 	next, _ := m.Update(LoadedMsgFor("U0", "Acme", sample()))
 	got, ok := next.(Model)
 	if !ok {
@@ -34,7 +41,11 @@ func loaded(t *testing.T) Model {
 }
 
 // 1단계 — 토큰이 없으면 관문에서 막고, 다음에 뭘 할지 화면이 말한다.
+//
+// client_id 가 없는 빌드다. 사용자가 앱을 직접 만들어야 하므로
+// 화면이 그 순서를 안내한다.
 func TestGate(t *testing.T) {
+	t.Setenv("SLACK_CLIENT_ID", "")
 	m := Model{users: map[string]string{}}
 	if m.Ready() == nil {
 		t.Fatal("토큰이 없는데 Ready 가 nil 이다")
@@ -132,6 +143,7 @@ func TestOpenSaysToLog(t *testing.T) {
 // 앱은 자기 키 바인딩을 만들지 않는다. 하고 싶은 것은 전부 팔레트로 간다.
 func TestCommandsRegistered(t *testing.T) {
 	m := loaded(t)
+	t.Setenv("SLACK_CLIENT_ID", "")
 	want := map[string]bool{"/unread": false, "/all": false, "/dnd": false, "/undnd": false, "/read": false}
 	for _, c := range m.Commands() {
 		if _, ok := want[c.Name]; !ok {
@@ -254,5 +266,321 @@ func TestParseTS(t *testing.T) {
 	}
 	if !parseTS("").IsZero() {
 		t.Error("빈 ts 가 영시각이 아니다")
+	}
+}
+
+// ─────────────────────────────────────────────────────────────
+// 브라우저 로그인
+// ─────────────────────────────────────────────────────────────
+
+// client_id 가 있는 빌드에서는 사용자가 할 일이 /login 하나다.
+// 앱을 만드는 순서를 보여줄 이유가 없다 — 우리가 이미 만들었다.
+func TestGateWithLogin(t *testing.T) {
+	t.Setenv("SLACK_CLIENT_ID", "123.456")
+	m := Model{users: map[string]string{}}
+
+	if err := m.Ready(); err != errNoLogin {
+		t.Errorf("Ready = %v, want errNoLogin", err)
+	}
+	v := m.View(80, 12)
+	if !strings.Contains(v, "/login") {
+		t.Error("관문 화면이 /login 을 안 알려준다")
+	}
+	if strings.Contains(v, "User Token Scopes") {
+		t.Error("로그인이 되는데도 앱을 직접 만들라고 안내한다")
+	}
+}
+
+// 못 하는 것을 팔레트에 올리면 팔레트가 거짓말을 하는 셈이다.
+func TestLoginCommandsAppearOnlyWhenPossible(t *testing.T) {
+	has := func(m Model, name string) bool {
+		for _, c := range m.Commands() {
+			if c.Name == name {
+				return true
+			}
+		}
+		return false
+	}
+	m := loaded(t)
+
+	t.Setenv("SLACK_CLIENT_ID", "")
+	if has(m, "/login") {
+		t.Error("client_id 가 없는데 /login 이 팔레트에 있다")
+	}
+	t.Setenv("SLACK_CLIENT_ID", "123.456")
+	if !has(m, "/login") || !has(m, "/logout") {
+		t.Error("client_id 가 있는데 /login · /logout 이 없다")
+	}
+}
+
+// 로그인이 끝나면 토큰이 앉고 곧바로 목록을 읽으러 간다.
+func TestLoginThenLogout(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	m := loaded(t)
+
+	next, cmd := m.Update(loginMsg{Creds: creds{Access: "xoxp-new", Team: "Acme"}})
+	m = next.(Model)
+	if m.token() != "xoxp-new" {
+		t.Errorf("토큰 = %q", m.token())
+	}
+	if m.Ready() != nil {
+		t.Errorf("로그인했는데 관문이 안 열렸다: %v", m.Ready())
+	}
+	if cmd == nil {
+		t.Error("로그인 뒤 목록을 읽으러 가지 않는다")
+	}
+	if got := loadCreds().Access; got != "xoxp-new" {
+		t.Errorf("저장된 토큰 = %q", got)
+	}
+
+	// 파일을 지우는 것은 Cmd 이고, Update 는 그 결과를 받는다.
+	out := cmdLogout()()
+	if lm, ok := out.(logoutMsg); !ok || lm.Err != nil {
+		t.Fatalf("logout = %#v", out)
+	}
+	next, _ = m.Update(out)
+	m = next.(Model)
+	if m.token() != "" || m.Ready() == nil {
+		t.Error("로그아웃했는데 관문이 안 닫혔다")
+	}
+	if len(m.convs) != 0 {
+		t.Error("로그아웃했는데 대화가 남아 있다")
+	}
+	if loadCreds().Access != "" {
+		t.Error("저장된 토큰이 안 지워졌다")
+	}
+}
+
+// 실패해도 조용히 있지 않는다. 그리고 기다리는 표시를 풀어야 한다 —
+// 안 그러면 상태줄이 영원히 "승인을 기다리는 중"으로 남는다.
+func TestLoginFailureSays(t *testing.T) {
+	m := loaded(t)
+	m.loggingIn = true
+
+	next, cmd := m.Update(loginMsg{Err: errDenied})
+	if next.(Model).loggingIn {
+		t.Error("실패했는데 기다리는 중으로 남아 있다")
+	}
+	if say, ok := cmd().(app.SayMsg); !ok || !say.Err {
+		t.Errorf("실패로 안 남았다: %#v", cmd())
+	}
+}
+
+// 검증자는 우리만 알고 해시만 먼저 나간다.
+// 이 관계가 client_secret 없이도 안전한 이유다.
+func TestPKCE(t *testing.T) {
+	verifier, challenge, err := pkce()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// RFC 7636 은 43~128자를 요구한다.
+	if len(verifier) < 43 || len(verifier) > 128 {
+		t.Errorf("검증자 길이 %d", len(verifier))
+	}
+	sum := sha256.Sum256([]byte(verifier))
+	if want := base64.RawURLEncoding.EncodeToString(sum[:]); challenge != want {
+		t.Errorf("challenge 가 검증자의 SHA-256 이 아니다")
+	}
+	if strings.ContainsAny(verifier+challenge, "+/=") {
+		t.Error("URL-safe base64 가 아니다")
+	}
+
+	v2, _, _ := pkce()
+	if v2 == verifier {
+		t.Error("검증자가 매번 같다")
+	}
+}
+
+func TestAuthorizeURL(t *testing.T) {
+	u, err := url.Parse(authorizeURL("123.456", "CHAL", "STATE"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.Host != "slack.com" || u.Path != "/oauth/v2/authorize" {
+		t.Errorf("주소가 %s", u)
+	}
+	q := u.Query()
+	for k, want := range map[string]string{
+		"client_id":             "123.456",
+		"code_challenge":        "CHAL",
+		"code_challenge_method": "S256",
+		"state":                 "STATE",
+		"redirect_uri":          "http://localhost:8765/callback",
+	} {
+		if got := q.Get(k); got != want {
+			t.Errorf("%s = %q, want %q", k, got, want)
+		}
+	}
+	// desktop redirect 는 봇 권한을 요청할 수 없다. 사용자 권한만 보낸다.
+	if q.Get("scope") != "" {
+		t.Error("봇 scope 를 요청하고 있다")
+	}
+	if !strings.Contains(q.Get("user_scope"), "chat:write") {
+		t.Errorf("user_scope = %q", q.Get("user_scope"))
+	}
+}
+
+// 브라우저가 돌아오는 자리. 루프백에만 열려 있어야 한다.
+func TestCallbackServer(t *testing.T) {
+	srv, results, err := listenForCallback()
+	if err != nil {
+		t.Skipf("포트 %d 를 쓸 수 없다: %v", callbackPort, err)
+	}
+	defer srv.Close()
+
+	resp, err := http.Get(redirectURI() + "?code=CODE&state=STATE")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	select {
+	case got := <-results:
+		if got.err != nil {
+			t.Fatalf("err = %v", got.err)
+		}
+		if got.code != "CODE" || got.state != "STATE" {
+			t.Errorf("code=%q state=%q", got.code, got.state)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("콜백이 안 왔다")
+	}
+}
+
+func TestCallbackDenied(t *testing.T) {
+	srv, results, err := listenForCallback()
+	if err != nil {
+		t.Skipf("포트 %d 를 쓸 수 없다: %v", callbackPort, err)
+	}
+	defer srv.Close()
+
+	resp, err := http.Get(redirectURI() + "?error=access_denied")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	select {
+	case got := <-results:
+		if got.err != errDenied {
+			t.Errorf("err = %v, want errDenied", got.err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("콜백이 안 왔다")
+	}
+}
+
+// 우리가 보낸 state 와 다르면 우리 요청의 답이 아니다.
+func TestStateMismatchIsRejected(t *testing.T) {
+	if errBadState == nil {
+		t.Fatal("state 검사가 없다")
+	}
+}
+
+// 사용자 토큰은 authed_user 안에 있다. 바깥 access_token 은 봇 것이다.
+func TestOAuthResponseUsesAuthedUser(t *testing.T) {
+	var r oauthResponse
+	body := `{"ok":true,"access_token":"xoxb-bot","team":{"name":"Acme"},
+	  "authed_user":{"access_token":"xoxp-me","refresh_token":"xoxe-1","expires_in":43200}}`
+	if err := json.Unmarshal([]byte(body), &r); err != nil {
+		t.Fatal(err)
+	}
+	c, err := r.creds()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Access != "xoxp-me" || c.Refresh != "xoxe-1" || c.Team != "Acme" {
+		t.Errorf("%+v", c)
+	}
+	if c.Expires.IsZero() || c.expired() {
+		t.Error("만료 시각이 안 앉았다")
+	}
+
+	// 사용자 토큰이 없으면 권한 설정이 틀린 것이다. 조용히 넘어가면 안 된다.
+	var empty oauthResponse
+	if _, err := empty.creds(); err != errNoUserTok {
+		t.Errorf("err = %v, want errNoUserTok", err)
+	}
+}
+
+// 회전을 안 켠 앱은 만료가 없는 토큰 하나만 준다. 그것도 정상이다.
+func TestCredsWithoutExpiry(t *testing.T) {
+	if (creds{Access: "xoxp-1"}).expired() {
+		t.Error("만료가 없는 토큰을 만료로 봤다")
+	}
+	if !(creds{Access: "x", Expires: time.Now().Add(-time.Hour)}).expired() {
+		t.Error("지난 토큰을 안 지난 것으로 봤다")
+	}
+	// 만료 직전은 미리 지난 것으로 본다. 부르는 도중에 만료되면 안 된다.
+	if !(creds{Access: "x", Expires: time.Now().Add(30 * time.Second)}).expired() {
+		t.Error("만료 직전을 미리 안 잡는다")
+	}
+}
+
+func TestStoreRoundTrip(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	if loadCreds().Access != "" {
+		t.Error("아직 로그인 안 했는데 토큰이 있다")
+	}
+	want := creds{Access: "xoxp-1", Refresh: "xoxe-1", Team: "Acme"}
+	if err := saveCreds(want); err != nil {
+		t.Fatal(err)
+	}
+	if got := loadCreds(); got.Access != want.Access || got.Refresh != want.Refresh {
+		t.Errorf("%+v", got)
+	}
+
+	// 남이 못 읽어야 한다.
+	path, _ := storePath()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o600 {
+		t.Errorf("권한이 %o", perm)
+	}
+
+	if err := clearCreds(); err != nil {
+		t.Fatal(err)
+	}
+	if loadCreds().Access != "" {
+		t.Error("지웠는데 남아 있다")
+	}
+	// 두 번 지워도 실패가 아니다.
+	if err := clearCreds(); err != nil {
+		t.Errorf("두 번째 삭제가 실패했다: %v", err)
+	}
+}
+
+// 깨진 파일은 로그인 안 한 것과 같게 다룬다. 사용자가 할 일이 어느 쪽이든 같다.
+func TestCorruptStoreIsNotAnError(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	path, _ := storePath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("{ not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if loadCreds().Access != "" {
+		t.Error("깨진 파일에서 토큰이 나왔다")
+	}
+}
+
+// 환경변수가 이긴다. 개발 중에 손으로 넣은 토큰을 쓸 수 있어야 한다.
+func TestEnvTokenWins(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := saveCreds(creds{Access: "xoxp-stored"}); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SLACK_USER_TOKEN", "xoxp-env")
+	if got := New().token(); got != "xoxp-env" {
+		t.Errorf("토큰 = %q, want xoxp-env", got)
+	}
+	t.Setenv("SLACK_USER_TOKEN", "")
+	if got := New().token(); got != "xoxp-stored" {
+		t.Errorf("토큰 = %q, want xoxp-stored", got)
 	}
 }

@@ -45,8 +45,9 @@ import (
 // 받아 그것만 따로 들고 있는다.
 type Model struct {
 	// 1단계 — 관문
-	token    string // xoxp- 사용자 토큰. 없으면 앱을 못 쓴다
-	appToken string // xapp- 앱 토큰. 없으면 실시간 수신만 꺼진다
+	creds     creds  // 사용자 토큰. 브라우저 로그인이나 환경변수에서 온다
+	appToken  string // xapp- 앱 토큰. 없으면 실시간 수신만 꺼진다
+	loggingIn bool   // 브라우저에서 승인을 기다리는 중
 
 	// 2단계 — 읽기
 	me      string // 내 user id. 내가 쓴 것은 안 읽음으로 세지 않는다
@@ -74,12 +75,24 @@ type Model struct {
 var _ app.App = Model{}
 
 func New() Model {
-	return Model{
-		token:    strings.TrimSpace(os.Getenv("SLACK_USER_TOKEN")),
+	m := Model{
 		appToken: strings.TrimSpace(os.Getenv("SLACK_APP_TOKEN")),
 		users:    map[string]string{},
 	}
+	// 환경변수가 이긴다. 개발 중에 다른 워크스페이스를 잠깐 물리거나,
+	// 로그인을 건너뛰고 손으로 넣은 토큰을 쓸 수 있어야 한다.
+	if t := strings.TrimSpace(os.Getenv("SLACK_USER_TOKEN")); t != "" {
+		m.creds = creds{Access: t}
+	} else {
+		m.creds = loadCreds()
+	}
+	m.team = m.creds.Team
+	return m
 }
+
+// token 은 지금 쓸 사용자 토큰이다. 출처(환경변수·저장소·방금 로그인)는
+// 부르는 쪽이 알 필요가 없다.
+func (m Model) token() string { return m.creds.Access }
 
 // ─────────────────────────────────────────────────────────────
 // 이름과 설명
@@ -101,8 +114,15 @@ func (m Model) Description() string {
 // 1단계 — 관문
 // ─────────────────────────────────────────────────────────────
 
-var errNoToken = errors.New(
-	"Slack 토큰이 없습니다. api.slack.com/apps 에서 앱을 만들고 .env 를 채우세요")
+var (
+	errNoLogin = errors.New(
+		"Slack 에 로그인하지 않았습니다. /login 을 입력하면 브라우저가 열립니다")
+	errNoToken = errors.New(
+		"Slack 토큰이 없습니다. api.slack.com/apps 에서 앱을 만들고 .env 를 채우세요")
+)
+
+// 로그인이 가능한 빌드인가. client_id 가 있어야 브라우저를 열 수 있다.
+func canLogin() bool { return oauthClientID() != "" }
 
 // Ready 는 앱이 쓸 수 있는 상태인지 본다.
 //
@@ -112,7 +132,10 @@ var errNoToken = errors.New(
 // **앱 토큰(xapp-)은 관문이 아니다.** 그것이 없으면 실시간 수신만 꺼지고,
 // 읽기·쓰기는 그대로 된다. 못 하는 것 하나 때문에 되는 것까지 막지 않는다.
 func (m Model) Ready() error {
-	if m.token == "" {
+	if m.token() == "" {
+		if canLogin() {
+			return errNoLogin
+		}
 		return errNoToken
 	}
 	if m.loadErr != nil {
@@ -135,13 +158,13 @@ func (m Model) Ready() error {
 // 여기서 넣은 필드는 호출자에게 돌아가지 않는다. 필요한 곳은 고루틴뿐이고,
 // 고루틴은 클로저로 잡으면 된다.
 func (m Model) Init(send func(tea.Msg)) tea.Cmd {
-	if m.token == "" {
+	if m.token() == "" {
 		return nil // 관문에서 막힌다. 아무것도 부르지 않는다
 	}
 	if m.appToken != "" {
 		startSocket(m.appToken, send)
 	}
-	return cmdLoad(m.token)
+	return cmdEnsureToken(m.creds)
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -227,13 +250,25 @@ func (m Model) viewGate(w, h int, err error) string {
 			style.Body.Render(style.Truncate(err.Error(), style.Max(w-8, 10))),
 		"",
 	}
-	for _, s := range gateSteps {
+	steps := gateSteps
+	if canLogin() {
+		steps = loginSteps
+	}
+	for _, s := range steps {
 		lines = append(lines, style.Faint.Render(style.Truncate(s, w)))
 	}
 	for len(lines) < h {
 		lines = append(lines, "")
 	}
 	return strings.Join(lines[:style.Min(len(lines), h)], "\n")
+}
+
+// 로그인이 되는 빌드에서는 사용자가 할 일이 하나다.
+// 나머지(앱 생성·권한 선택)는 우리가 이미 했다.
+var loginSteps = []string{
+	"/login  브라우저에서 Slack 이 열리고, 승인하면 여기로 돌아옵니다",
+	"",
+	"승인 화면에서 워크스페이스를 고르면 됩니다. 토큰을 복사할 일은 없습니다.",
 }
 
 var gateSteps = []string{
@@ -249,7 +284,10 @@ var gateSteps = []string{
 // Status 는 상태줄에 들어갈 한 줄이다. 배경에 있어도 호출된다.
 // 다른 앱을 보는 중에도 이 앱이 뭘 하는지 여기로 보인다.
 func (m Model) Status() string {
-	if m.token == "" {
+	if m.token() == "" {
+		if m.loggingIn {
+			return style.Faint.Render("chat · 브라우저에서 승인을 기다리는 중…")
+		}
 		return style.Faint.Render("chat · not signed in")
 	}
 	if m.loadErr != nil {
@@ -303,7 +341,7 @@ func (m Model) Ask(prompt string) tea.Cmd {
 	if err := m.Ready(); err != nil {
 		return app.SayErr(m.Name(), err)
 	}
-	return cmdAct(m.token, prompt, m.convs)
+	return cmdAct(m.token(), prompt, m.convs)
 }
 
 // Filter 는 검색어를 받는다. 즉시 반영되어야 하므로 Cmd 를 돌려주지 않는다.
@@ -322,6 +360,38 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 	switch msg := msg.(type) {
 	case app.AskMsg:
 		return m, m.Ask(msg.Prompt)
+
+	case loginStartedMsg:
+		m.loggingIn = true
+		return m, app.Say(m.Name(), "브라우저를 열었습니다. 승인하면 돌아옵니다")
+
+	case loginMsg:
+		m.loggingIn = false
+		if msg.Err != nil {
+			return m, app.SayErr(m.Name(), msg.Err)
+		}
+		m.creds, m.loadErr = msg.Creds, nil
+		if msg.Creds.Team != "" {
+			m.team = msg.Creds.Team
+		}
+		// 토큰을 저장하지 못해도 이번 세션은 쓸 수 있다. 다음에 다시
+		// 로그인하면 될 뿐이라 관문을 닫을 이유가 없다.
+		var cmds []tea.Cmd
+		if err := saveCreds(msg.Creds); err != nil {
+			cmds = append(cmds, app.SayErr(m.Name(), err))
+		}
+		return m, tea.Batch(append(cmds, cmdLoad(msg.Creds.Access))...)
+
+	case logoutMsg:
+		if msg.Err != nil {
+			return m, app.SayErr(m.Name(), msg.Err)
+		}
+		m.creds = creds{}
+		m.convs, m.users = nil, map[string]string{}
+		m.me, m.team = "", ""
+		m.loaded, m.loadErr = false, nil
+		m.sel, m.top = 0, 0
+		return m, app.Say(m.Name(), "로그아웃했습니다")
 
 	case loadedMsg:
 		m.loaded = true
@@ -416,12 +486,12 @@ func (m Model) receive(in incomingMsg) (app.App, tea.Cmd) {
 			ID: in.Channel, Name: in.Channel, Unread: 1,
 			Last: in.Text, LastBy: in.User, At: in.At,
 		})
-		cmds = append(cmds, cmdConvName(m.token, in.Channel))
+		cmds = append(cmds, cmdConvName(m.token(), in.Channel))
 	}
 	m.convs = convs
 
 	if _, known := m.users[in.User]; !known {
-		cmds = append(cmds, cmdUserName(m.token, in.User))
+		cmds = append(cmds, cmdUserName(m.token(), in.User))
 	}
 	m.clampList()
 	return m, tea.Batch(cmds...)
