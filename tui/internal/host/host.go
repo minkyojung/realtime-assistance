@@ -67,6 +67,10 @@ func New(apps ...app.App) Model {
 	ta.SetHeight(1)
 	ta.CharLimit = 500
 	ta.ShowLineNumbers = false
+	// 커서는 터미널의 실제 커서다. 한글 조합(IME)은 앱이 아니라 터미널이
+	// 그 자리에 그리므로, 가짜 커서를 쓰면 조합 중인 글자가 엉뚱한 데
+	// 뜨고 커서는 음절이 확정된 뒤에야 따라온다. View 가 위치를 보고한다.
+	ta.SetVirtualCursor(false)
 	styleInput(&ta)
 	ta.Focus() // 입력창은 늘 활성이다. 타이핑이 언제나 먼저 온다.
 
@@ -82,7 +86,8 @@ func New(apps ...app.App) Model {
 func (m Model) app() app.App { return m.apps[m.current] }
 
 func (m Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{textarea.Blink, m.spinner.Tick}
+	// textarea.Blink 를 걸지 않는다. 실제 커서는 터미널이 깜빡인다.
+	cmds := []tea.Cmd{m.spinner.Tick}
 	for _, a := range m.apps {
 		cmds = append(cmds, a.Init(m.push))
 	}
@@ -434,6 +439,9 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 	return m.forward(tea.KeyPressMsg{Code: tea.KeyEnter})
 }
 
+// 프레임 여백. 커서 위치를 보고할 때 이만큼 밀어야 한다.
+const framePad = 1
+
 func (m Model) bodyHeight() int {
 	// 입력창1 + 룰1 + 상태줄1 + 위아래 여백2
 	w := style.ContentWidth(m.w)
@@ -461,6 +469,9 @@ func (m Model) View() tea.View {
 		b.WriteString(r)
 	}
 	b.WriteString("\n")
+	// 입력창이 몇째 줄에 놓이는지는 지금 센다. 본문 높이로 계산하면
+	// 앱이 받은 높이를 다 안 쓸 때(musicapp 의 maxListRows) 어긋난다.
+	inputRow := strings.Count(b.String(), "\n")
 	b.WriteString(m.input.View())
 	for _, r := range m.overlayRows(w) {
 		b.WriteString("\n")
@@ -471,8 +482,15 @@ func (m Model) View() tea.View {
 	b.WriteString("\n")
 	b.WriteString(m.viewStatus(w))
 
-	v := tea.NewView(lipgloss.NewStyle().Padding(1, 1).Render(b.String()))
+	v := tea.NewView(lipgloss.NewStyle().Padding(framePad, framePad).Render(b.String()))
 	v.AltScreen = true
+	// 실제 커서를 입력창의 글자 자리에 둔다. 터미널이 한글 조합을 그리는
+	// 자리가 여기다 — 안 알려주면 조합 중인 글자가 엉뚱한 데 뜬다.
+	if c := m.input.Cursor(); c != nil {
+		c.Position.X += framePad
+		c.Position.Y += framePad + inputRow
+		v.Cursor = c
+	}
 	// 어깨너머로 제일 먼저 보이는 자리다. 스플래시보다 노출이 크다.
 	// 이 껍데기의 컨셉대로라면 여기가 가장 정직하지 않아야 한다.
 	v.WindowTitle = windowTitle
