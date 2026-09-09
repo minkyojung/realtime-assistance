@@ -11,7 +11,7 @@
 //  권한이다(S11). 없는 화면을 위한 테이블은 두지 않는다.
 // ============================================================
 
-Project music_cli {
+Project apple_music {
   database_type: 'SQLite'
   Note: '''
     터미널에서 쓰는 Apple Music 클라이언트.
