@@ -110,6 +110,9 @@ func (m Model) Description() string {
 		"and setting status or do-not-disturb."
 }
 
+// 못 하는 것을 말한다. 요약도 판단도 하지 않는다.
+func (m Model) Tagline() string { return "reads and sends, nothing more" }
+
 // ─────────────────────────────────────────────────────────────
 // 1단계 — 관문
 // ─────────────────────────────────────────────────────────────

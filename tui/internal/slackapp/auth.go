@@ -51,15 +51,18 @@ func oauthClientID() string {
 	return strings.TrimSpace(os.Getenv("SLACK_CLIENT_ID"))
 }
 
-// 리다이렉트 주소는 앱 설정에 **글자 그대로** 등록된 것과 같아야 한다.
-// 그래서 포트를 고르지 않고 고정한다.
-const (
-	callbackPort = 8765
-	callbackPath = "/callback"
-)
+// 리다이렉트 주소는 앱 설정에 **글자 그대로** 등록된 것과 같아야 하므로
+// 포트를 마음대로 고를 수 없다. 그렇다고 하나만 두면 그 포트를 쓰는
+// 프로그램이 깔린 기계에서는 로그인이 아예 안 된다.
+//
+// 그래서 몇 개를 등록해두고 비어 있는 것을 쓴다. **여기 있는 전부가
+// 앱 설정의 Redirect URLs 에 들어가 있어야 한다.**
+var callbackPorts = []int{8765, 8766, 8767}
 
-func redirectURI() string {
-	return fmt.Sprintf("http://localhost:%d%s", callbackPort, callbackPath)
+const callbackPath = "/callback"
+
+func redirectURI(port int) string {
+	return fmt.Sprintf("http://localhost:%d%s", port, callbackPath)
 }
 
 // 요청하는 권한. 관문 화면이 안내하는 것과 같은 목록이어야 한다.
@@ -85,7 +88,8 @@ var (
 	errNoClientID = errors.New(
 		"SLACK_CLIENT_ID 가 없습니다. api.slack.com/apps 의 Basic Information 에서 Client ID 를 받으세요")
 	errPortBusy = fmt.Errorf(
-		"포트 %d 를 쓸 수 없습니다. 그 포트를 쓰는 다른 프로그램을 끄고 다시 시도하세요", callbackPort)
+		"포트 %v 가 전부 사용 중입니다. 그중 하나를 쓰는 프로그램을 끄고 다시 시도하세요",
+		callbackPorts)
 	errDenied    = errors.New("로그인이 취소되었습니다")
 	errBadState  = errors.New("응답이 우리가 보낸 요청과 맞지 않습니다. 다시 시도하세요")
 	errNoUserTok = errors.New(
@@ -114,13 +118,13 @@ func cmdLogin() tea.Cmd {
 			return loginMsg{Err: err}
 		}
 
-		srv, results, err := listenForCallback()
+		srv, results, port, err := listenForCallback()
 		if err != nil {
 			return loginMsg{Err: err}
 		}
 		defer srv.Close()
 
-		if err := openBrowser(authorizeURL(id, challenge, state)); err != nil {
+		if err := openBrowser(authorizeURL(id, challenge, state, port)); err != nil {
 			return loginMsg{Err: err}
 		}
 
@@ -134,7 +138,7 @@ func cmdLogin() tea.Cmd {
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
 			defer cancel()
-			c, err := exchange(ctx, id, got.code, verifier)
+			c, err := exchange(ctx, id, got.code, verifier, port)
 			return loginMsg{Creds: c, Err: err}
 
 		case <-time.After(loginTimeout):
@@ -143,11 +147,11 @@ func cmdLogin() tea.Cmd {
 	}
 }
 
-func authorizeURL(id, challenge, state string) string {
+func authorizeURL(id, challenge, state string, port int) string {
 	q := url.Values{
 		"client_id":             {id},
 		"user_scope":            {strings.Join(userScopes, ",")},
-		"redirect_uri":          {redirectURI()},
+		"redirect_uri":          {redirectURI(port)},
 		"state":                 {state},
 		"code_challenge":        {challenge},
 		"code_challenge_method": {"S256"},
@@ -197,7 +201,7 @@ type callback struct {
 // 푸는지는 /etc/hosts 에 달려 있어서, 하나만 열면 어떤 기계에서는
 // 되고 어떤 기계에서는 안 된다. 0.0.0.0 으로 여는 것은 답이 아니다 —
 // 같은 네트워크의 다른 기계에 인가 코드를 노출한다.
-func listenForCallback() (*http.Server, <-chan callback, error) {
+func listenForCallback() (*http.Server, <-chan callback, int, error) {
 	results := make(chan callback, 1)
 
 	mux := http.NewServeMux()
@@ -229,19 +233,29 @@ func listenForCallback() (*http.Server, <-chan callback, error) {
 		}
 	})
 
-	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", callbackPort))
-	if err != nil {
-		return nil, nil, errPortBusy
+	// 등록해 둔 포트 중 처음으로 비어 있는 것을 쓴다.
+	var ln net.Listener
+	port := 0
+	for _, p := range callbackPorts {
+		l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", p))
+		if err != nil {
+			continue
+		}
+		ln, port = l, p
+		break
+	}
+	if ln == nil {
+		return nil, nil, 0, errPortBusy
 	}
 
 	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	go srv.Serve(ln)
 
 	// IPv6 루프백은 있으면 좋고 없어도 그만이다.
-	if ln6, err := net.Listen("tcp", fmt.Sprintf("[::1]:%d", callbackPort)); err == nil {
+	if ln6, err := net.Listen("tcp", fmt.Sprintf("[::1]:%d", port)); err == nil {
 		go srv.Serve(ln6)
 	}
-	return srv, results, nil
+	return srv, results, port, nil
 }
 
 const closedPage = `<!doctype html><meta charset="utf-8">
@@ -297,13 +311,13 @@ func (r oauthResponse) creds() (creds, error) {
 //
 // client_secret 을 보내지 않는다. PKCE 앱은 public client 이고,
 // 그 자리를 code_verifier 가 대신한다.
-func exchange(ctx context.Context, id, code, verifier string) (creds, error) {
+func exchange(ctx context.Context, id, code, verifier string, port int) (creds, error) {
 	var out oauthResponse
 	err := unauthenticated().call(ctx, "oauth.v2.access", url.Values{
 		"client_id":     {id},
 		"code":          {code},
 		"code_verifier": {verifier},
-		"redirect_uri":  {redirectURI()},
+		"redirect_uri":  {redirectURI(port)},
 	}, &out)
 	if err != nil {
 		return creds{}, err

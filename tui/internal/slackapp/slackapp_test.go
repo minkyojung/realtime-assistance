@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -392,7 +394,7 @@ func TestPKCE(t *testing.T) {
 }
 
 func TestAuthorizeURL(t *testing.T) {
-	u, err := url.Parse(authorizeURL("123.456", "CHAL", "STATE"))
+	u, err := url.Parse(authorizeURL("123.456", "CHAL", "STATE", 8765))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -422,13 +424,13 @@ func TestAuthorizeURL(t *testing.T) {
 
 // 브라우저가 돌아오는 자리. 루프백에만 열려 있어야 한다.
 func TestCallbackServer(t *testing.T) {
-	srv, results, err := listenForCallback()
+	srv, results, port, err := listenForCallback()
 	if err != nil {
-		t.Skipf("포트 %d 를 쓸 수 없다: %v", callbackPort, err)
+		t.Skipf("포트를 쓸 수 없다: %v", err)
 	}
 	defer srv.Close()
 
-	resp, err := http.Get(redirectURI() + "?code=CODE&state=STATE")
+	resp, err := http.Get(redirectURI(port) + "?code=CODE&state=STATE")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -448,13 +450,13 @@ func TestCallbackServer(t *testing.T) {
 }
 
 func TestCallbackDenied(t *testing.T) {
-	srv, results, err := listenForCallback()
+	srv, results, port, err := listenForCallback()
 	if err != nil {
-		t.Skipf("포트 %d 를 쓸 수 없다: %v", callbackPort, err)
+		t.Skipf("포트를 쓸 수 없다: %v", err)
 	}
 	defer srv.Close()
 
-	resp, err := http.Get(redirectURI() + "?error=access_denied")
+	resp, err := http.Get(redirectURI(port) + "?error=access_denied")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -582,5 +584,59 @@ func TestEnvTokenWins(t *testing.T) {
 	t.Setenv("SLACK_USER_TOKEN", "")
 	if got := New().token(); got != "xoxp-stored" {
 		t.Errorf("토큰 = %q, want xoxp-stored", got)
+	}
+}
+
+// 포트 하나가 막혀 있어도 로그인은 된다.
+// 배포판에서 이게 없으면 그 포트를 쓰는 기계에서 아예 못 쓴다.
+func TestCallbackFallsBackWhenPortBusy(t *testing.T) {
+	// 첫 번째 포트를 우리가 미리 차지한다.
+	blocker, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", callbackPorts[0]))
+	if err != nil {
+		t.Skipf("첫 포트가 이미 사용 중이다: %v", err)
+	}
+	defer blocker.Close()
+
+	srv, results, port, err := listenForCallback()
+	if err != nil {
+		t.Fatalf("남은 포트가 있는데 실패했다: %v", err)
+	}
+	defer srv.Close()
+
+	if port == callbackPorts[0] {
+		t.Fatalf("막힌 포트를 골랐다: %d", port)
+	}
+
+	// 고른 포트가 리다이렉트 주소에 그대로 반영되어야 한다.
+	// 여기가 어긋나면 Slack 이 redirect_uri 불일치로 막는다.
+	resp, err := http.Get(redirectURI(port) + "?code=CODE&state=STATE")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	select {
+	case got := <-results:
+		if got.code != "CODE" {
+			t.Errorf("code = %q", got.code)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("콜백이 안 왔다")
+	}
+}
+
+// 등록해야 하는 주소와 코드가 어긋나면 안 된다.
+func TestEveryPortMakesALoopbackURI(t *testing.T) {
+	if len(callbackPorts) < 2 {
+		t.Fatal("포트가 하나뿐이면 대체가 없다")
+	}
+	for _, p := range callbackPorts {
+		u, err := url.Parse(redirectURI(p))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if u.Scheme != "http" || u.Hostname() != "localhost" || u.Path != callbackPath {
+			t.Errorf("%s 가 루프백 주소가 아니다", u)
+		}
 	}
 }
