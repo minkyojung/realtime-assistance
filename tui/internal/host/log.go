@@ -38,7 +38,7 @@ func (m Model) waiting() []string {
 }
 
 // 대화 띠가 쓸 수 있는 줄 수의 상한. 넘으면 오래된 것부터 잘린다.
-const maxLogRows = 10
+const maxLogRows = 12
 
 // logRows 는 입력창 바로 위에 붙는 대화 띠다.
 //
@@ -59,15 +59,23 @@ func (m Model) logRows(w int) []string {
 			return m.spinnerRows(waiting, w)
 		}
 		last := m.renderLogEntry(m.log[len(m.log)-1], w)
-		return append(last[:style.Min(len(last), 1)], m.spinnerRows(waiting, w)...)
+		out := append([]string{""}, last[:style.Min(len(last), 1)]...)
+		return append(append(out, m.spinnerRows(waiting, w)...), "")
 	}
 
 	// 말과 답이 먼저다. 근거는 남는 자리만큼만 붙인다 — 잘려도 뜻이
 	// 안 상하는 것은 그쪽뿐이다.
+	//
+	// 사이사이를 띄운다. 한 판이 여러 줄이 되면서 목록·내 말·답·근거가
+	// 다닥다닥 붙어 한 덩어리로 읽혔다. 빈 줄 하나가 그것을 가른다.
 	var said, why []string
-	for _, e := range m.lastExchange() {
+	for i, e := range m.lastExchange() {
+		if i > 0 {
+			said = append(said, "") // 내 말과 답 사이
+		}
 		said = append(said, m.renderLogEntry(e, w)...)
 		if len(e.detail) > 0 {
+			why = append(why, "")
 			why = append(why, m.renderDetail(e.detail, w)...)
 		}
 	}
@@ -79,7 +87,11 @@ func (m Model) logRows(w int) []string {
 	} else if room <= 0 {
 		why = nil
 	}
-	return append(append(said, why...), m.spinnerRows(waiting, w)...)
+	// 위아래로 갈라준다. 목록 마지막 줄에 내 말이 바로 붙으면 그것도 목록으로
+	// 읽히고, 근거가 입력창 테두리에 붙으면 테두리가 근거의 밑줄로 보인다.
+	said = append([]string{""}, said...)
+	out := append(append(said, why...), m.spinnerRows(waiting, w)...)
+	return append(out, "")
 }
 
 // lastExchange — 마지막으로 내가 한 말과, 그 뒤에 온 답들.
@@ -130,12 +142,14 @@ func (m Model) renderLogEntry(e logEntry, w int) []string {
 		}
 	}
 
-	mark := tint(style.Faint).Render("› ")
+	// 기호 앞에 한 칸 둔다. 바탕색 덩어리가 화면 왼쪽 끝에 딱 붙으면
+	// 글자가 벽에 눌린 것처럼 보인다. 답의 ▸ 도 같은 칸에서 시작한다.
+	mark := tint(style.Faint).Render(" › ")
 	name := ""
 	if e.who != "" {
-		mark = style.Brand.Render("▸ ")
+		mark = " " + style.Brand.Render("▸ ")
 		if e.err {
-			mark = style.Warn.Render("▸ ")
+			mark = " " + style.Warn.Render("▸ ")
 		}
 		// 앱이 하나뿐이면 이름은 군더더기다.
 		if len(m.apps) > 1 {
@@ -143,14 +157,14 @@ func (m Model) renderLogEntry(e logEntry, w int) []string {
 		}
 	}
 
-	const indent = 2
+	const indent = 3 // 앞 한 칸 + 기호 두 칸
 	lines := style.Wrap(e.text, style.Max(w-indent-lipgloss.Width(name), 8))
 	out := make([]string, 0, len(lines))
 	for i, l := range lines {
 		// 이어지는 줄은 기호도 이름도 반복하지 않는다. 자리만 비워 맞춘다.
 		head, who := mark, tint(style.Faint).Render(name)
 		if i > 0 {
-			head = tint(lipgloss.NewStyle()).Render("  ")
+			head = tint(lipgloss.NewStyle()).Render("   ")
 			who = tint(lipgloss.NewStyle()).Render(strings.Repeat(" ", lipgloss.Width(name)))
 		}
 		row := head + who + tint(style.Dim).Render(l)

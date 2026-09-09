@@ -467,3 +467,62 @@ func paintedWidth(l string) (painted, total int) {
 	}
 	return painted, total
 }
+
+// 대화 띠는 위아래로 갈라져 있어야 한다.
+//
+// 목록 마지막 줄에 내 말이 바로 붙으면 그것도 목록으로 읽히고, 근거가
+// 입력창 테두리에 붙으면 테두리가 근거의 밑줄로 보인다. 내 말과 답이
+// 붙어 있으면 한 덩어리가 된다.
+func TestLogBandBreathes(t *testing.T) {
+	m, _ := twoAppHost()
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	m = typeText(m, "hi")
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요"})
+
+	lines := strings.Split(m.View().Content, "\n")
+	at := func(want string) int {
+		for i, l := range lines {
+			if strings.Contains(plain(l), want) {
+				return i
+			}
+		}
+		return -1
+	}
+	blank := func(i int) bool { return i >= 0 && i < len(lines) && strings.TrimSpace(plain(lines[i])) == "" }
+
+	mine, theirs := at("› hi"), at("골랐어요")
+	if mine < 0 || theirs < 0 {
+		t.Fatal("대화가 화면에 없다")
+	}
+	if !blank(mine - 1) {
+		t.Error("내 말 위가 안 비었다 — 목록에 붙는다")
+	}
+	if theirs != mine+2 || !blank(mine+1) {
+		t.Error("내 말과 답 사이가 안 비었다")
+	}
+	if box := at("╭"); box < 0 || !blank(box-1) {
+		t.Error("대화와 입력창 사이가 안 비었다")
+	}
+}
+
+// 내 말은 화면 왼쪽 끝에 딱 붙지 않는다. 바탕색 덩어리가 벽에 눌려 보인다.
+func TestMyWordsHaveLeftPadding(t *testing.T) {
+	m, _ := twoAppHost()
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	m = typeText(m, "hi")
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+
+	for _, l := range strings.Split(m.View().Content, "\n") {
+		p := plain(l)
+		if !strings.Contains(p, "› hi") {
+			continue
+		}
+		// 프레임 여백 한 칸 + 안여백 한 칸 = 기호는 세 번째 칸부터.
+		if i := strings.Index(p, "›"); i != framePad+1 {
+			t.Errorf("기호가 %d번째 칸에 있다 — %d번째여야 한다", i, framePad+1)
+		}
+		return
+	}
+	t.Fatal("내 말이 화면에 없다")
+}
