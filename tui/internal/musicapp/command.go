@@ -21,6 +21,8 @@ func (m Model) Commands() []app.Command {
 			Run: m.jumpCmd(secUnplayed)},
 		{Name: "/save", Arg: "<name>", Help: "save the queue as an Apple Music playlist",
 			Run: m.saveCmd},
+		{Name: "/pause", Help: "play or pause — same as shift+↓",
+			Run: func(string) tea.Cmd { return cmdPlayPause() }},
 		{Name: "/clear", Help: "empty the queue",
 			Run: func(string) tea.Cmd { return send(clearQueueMsg{}) }},
 		{Name: "/reload", Help: "read your library from Music.app again",

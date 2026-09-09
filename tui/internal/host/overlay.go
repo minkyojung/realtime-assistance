@@ -207,7 +207,7 @@ var helpRows = []struct{ key, what string }{
 	{"ctrl+o", "show what the last request did"},
 	{"↑ ↓", "move through the list"},
 	{"tab", "next section"},
-	{"shift+← →", "previous / next track"},
+	{"shift+← ↓ →", "previous · play / pause · next"},
 	{"esc", "back out one step"},
 	{"ctrl+c", "quit"},
 }

@@ -94,11 +94,11 @@
  [38;2;250;0;44m▌ [m[38;2;232;232;234m/queue[m                                                                 [38;2;85;85;94mjump to the current queue[m 
    [38;2;232;232;234m/unplayed[m                                                      [38;2;85;85;94mtracks you added but never played[m 
    [38;2;232;232;234m/save[m[38;2;85;85;94m <name>[m                                           [38;2;85;85;94msave the queue as an Apple Music playlist[m 
+   [38;2;232;232;234m/pause[m                                                           [38;2;85;85;94mplay or pause — same as shift+↓[m 
    [38;2;232;232;234m/clear[m                                                                           [38;2;85;85;94mempty the queue[m 
    [38;2;232;232;234m/reload[m                                                   [38;2;85;85;94mread your library from Music.app again[m 
    [38;2;232;232;234m/login[m                                        [38;2;85;85;94mconnect your Apple Music account (opens a browser)[m 
    [38;2;232;232;234m/cost[m                                                                [38;2;85;85;94mwhat this session has spent[m 
-   [38;2;232;232;234m/help[m                                                                          [38;2;85;85;94mkeys and commands[m 
  [38;2;46;46;54m──────────────────────────────────────────────────────────────────────────────────────────────────[m 
  [38;2;138;138;146mRecently Added[m[38;2;85;85;94m · 157[m                                                                               
                                                                                                     
@@ -125,7 +125,7 @@
    [38;2;255;90;117mctrl+o[m                                                            [38;2;85;85;94mshow what the last request did[m 
    [38;2;255;90;117m↑ ↓[m                                                                        [38;2;85;85;94mmove through the list[m 
    [38;2;255;90;117mtab[m                                                                                 [38;2;85;85;94mnext section[m 
-   [38;2;255;90;117mshift+← →[m                                                                  [38;2;85;85;94mprevious / next track[m 
+   [38;2;255;90;117mshift+← ↓ →[m                                                       [38;2;85;85;94mprevious · play / pause · next[m 
    [38;2;255;90;117mesc[m                                                                            [38;2;85;85;94mback out one step[m 
    [38;2;255;90;117mctrl+c[m                                                                                      [38;2;85;85;94mquit[m 
  [38;2;46;46;54m──────────────────────────────────────────────────────────────────────────────────────────────────[m 

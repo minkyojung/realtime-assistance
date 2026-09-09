@@ -270,6 +270,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			m.sectionIdx = (m.sectionIdx - 1 + len(m.sections)) % len(m.sections)
 			m.drill = nil
 			m.listIdx, m.listTop = 0, 0
+		case "shift+down":
+			// 재생 제어는 shift+화살표 한 가족이다. 수식키+화살표라
+			// 입력창도 한글 조합도 건드리지 않는다 — 알파벳이나 space 를
+			// 쓸 수 없는 이유가 그것이다(docs/07 2절).
+			return m, cmdPlayPause()
 		case "shift+right":
 			return m, cmdNext()
 		case "shift+left":
