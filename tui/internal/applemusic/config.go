@@ -35,7 +35,7 @@ func LoadConfig() (Config, error) {
 		TeamID: os.Getenv("AM_TEAM_ID"),
 	}
 	if c.P8Path == "" || c.KeyID == "" || c.TeamID == "" {
-		return c, errors.New("AM_P8, AM_KEY_ID, AM_TEAM_ID 를 설정해야 한다")
+		return c, errors.New("set AM_P8, AM_KEY_ID and AM_TEAM_ID")
 	}
 	if strings.HasPrefix(c.P8Path, "~/") {
 		home, err := os.UserHomeDir()
@@ -90,7 +90,7 @@ func SaveUserToken(tok string) error {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return errors.New("키체인에 저장하지 못했다: " + strings.TrimSpace(stderr.String()))
+		return errors.New("could not save to the keychain: " + strings.TrimSpace(stderr.String()))
 	}
 	return nil
 }
@@ -99,7 +99,7 @@ func LoadUserToken() (string, error) {
 	out, err := exec.Command("security", "find-generic-password",
 		"-s", keychainService, "-a", keychainAccount, "-w").Output()
 	if err != nil {
-		return "", errors.New("저장된 로그인이 없다")
+		return "", errors.New("no saved sign-in")
 	}
 	return strings.TrimSpace(string(out)), nil
 }

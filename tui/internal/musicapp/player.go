@@ -103,8 +103,20 @@ func (m Model) Status() string {
 	left := style.Dim.Render(where) +
 		style.Faint.Render(fmt.Sprintf(" · %d", m.rowCount()))
 
+	// 빈 목록이 왜 비었는지를 목록 대신 여기가 말한다.
+	// 한 번이라도 읽은 뒤에는 말하지 않는다 — 다시 읽는 것은 티가 안 나야 한다.
+	if !m.synced && m.rowCount() == 0 {
+		left += style.Faint.Render("   ⟳ syncing")
+	}
+
 	if n := len(m.queue); n > 0 && m.sections[m.sectionIdx].kind != secQueue {
 		left += style.Faint.Render(fmt.Sprintf("   queue %d", n))
+	}
+	if m.sections[m.sectionIdx].kind == secCatalog && m.catTerm != "" {
+		left += style.Faint.Render("   " + style.Truncate("\""+m.catTerm+"\"", 30))
+	}
+	if m.catBusy {
+		left += style.Faint.Render("   searching…")
 	}
 	if m.queueTitle != "" && m.sections[m.sectionIdx].kind == secQueue {
 		left += style.Faint.Render("   " + style.Truncate(m.queueTitle, 40))
@@ -141,4 +153,24 @@ func (m Model) queueTracks() []api.Track {
 		out = append(out, it.Track)
 	}
 	return out
+}
+
+// viewCatalogHint — 카탈로그를 보고 있을 때 근거 자리를 이 문장이 쓴다.
+//
+// 관문 > 카탈로그 > 근거 순이다. 셋이 동시에 뜨는 일은 없으므로
+// 세로 예산은 그대로다.
+func (m Model) viewCatalogHint(w int) (string, bool) {
+	if m.catLogin {
+		return m.spinner.View() + " " +
+			style.Dim.Render("Waiting for you to approve in the browser… (up to 3 minutes)"), true
+	}
+	if m.adding != nil {
+		return style.Brand.Render("▸ ") + style.Dim.Render(style.Truncate(
+			"Adding \""+m.adding.track.Title+"\" — will play once it shows up in Music", w-2)), true
+	}
+	if m.sectionIdx >= len(m.sections) || m.sections[m.sectionIdx].kind != secCatalog {
+		return "", false
+	}
+	return style.Faint.Render(style.Truncate(
+		"Not in your library yet · enter adds it and plays", w)), true
 }

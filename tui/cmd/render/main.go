@@ -6,12 +6,17 @@ import (
 	"os"
 	"strconv"
 
+	"amcli/tui/internal/data"
+	"amcli/tui/internal/data/fixture"
 	"amcli/tui/internal/host"
 	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
 
 func main() {
+	// 레이아웃 확인은 언제나 같은 화면을 봐야 한다.
+	data.Set(fixture.Lib())
+
 	w := 96
 	if len(os.Args) > 1 {
 		if n, err := strconv.Atoi(os.Args[1]); err == nil {

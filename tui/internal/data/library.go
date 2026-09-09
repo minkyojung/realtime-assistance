@@ -1,20 +1,18 @@
-// Package data 는 화면 개발용 데이터를 담는다.
+// Package data 는 화면이 보는 라이브러리를 담는다.
 //
-// library.json 은 작성자 본인 Music.app 에서 실제로 뽑은 157곡이다
-// (docs/05-스파이크-라이브러리-실측.md). 서버 연동 전까지 이걸로 그린다.
+// 스냅샷 하나가 한 시점의 Music.app 이다. 만들어진 뒤로는 바뀌지 않으므로
+// 통째로 갈아끼우면 되고, 읽는 쪽은 잠글 필요가 없다.
 package data
 
 import (
-	_ "embed"
 	"encoding/json"
 	"sort"
 	"strings"
+	"sync/atomic"
+	"time"
 
 	"amcli/tui/internal/api"
 )
-
-//go:embed library.json
-var libraryJSON []byte
 
 type Playlist struct {
 	Id         int64   `json:"id"`
@@ -27,37 +25,64 @@ type Library struct {
 	Tracks    []api.Track `json:"tracks"`
 	Playlists []Playlist  `json:"playlists"`
 
-	byID map[int64]api.Track
+	// 캐시 파일에만 있는 값이다. 픽스처에는 없어 zero value 로 읽힌다.
+	Version  int       `json:"version,omitempty"`
+	SyncedAt time.Time `json:"syncedAt,omitempty"`
+
+	byID  map[int64]api.Track
+	byPID map[string]int64
 }
 
-var lib *Library
+var current atomic.Pointer[Library]
 
-// Lib 은 임베드된 라이브러리를 한 번만 읽어 돌려준다.
+// Lib 은 지금 스냅샷을 돌려준다. 언제나 nil 이 아니다.
+//
+// 아직 아무것도 읽지 않았으면 빈 라이브러리다. 남의 라이브러리를 대신
+// 보여주지 않는다 — 그 위에 의도 층이 그럴듯한 근거를 지어낸다.
 func Lib() *Library {
-	if lib != nil {
-		return lib
+	if l := current.Load(); l != nil {
+		return l
 	}
+	empty := (&Library{}).index()
+	current.CompareAndSwap(nil, empty)
+	return current.Load()
+}
+
+// Set 은 스냅샷을 통째로 갈아끼운다. 색인은 여기서 만든다 — 빠뜨릴 수 없게.
+func Set(l *Library) { current.Store(l.index()) }
+
+// FromJSON 은 {tracks, playlists} 를 읽어 스냅샷을 만든다.
+func FromJSON(b []byte) (*Library, error) {
 	l := &Library{}
-	if err := json.Unmarshal(libraryJSON, l); err != nil {
-		panic("library.json 을 읽을 수 없다: " + err.Error())
+	if err := json.Unmarshal(b, l); err != nil {
+		return nil, err
 	}
+	return l.index(), nil
+}
+
+func (l *Library) index() *Library {
 	l.byID = make(map[int64]api.Track, len(l.Tracks))
+	l.byPID = make(map[string]int64, len(l.Tracks))
 	for _, t := range l.Tracks {
 		l.byID[t.Id] = t
+		if t.PersistentId != nil {
+			l.byPID[*t.PersistentId] = t.Id
+		}
 	}
-	lib = l
-	return lib
+	return l
 }
 
 // ByPersistentID — Music.app 이 알려주는 식별자로 우리 곡을 찾는다.
 // 이 값이 두 세계를 잇는 유일한 키다.
+//
+// 1초마다 불린다. 선형 탐색이면 곡 수만큼 문자열을 비교하게 된다.
 func (l *Library) ByPersistentID(pid string) (api.Track, bool) {
-	for _, t := range l.Tracks {
-		if t.PersistentId != nil && *t.PersistentId == pid {
-			return t, true
-		}
+	id, ok := l.byPID[pid]
+	if !ok {
+		return api.Track{}, false
 	}
-	return api.Track{}, false
+	t, ok := l.byID[id]
+	return t, ok
 }
 
 func (l *Library) Track(id int64) (api.Track, bool) {

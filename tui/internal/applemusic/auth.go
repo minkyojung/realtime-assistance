@@ -60,7 +60,7 @@ func Authorize(ctx context.Context, devToken string) (string, error) {
 		tok := strings.TrimSpace(string(b))
 		w.Write([]byte("ok"))
 		if tok == "" {
-			fail <- errors.New("빈 토큰이 돌아왔다")
+			fail <- errors.New("got an empty token back")
 			return
 		}
 		got <- tok
@@ -73,7 +73,7 @@ func Authorize(ctx context.Context, devToken string) (string, error) {
 	url := fmt.Sprintf("http://%s/", ln.Addr().String())
 	if err := exec.Command("open", url).Run(); err != nil {
 		// 브라우저가 안 열려도 사람이 직접 열 수 있어야 한다.
-		return "", fmt.Errorf("브라우저를 열지 못했다. 직접 여세요: %s (%w)", url, err)
+		return "", fmt.Errorf("could not open a browser. Open this yourself: %s (%w)", url, err)
 	}
 
 	select {
@@ -84,7 +84,7 @@ func Authorize(ctx context.Context, devToken string) (string, error) {
 	case <-ctx.Done():
 		return "", ctx.Err()
 	case <-time.After(3 * time.Minute):
-		return "", errors.New("로그인이 3분 안에 끝나지 않았다")
+		return "", errors.New("sign-in did not finish within 3 minutes")
 	}
 }
 
@@ -100,7 +100,7 @@ func randomNonce() (string, error) {
 // 팝업으로 막는다. 그래서 반드시 **사용자 클릭 안에서** 부른다.
 var authPage = template.Must(template.New("auth").Parse(`<!doctype html>
 <meta charset="utf-8">
-<title>Apple Music 연결</title>
+<title>Connect Apple Music</title>
 <style>
   body { font: 15px -apple-system, sans-serif; display: grid; place-content: center;
          height: 100vh; margin: 0; gap: 1rem; text-align: center; }
@@ -108,9 +108,9 @@ var authPage = template.Must(template.New("auth").Parse(`<!doctype html>
            border: 0; background: #fa243c; color: #fff; cursor: pointer; }
   #msg { color: #666; min-height: 1.2em; }
 </style>
-<h2>Apple Music 연결</h2>
-<button id="go">Apple Music 으로 로그인</button>
-<p id="msg">터미널이 기다리고 있습니다.</p>
+<h2>Connect Apple Music</h2>
+<button id="go">Sign in to Apple Music</button>
+<p id="msg">Your terminal is waiting.</p>
 <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js" data-web-components async></script>
 <script>
   const msg = document.getElementById('msg');
@@ -125,21 +125,21 @@ var authPage = template.Must(template.New("auth").Parse(`<!doctype html>
       });
       ready = true;
     } catch (e) {
-      msg.textContent = '개발자 토큰이 거부됐습니다: ' + e;
+      msg.textContent = 'Developer token rejected: ' + e;
     }
   });
 
   btn.onclick = async () => {
-    if (!ready) { msg.textContent = 'MusicKit 을 아직 불러오는 중입니다.'; return; }
+    if (!ready) { msg.textContent = 'Still loading MusicKit…'; return; }
     btn.disabled = true;
     try {
       const token = await MusicKit.getInstance().authorize();
       await fetch('/token', { method: 'POST', headers: { 'X-Nonce': {{.Nonce}} }, body: token });
-      msg.textContent = '연결됐습니다. 터미널로 돌아가세요.';
+      msg.textContent = 'Connected. You can return to your terminal.';
       btn.remove();
     } catch (e) {
       btn.disabled = false;
-      msg.textContent = '취소됐거나 실패했습니다: ' + e;
+      msg.textContent = 'Cancelled or failed: ' + e;
     }
   };
 </script>`))

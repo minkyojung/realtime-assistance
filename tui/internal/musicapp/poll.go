@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"amcli/tui/internal/api"
+	"amcli/tui/internal/data"
 	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
 	tea "charm.land/bubbletea/v2"
@@ -119,4 +120,36 @@ func StatusMsgFor(state music.PlayerState, err error) tea.Msg {
 // QueueMsgFor 는 의도 층의 결과를 흉내 낸다.
 func QueueMsgFor(res intent.Result, err error) tea.Msg {
 	return queueMsg{res: res, err: err}
+}
+
+// libraryMsg — 라이브러리 스냅샷이 도착했다. 캐시와 Music.app 두 경로로 온다.
+type libraryMsg struct {
+	lib      *data.Library
+	live     bool // Music.app 에서 직접 읽은 것인지
+	announce bool // /reload 로 부른 것인지 — 시작할 때마다 로그를 더럽히지 않는다
+	err      error
+}
+
+// cmdLoadCache 는 지난번에 읽어둔 스냅샷을 꺼낸다. 몇 ms 다.
+func cmdLoadCache() tea.Msg {
+	l, err := data.LoadCache()
+	return libraryMsg{lib: l, err: err}
+}
+
+// cmdDumpLibrary 는 Music.app 라이브러리를 통째로 읽는다. 몇 초다.
+//
+// 읽어낸 것은 캐시에 남긴다. 다음 시작이 즉시 그려지도록.
+func cmdDumpLibrary(announce bool) tea.Cmd {
+	return func() tea.Msg {
+		b, err := music.DumpLibrary(context.Background())
+		if err != nil {
+			return libraryMsg{live: true, announce: announce, err: err}
+		}
+		l, err := data.FromDump(b)
+		if err != nil {
+			return libraryMsg{live: true, announce: announce, err: err}
+		}
+		_ = data.SaveCache(l) // 실패해도 다음 시작이 조금 느릴 뿐이다
+		return libraryMsg{lib: l, live: true, announce: announce}
+	}
 }

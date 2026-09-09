@@ -24,7 +24,7 @@ import (
 func DeveloperToken(p8 []byte, keyID, teamID string, ttl time.Duration) (string, error) {
 	block, _ := pem.Decode(p8)
 	if block == nil {
-		return "", errors.New("p8 파일을 PEM 으로 읽을 수 없다")
+		return "", errors.New("could not read the p8 file as PEM")
 	}
 	parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
@@ -32,11 +32,11 @@ func DeveloperToken(p8 []byte, keyID, teamID string, ttl time.Duration) (string,
 	}
 	key, ok := parsed.(*ecdsa.PrivateKey)
 	if !ok {
-		return "", errors.New("p8 이 ECDSA 키가 아니다 — MusicKit 키가 맞는지 본다")
+		return "", errors.New("p8 is not an ECDSA key — check it is a MusicKit key")
 	}
 	// Apple 은 6개월을 넘는 만료를 거부한다.
 	if ttl > 180*24*time.Hour {
-		return "", errors.New("만료는 6개월을 넘을 수 없다")
+		return "", errors.New("expiry cannot exceed six months")
 	}
 
 	now := time.Now()

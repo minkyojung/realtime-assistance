@@ -18,6 +18,7 @@ const (
 	secPlaylist
 	secQueue
 	secUnplayed
+	secCatalog
 )
 
 type section struct {
@@ -29,7 +30,10 @@ type section struct {
 // 섹션 이동은 tab 과 슬래시 명령으로 한다. 사이드바를 두지 않는 이유는
 // "갈 수 있는 곳"을 상시로 보여줄 필요가 없기 때문이다. 필요한 것은
 // "지금 어디인지"뿐이고, 그것은 상태줄이 말한다.
-func buildSections(l *data.Library) []section {
+// catalog 가 false 면 섹션 자체가 없다. 쓸 수 없는 곳으로 tab 이 가면 안 된다.
+func buildSections(l *data.Library) []section { return buildSectionsWith(l, false) }
+
+func buildSectionsWith(l *data.Library, catalog bool) []section {
 	s := []section{
 		{kind: secRecent, label: "Recently Added"},
 		{kind: secArtists, label: "Artists"},
@@ -43,7 +47,42 @@ func buildSections(l *data.Library) []section {
 		}
 		s = append(s, section{kind: secPlaylist, label: strings.TrimSpace(p.Name), playlist: &p})
 	}
-	return append(s,
+	s = append(s,
 		section{kind: secQueue, label: "Queue"},
 		section{kind: secUnplayed, label: "Never played"})
+	// 끝에만 붙인다. 중간에 끼우면 보고 있던 섹션 번호가 어긋난다.
+	if catalog {
+		s = append(s, section{kind: secCatalog, label: "Apple Music"})
+	}
+	return s
+}
+
+// resync — 새 스냅샷 위에 화면 위치를 다시 앉힌다.
+//
+// 섹션 목록이 통째로 바뀌므로 "어디를 보고 있었는지"를 종류와 이름으로 되찾는다.
+// 번호로 기억하면 플레이리스트가 하나 늘어난 순간 엉뚱한 곳을 보게 된다.
+func (m *Model) resync(l *data.Library) {
+	kind, label := secRecent, ""
+	if m.sectionIdx < len(m.sections) {
+		kind, label = m.sections[m.sectionIdx].kind, m.sections[m.sectionIdx].label
+	}
+
+	m.sections = buildSectionsWith(l, m.cat != nil)
+	m.sectionIdx = 0
+	for i, s := range m.sections {
+		if s.kind == kind && (kind != secPlaylist || s.label == label) {
+			m.sectionIdx = i
+			break
+		}
+	}
+
+	// 큐는 곡을 값으로 갖는다. id 는 안 바뀌므로 메타데이터만 새로 입힌다.
+	// (재생 횟수가 늘었을 수 있다)
+	for i := range m.queue {
+		if t, ok := l.Track(m.queue[i].Track.Id); ok {
+			m.queue[i].Track = t
+		}
+	}
+
+	m.clampList()
 }

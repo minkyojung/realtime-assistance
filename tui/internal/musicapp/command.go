@@ -1,8 +1,11 @@
 package musicapp
 
 import (
+	"strings"
+
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/app"
+	"amcli/tui/internal/applemusic"
 	"amcli/tui/internal/data"
 	tea "charm.land/bubbletea/v2"
 )
@@ -23,6 +26,14 @@ func (m Model) Commands() []app.Command {
 			Run: m.saveCmd},
 		{Name: "/clear", Help: "empty the queue",
 			Run: func(string) tea.Cmd { return send(clearQueueMsg{}) }},
+		{Name: "/reload", Help: "read your library from Music.app again",
+			Run: m.reloadCmd},
+		{Name: "/catalog", Arg: "<term>", Help: "search all of Apple Music, not just your library",
+			Run: m.catalogCmd},
+		{Name: "/login", Help: "connect your Apple Music account (opens a browser)",
+			Run: m.loginCmd},
+		{Name: "/logout", Help: "forget the saved Apple Music login",
+			Run: m.logoutCmd},
 	}
 }
 
@@ -74,3 +85,48 @@ func unplayedTracks(l *data.Library) []listRow {
 }
 
 var _ = api.Track{}
+
+// reloadCmd — 라이브러리를 다시 읽는다.
+//
+// 주기적으로 다시 읽지 않는 이유: Apple 이벤트는 비싸고, 라이브러리는
+// 사용자가 바꾼다. 사용자는 자기가 바꾼 때를 안다.
+func (m Model) reloadCmd(string) tea.Cmd {
+	if m.syncing {
+		return send(errMsg{errSyncing})
+	}
+	return cmdDumpLibrary(true)
+}
+
+// catalogCmd — 라이브러리 밖으로 나간다. 명령이어야 하는 이유는
+// 바깥으로 나가는 것이 사용자가 의도한 행동이어야 하기 때문이다.
+func (m Model) catalogCmd(arg string) tea.Cmd {
+	if m.cat == nil {
+		return send(errMsg{errCatalogNotConfigured})
+	}
+	if strings.TrimSpace(arg) == "" {
+		return send(errMsg{errNoTerm})
+	}
+	return tea.Batch(send(catalogStartedMsg{}), cmdCatalogSearch(m.cat, arg, m.catSeq+1))
+}
+
+func (m Model) loginCmd(string) tea.Cmd {
+	if m.cat == nil {
+		return send(errMsg{errCatalogNotConfigured})
+	}
+	// 브라우저가 곧 포커스를 가져간다. 그 전에 왜 그런지 로그에 남긴다.
+	return tea.Batch(
+		send(loginStartedMsg{}),
+		app.Say(m.Name(), "Approve the Apple Music sign-in in your browser (up to 3 minutes)"),
+		cmdCatalogLogin(m.cat),
+	)
+}
+
+func (m Model) logoutCmd(string) tea.Cmd {
+	if m.cat == nil {
+		return send(errMsg{errCatalogNotConfigured})
+	}
+	if err := applemusic.DeleteUserToken(); err != nil {
+		return send(errMsg{err})
+	}
+	return send(loggedOutMsg{})
+}

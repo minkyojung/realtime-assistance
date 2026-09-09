@@ -83,7 +83,7 @@ var schema = map[string]any{
 				"properties": map[string]any{
 					"trackId": map[string]any{
 						"type":        "integer",
-						"description": "id from the library listing. Never invent one.",
+						"description": "The line number of the track in the library listing (the first column). Never invent one.",
 					},
 					"reason": map[string]any{
 						"type":      "string",
@@ -128,11 +128,12 @@ type Current struct {
 // 무엇이 요청인지는 모델이 문장을 보고 판단한다.
 func Build(ctx context.Context, prompt string, library []api.Track, cur Current, now time.Time) (Result, error) {
 	if strings.TrimSpace(prompt) == "" {
-		return Result{}, fmt.Errorf("빈 요청")
+		return Result{}, fmt.Errorf("nothing to ask for")
 	}
 
 	start := time.Now()
 	client := openai.NewClient()
+	lst := renderLibrary(library, now)
 
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model: model,
@@ -140,7 +141,7 @@ func Build(ctx context.Context, prompt string, library []api.Track, cur Current,
 		// 고르는 작업이라 추론을 낮추면 지연이 크게 줄어든다.
 		ReasoningEffort: effort,
 		// 시스템 프롬프트와 라이브러리 목록을 먼저 두어야 프롬프트 캐시가 걸린다.
-		Messages: messages(prompt, library, cur, now),
+		Messages: messages(prompt, lst, cur),
 		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
 			OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{
 				JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{
@@ -159,6 +160,16 @@ func Build(ctx context.Context, prompt string, library []api.Track, cur Current,
 	if err := decode(resp, &out); err != nil {
 		return Result{}, err
 	}
+	// 줄번호를 진짜 id 로 되돌린다. 범위를 벗어난 번호는 0 으로 두면
+	// applyQueue 가 조용히 버린다.
+	for i := range out.Picks {
+		n := out.Picks[i].TrackID
+		if n < 1 || int(n) > len(lst.ids) {
+			out.Picks[i].TrackID = 0
+			continue
+		}
+		out.Picks[i].TrackID = lst.ids[n-1]
+	}
 	out.Usage = api.Usage{
 		PromptTokens:     int(resp.Usage.PromptTokens),
 		CompletionTokens: int(resp.Usage.CompletionTokens),
@@ -171,19 +182,23 @@ func Build(ctx context.Context, prompt string, library []api.Track, cur Current,
 
 // 시스템 프롬프트와 라이브러리는 요청마다 같으므로 앞에 둔다. 그래야 캐시가 걸린다.
 // 현재 큐는 매번 달라지므로 뒤에 붙인다.
-func messages(prompt string, library []api.Track, cur Current, now time.Time) []openai.ChatCompletionMessageParamUnion {
+func messages(prompt string, lst listing, cur Current) []openai.ChatCompletionMessageParamUnion {
 	out := []openai.ChatCompletionMessageParamUnion{
 		openai.SystemMessage(systemPrompt),
-		openai.SystemMessage(renderLibrary(library, now)),
+		openai.SystemMessage(lst.text),
 	}
 	if len(cur.Items) > 0 {
-		out = append(out, openai.SystemMessage(renderCurrent(cur)))
+		ord := make(map[int64]int, len(lst.ids))
+		for i, id := range lst.ids {
+			ord[id] = i + 1
+		}
+		out = append(out, openai.SystemMessage(renderCurrent(cur, ord)))
 	}
 	return append(out, openai.UserMessage(prompt))
 }
 
 // renderCurrent 는 지금 큐를 적는다.
-func renderCurrent(cur Current) string {
+func renderCurrent(cur Current, ord map[int64]int) string {
 	var b strings.Builder
 	b.WriteString("A queue is already on screen")
 	if cur.Title != "" {
@@ -198,7 +213,13 @@ func renderCurrent(cur Current) string {
 		if it.Track.Id == cur.Playing {
 			mark = "▶"
 		}
-		fmt.Fprintf(&b, "%s %d | %s | %s\n", mark, it.Track.Id, it.Track.Title, it.Track.Artist.Name)
+		// 목록에 없는 곡(라이브러리 밖)은 번호가 없다. 그런 곡은 번호 없이 적는다.
+		n, ok := ord[it.Track.Id]
+		if !ok {
+			fmt.Fprintf(&b, "%s - | %s | %s\n", mark, it.Track.Title, it.Track.Artist.Name)
+			continue
+		}
+		fmt.Fprintf(&b, "%s %d | %s | %s\n", mark, n, it.Track.Title, it.Track.Artist.Name)
 	}
 	return b.String()
 }
@@ -207,9 +228,21 @@ func renderCurrent(cur Current) string {
 //
 // 재생 횟수와 마지막 재생일을 반드시 넣는다. 근거를 사실로 쓰게 하려면
 // 모델이 그 사실을 볼 수 있어야 한다.
-func renderLibrary(tracks []api.Track, now time.Time) string {
+// listing 은 모델에게 준 목록이다. 줄번호(1..N)가 곧 모델이 돌려줄 trackId 다.
+//
+// 진짜 id 를 그대로 주지 않는 이유: persistent ID 를 수로 읽으므로 19자리가 된다.
+// 모델이 옮겨 적다 틀리기 쉽고 토큰도 비싸다. 줄번호는 짧고, 되돌리는 표를
+// 우리가 갖고 있으므로 요청 도중에 라이브러리가 갈려도 옳은 곡을 가리킨다.
+type listing struct {
+	text string
+	ids  []int64 // 줄번호-1 → 진짜 Track.Id
+}
+
+func renderLibrary(tracks []api.Track, now time.Time) listing {
 	var b strings.Builder
-	b.WriteString("The person's library. Columns: id | title | artist | album | genre | year | length | plays | last played | added\n")
+	ids := make([]int64, 0, len(tracks))
+	b.WriteString("The person's library. Columns: n | title | artist | album | genre | year | length | plays | last played | added\n")
+	b.WriteString("Use the n column as trackId when you pick a track.\n")
 	b.WriteString("\"added: not in library\" means the track sits in a playlist but was never added to the library, so no add date exists. Never claim a date for those.\n\n")
 	for _, t := range tracks {
 		if t.Excluded {
@@ -236,11 +269,12 @@ func renderLibrary(tracks []api.Track, now time.Time) string {
 		if t.AddedAt != nil {
 			added = fmt.Sprintf("%dd ago", int(now.Sub(*t.AddedAt).Hours()/24))
 		}
+		ids = append(ids, t.Id)
 		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s | %s | %d plays | %s | %s\n",
-			t.Id, t.Title, t.Artist.Name, album, genre, year,
+			len(ids), t.Title, t.Artist.Name, album, genre, year,
 			mmss(t.DurationMs), t.PlayCount, last, added)
 	}
-	return b.String()
+	return listing{text: b.String(), ids: ids}
 }
 
 func mmss(ms int) string {

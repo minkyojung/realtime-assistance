@@ -6,12 +6,16 @@ import (
 	"os"
 	"strings"
 
+	"amcli/tui/internal/data"
+	"amcli/tui/internal/data/fixture"
 	"amcli/tui/internal/host"
 	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
 
 func main() {
+	data.Set(fixture.Lib())
+
 	prompt := "요즘 안 듣던 것 위주로 30분"
 	if len(os.Args) > 1 {
 		prompt = strings.Join(os.Args[1:], " ")

@@ -5,10 +5,13 @@ package musicapp
 
 import (
 	"errors"
+	"strconv"
 	"strings"
+	"time"
 
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/app"
+	"amcli/tui/internal/applemusic"
 	"amcli/tui/internal/data"
 	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
@@ -50,6 +53,26 @@ type Model struct {
 	playerErr error
 	polled    bool
 
+	// 라이브러리 — Music.app 을 읽어 채운다. 읽기 전에는 비어 있다.
+	syncing bool
+	synced  bool
+
+	// 카탈로그 — 라이브러리 밖. 설정이 없으면 cat 이 nil 이고,
+	// 그때는 이 기능만 없다. 앱은 그대로 돈다.
+	cat      *applemusic.Client
+	catErr   error
+	catTerm  string
+	catHits  []api.CatalogTrack
+	catSeq   int
+	catBusy  bool
+	catLogin bool
+
+	// 검색어가 마지막으로 바뀐 때. 타이핑이 멎었는지 재는 데만 쓴다.
+	filterAt time.Time
+
+	// 담고 트는 중인 곡. 한 번에 하나만 한다.
+	adding *addJob
+
 	// 스크롤 계산에만 쓴다. 그리는 것은 언제나 View 의 인자를 따른다.
 	bodyH int
 }
@@ -63,6 +86,7 @@ func New() Model {
 	sp.Style = lipgloss.NewStyle().Foreground(style.ColBrand)
 
 	return Model{
+		// 여기서는 아직 아무것도 읽지 않는다. Init 이 캐시와 실물을 부른다.
 		sections: buildSections(data.Lib()),
 		spinner:  sp,
 		playing:  true,
@@ -77,10 +101,14 @@ func (m Model) Description() string {
 		"finding tracks, and playback control."
 }
 
+// 못 하는 것을 말한다. 카탈로그는 뒤지지 않는다.
+func (m Model) Tagline() string { return "only what you own" }
+
 // Init — send 는 이벤트 루프 밖에서 메시지를 넣는 통로다.
 // 음악은 폴링이라 아직 쓰지 않지만, 계약이 그렇게 되어 있다.
 func (m Model) Init(send func(tea.Msg)) tea.Cmd {
-	return tea.Batch(m.spinner.Tick, fetchStatus, tick())
+	// 캐시는 몇 ms, 실물은 몇 초다. 둘 다 띄우고 먼저 오는 것을 그린다.
+	return tea.Batch(m.spinner.Tick, fetchStatus, tick(), cmdLoadCache, cmdDumpLibrary(false), cmdCatalogInit)
 }
 
 func (m Model) Ready() error { return m.playerErr }
@@ -100,17 +128,46 @@ func (m Model) Ask(prompt string) tea.Cmd {
 func (m Model) Thinking() bool { return m.thinking }
 
 // Filter 는 검색어를 받는다. 즉시 반영되어야 하므로 Cmd 를 돌려주지 않는다.
+// Filter 는 계약상 Cmd 를 못 돌려준다 — 글자마다 불리기 때문이다.
+// 그래서 여기서는 "언제 바뀌었는지"만 적어두고, 바깥을 찾는 일은
+// 이미 도는 틱이 타이핑이 멎은 것을 보고 시작한다 (maybeSearchCatalog).
 func (m Model) Filter(q string) app.App {
 	if m.filter != q {
 		m.listIdx, m.listTop = 0, 0
+		m.filterAt = time.Now()
 	}
 	m.filter = q
 	return m
 }
 
+// 타이핑이 이만큼 멎으면 바깥까지 찾는다.
+// 폴링 주기가 1초라 실제 지연은 이 값과 1초 사이다.
+const catalogDebounce = 400 * time.Millisecond
+
+// maybeSearchCatalog — 틱마다 불린다. 조건이 맞을 때만 요청이 나간다.
+func (m *Model) maybeSearchCatalog() tea.Cmd {
+	q := strings.TrimSpace(m.filter)
+	if m.cat == nil || q == "" || m.catBusy {
+		return nil
+	}
+	if m.catTerm == q {
+		return nil // 이미 이 검색어의 결과를 갖고 있다
+	}
+	if time.Since(m.filterAt) < catalogDebounce {
+		return nil // 아직 치는 중이다
+	}
+	m.catSeq++
+	m.catBusy = true
+	return cmdCatalogSearch(m.cat, q, m.catSeq)
+}
+
 func (m Model) searching() bool { return strings.TrimSpace(m.filter) != "" }
 
 func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
+	if mm, cmd, handled := m.applyCatalog(msg); handled {
+		return mm, cmd
+	}
+
 	switch msg := msg.(type) {
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -137,8 +194,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		}
 		return mm, tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
 
+	case libraryMsg:
+		return m.applyLibrary(msg)
+
 	case tickMsg:
-		return m, tea.Batch(fetchStatus, tick())
+		return m, tea.Batch(fetchStatus, tick(), m.maybeSearchCatalog())
 
 	case statusMsg:
 		m.polled = true
@@ -190,11 +250,9 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 				return m, cmdOpenSettings()
 			}
 		case "up", "ctrl+p":
-			m.listIdx = style.Clamp(m.listIdx-1, 0, style.Max(m.rowCount()-1, 0))
-			m.clampList()
+			m.move(-1)
 		case "down", "ctrl+n":
-			m.listIdx = style.Clamp(m.listIdx+1, 0, style.Max(m.rowCount()-1, 0))
-			m.clampList()
+			m.move(1)
 		case "tab":
 			m.sectionIdx = (m.sectionIdx + 1) % len(m.sections)
 			m.listIdx, m.listTop = 0, 0
@@ -259,15 +317,24 @@ func (m Model) applyQueue(res intent.Result) (app.App, tea.Cmd) {
 }
 
 var (
-	errNoTracks = errors.New("고른 곡이 라이브러리에 없습니다")
-	errNoQueue  = errors.New("저장할 큐가 없습니다")
-	errNoName   = errors.New("플레이리스트 이름이 필요합니다: /save <name>")
+	errNoTracks = errors.New("None of those tracks are in your library")
+	errNoQueue  = errors.New("Nothing in the queue to save")
+	errSyncing  = errors.New("Already reading your library")
+	errNoTerm   = errors.New("Needs something to search for: /catalog <term>")
+	errNoName   = errors.New("Needs a playlist name: /save <name>")
 )
 
 // 목록에서 고른 곡을 튼다. 실제 재생은 Music.app 이 하고, 화면은 폴링으로 따라간다.
 func (m Model) playSelected() (app.App, tea.Cmd) {
 	rows := m.rows()
-	if m.listIdx < 0 || m.listIdx >= len(rows) || rows[m.listIdx].track == nil {
+	if m.listIdx < 0 || m.listIdx >= len(rows) {
+		return m, nil
+	}
+	// 카탈로그 곡은 아직 내 것이 아니다. 담아야 틀 수 있다.
+	if ct := rows[m.listIdx].catalog; ct != nil {
+		return m.playCatalog(*ct)
+	}
+	if rows[m.listIdx].track == nil {
 		return m, nil
 	}
 	t := *rows[m.listIdx].track
@@ -296,10 +363,39 @@ func (m *Model) ensureQueued(t api.Track) {
 }
 
 // clampList — 선택 행이 늘 보이도록 스크롤 위치를 맞춘다.
+// move — 커서를 옮긴다. 구역 머리글은 건너뛴다.
+//
+// 머리글에 커서가 서면 enter 가 아무것도 안 하는 자리가 생긴다.
+// 고를 수 없는 줄에는 서지 않는 것이 낫다.
+func (m *Model) move(d int) {
+	rows := m.rows()
+	i := m.listIdx
+	for {
+		i += d
+		if i < 0 || i >= len(rows) {
+			return // 끝에 닿았다. 커서를 그대로 둔다
+		}
+		if rows[i].selectable() {
+			m.listIdx = i
+			m.clampList()
+			return
+		}
+	}
+}
+
 func (m *Model) clampList() {
 	h := m.listHeight(m.bodyH)
 	n := m.rowCount()
 	m.listIdx = style.Clamp(m.listIdx, 0, style.Max(n-1, 0))
+	// 첫 줄이 머리글이면 그 다음 곡으로 내린다.
+	if rows := m.rows(); m.listIdx < len(rows) && !rows[m.listIdx].selectable() {
+		for i := m.listIdx + 1; i < len(rows); i++ {
+			if rows[i].selectable() {
+				m.listIdx = i
+				break
+			}
+		}
+	}
 	if m.listIdx < m.listTop {
 		m.listTop = m.listIdx
 	}
@@ -317,6 +413,8 @@ const maxListRows = 14
 func (m Model) listHeight(h int) int {
 	reserved := 3
 	if _, ok := m.viewGateHint(10); ok {
+		reserved++
+	} else if _, ok := m.viewCatalogHint(10); ok {
 		reserved++
 	}
 	return style.Min(style.Max(h-reserved, 3), maxListRows)
@@ -337,9 +435,46 @@ func (m Model) View(w, h int) string {
 	b.WriteString("\n")
 	b.WriteString(style.Rule(w))
 
-	if hint, ok := m.viewGateHint(w); ok {
+	// 관문이 있으면 그것이 이 자리를 쓴다. 둘 다 뜨는 일은 없다.
+	hint, ok := m.viewGateHint(w)
+	if !ok {
+		hint, ok = m.viewCatalogHint(w)
+	}
+	if ok {
 		b.WriteString("\n")
 		b.WriteString(hint)
 	}
 	return b.String()
+}
+
+// applyLibrary — 새 스냅샷을 받아들인다.
+//
+// 캐시와 실물이 경주한다. 늦게 도착한 캐시가 실물을 덮으면 안 된다.
+func (m Model) applyLibrary(msg libraryMsg) (app.App, tea.Cmd) {
+	if msg.live {
+		m.syncing = false
+	}
+	if msg.err != nil {
+		// 관문(E1·E2)은 이미 1초마다 같은 말을 하고 있다. 두 번 말하지 않는다.
+		if errors.Is(msg.err, music.ErrNotRunning) || errors.Is(msg.err, music.ErrPermissionDenied) {
+			return m, nil
+		}
+		// 캐시가 없는 것은 첫 실행의 정상 상태다.
+		if !msg.live {
+			return m, nil
+		}
+		return m, app.SayErr(m.Name(), msg.err)
+	}
+	if msg.lib == nil || (!msg.live && m.synced) {
+		return m, nil
+	}
+
+	m.synced = m.synced || msg.live
+	data.Set(msg.lib)
+	m.resync(msg.lib)
+
+	if msg.announce {
+		return m, app.Say(m.Name(), "Read "+strconv.Itoa(len(msg.lib.Songs()))+" songs from your library")
+	}
+	return m, nil
 }

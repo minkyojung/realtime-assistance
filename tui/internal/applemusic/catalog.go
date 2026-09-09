@@ -14,8 +14,14 @@ import (
 	"amcli/tui/internal/api"
 )
 
-// ErrCatalogUnavailable — E7. 스펙의 CATALOG_UNAVAILABLE 과 같은 뜻이다.
-var ErrCatalogUnavailable = errors.New("catalog unavailable")
+// E7 의 두 얼굴. 개발자 토큰이 죽은 것과 사용자 토큰이 죽은 것은
+// 사용자가 할 일이 다르다 — 앞은 우리 잘못이고, 뒤는 다시 로그인하면 된다.
+var (
+	// ErrCatalogUnavailable — E7. 스펙의 CATALOG_UNAVAILABLE 과 같은 뜻이다.
+	ErrCatalogUnavailable = errors.New("catalog unavailable")
+	// ErrUserTokenRejected — 사용자 토큰이 만료되거나 취소됐다.
+	ErrUserTokenRejected = errors.New("user token rejected")
+)
 
 // Client 는 api.music.apple.com 에 붙는다.
 //
@@ -58,9 +64,9 @@ func (c *Client) do(ctx context.Context, method, path string, q url.Values) ([]b
 	}
 	switch {
 	case res.StatusCode == http.StatusUnauthorized:
-		return nil, errors.New("개발자 토큰이 거부됐다 (401) — key ID·team ID·만료를 본다")
+		return nil, errors.New("developer token rejected (401) — check key ID, team ID and expiry")
 	case res.StatusCode == http.StatusForbidden:
-		return nil, errors.New("사용자 토큰이 거부됐다 (403) — 다시 로그인해야 한다")
+		return nil, fmt.Errorf("%w: 403", ErrUserTokenRejected)
 	case res.StatusCode >= 300:
 		return nil, fmt.Errorf("%w: %s: %s", ErrCatalogUnavailable, res.Status, trim(body))
 	}
@@ -114,7 +120,7 @@ func (c *Client) Search(ctx context.Context, term string, limit int) ([]api.Cata
 		} `json:"results"`
 	}
 	if err := json.Unmarshal(body, &res); err != nil {
-		return nil, fmt.Errorf("%w: 응답을 읽을 수 없다: %v", ErrCatalogUnavailable, err)
+		return nil, fmt.Errorf("%w: could not read the response: %v", ErrCatalogUnavailable, err)
 	}
 
 	out := make([]api.CatalogTrack, 0, len(res.Results.Songs.Data))
@@ -154,7 +160,7 @@ func (c *Client) Search(ctx context.Context, term string, limit int) ([]api.Cata
 // 담긴 곡이 Music.app 에 나타나기까지는 동기화 지연이 있다.
 func (c *Client) AddToLibrary(ctx context.Context, appleMusicIDs []string) error {
 	if c.UserToken == "" {
-		return errors.New("로그인이 필요하다")
+		return errors.New("sign-in required")
 	}
 	if len(appleMusicIDs) == 0 {
 		return nil
@@ -168,7 +174,7 @@ func (c *Client) AddToLibrary(ctx context.Context, appleMusicIDs []string) error
 // Storefront 는 이 계정의 지역을 읽는다. 사용자 토큰이 있을 때만 된다.
 func (c *Client) LookupStorefront(ctx context.Context) (string, error) {
 	if c.UserToken == "" {
-		return "", errors.New("로그인이 필요하다")
+		return "", errors.New("sign-in required")
 	}
 	body, err := c.do(ctx, http.MethodGet, "/v1/me/storefront", nil)
 	if err != nil {
@@ -180,7 +186,7 @@ func (c *Client) LookupStorefront(ctx context.Context) (string, error) {
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(body, &res); err != nil || len(res.Data) == 0 {
-		return "", errors.New("지역을 읽을 수 없다")
+		return "", errors.New("could not read the storefront")
 	}
 	return res.Data[0].ID, nil
 }

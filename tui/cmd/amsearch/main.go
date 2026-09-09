@@ -16,7 +16,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "쓰임: amsearch login | amsearch <검색어>")
+		fmt.Fprintln(os.Stderr, "usage: amsearch login | amsearch <term>")
 		os.Exit(2)
 	}
 
@@ -29,9 +29,9 @@ func main() {
 	defer cancel()
 
 	if os.Args[1] == "login" {
-		fmt.Println("브라우저를 엽니다...")
+		fmt.Println("Opening your browser…")
 		die(c.Login(ctx))
-		fmt.Println("연결됐습니다. 지역:", c.Storefront)
+		fmt.Println("Connected. Storefront:", c.Storefront)
 		return
 	}
 
@@ -39,7 +39,7 @@ func main() {
 	tracks, err := c.Search(ctx, term, 25)
 	die(err)
 
-	fmt.Printf("%q — %d곡\n\n", term, len(tracks))
+	fmt.Printf("%q — %d results\n\n", term, len(tracks))
 	for i, t := range tracks {
 		album := ""
 		if t.AlbumName != nil {
@@ -51,7 +51,7 @@ func main() {
 
 func die(err error) {
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "오류:", err)
+		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
 }

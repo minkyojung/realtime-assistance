@@ -12,10 +12,22 @@ import (
 	"time"
 
 	"amcli/tui/internal/data"
+	"amcli/tui/internal/data/fixture"
 	"amcli/tui/internal/intent"
+	"amcli/tui/internal/music"
 )
 
 func main() {
+	// 실물을 본다. Music.app 이 없으면 픽스처로 물러선다.
+	if b, err := music.DumpLibrary(context.Background()); err == nil {
+		if l, err := data.FromDump(b); err == nil {
+			data.Set(l)
+		}
+	}
+	if len(data.Lib().Tracks) == 0 {
+		data.Set(fixture.Lib())
+	}
+
 	prompt := "앞으로 1시간 동안 코딩하면서 들을 큐 만들어줘"
 	if len(os.Args) > 1 {
 		prompt = strings.Join(os.Args[1:], " ")

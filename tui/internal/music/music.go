@@ -6,11 +6,13 @@
 package music
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -18,6 +20,8 @@ var (
 	ErrNotRunning = errors.New("music app is not running")
 	// ErrPermissionDenied — 자동화 권한이 거부됐다 (E1).
 	ErrPermissionDenied = errors.New("automation permission denied")
+	// ErrTimeout — osascript 가 제 시간에 안 돌아왔다.
+	ErrTimeout = errors.New("osascript timed out")
 )
 
 // PlayerState 는 Music.app 을 폴링해 얻는 값이다. DB 에 저장하지 않는다.
@@ -114,17 +118,35 @@ func simple(cmd string) error {
 	return err
 }
 
+// osascript 는 붙잡히면 돌아오지 않는다. 권한 대화상자가 떠 있는 동안이 그렇고,
+// 1초 폴링이 그대로 프로세스 더미가 된다.
+const cmdTimeout = 5 * time.Second
+
 func run(script string) (string, error) {
-	out, err := exec.Command("osascript", "-e", script).CombinedOutput()
+	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "osascript", "-e", script).CombinedOutput()
 	s := strings.TrimSpace(string(out))
 	if err != nil {
-		// -1743 은 TCC 가 자동화를 막았을 때의 코드다.
-		if strings.Contains(s, "-1743") || strings.Contains(s, "Not authorized") {
-			return "", ErrPermissionDenied
+		if ctx.Err() != nil {
+			return "", ErrTimeout
 		}
-		return "", errors.New(s)
+		return "", classify(s)
 	}
 	return s, nil
+}
+
+// classify 는 osascript 가 뱉은 말을 우리가 아는 오류로 바꾼다.
+func classify(out string) error {
+	s := strings.TrimSpace(out)
+	// -1743 은 TCC 가 자동화를 막았을 때의 코드다.
+	if strings.Contains(s, "-1743") || strings.Contains(s, "Not authorized") {
+		return ErrPermissionDenied
+	}
+	if s == "" {
+		return errors.New("osascript failed without a message")
+	}
+	return errors.New(s)
 }
 
 func seconds(s string) int {
@@ -149,7 +171,7 @@ func CreatePlaylist(name string, persistentIDs []string) error {
 		return ErrNotRunning
 	}
 	if len(persistentIDs) == 0 {
-		return errors.New("담을 곡이 없습니다")
+		return errors.New("no tracks to add")
 	}
 
 	var b strings.Builder
@@ -180,5 +202,56 @@ func CreatePlaylist(name string, persistentIDs []string) error {
 	return name of pl
 end tell`)
 	_, err := run(b.String())
+	return err
+}
+
+// runArgs 는 값을 스크립트에 이어 붙이지 않고 argv 로 넘긴다.
+//
+// 제목과 아티스트는 사용자 데이터고 따옴표가 들어간다. 이어 붙이면
+// 따옴표 하나로 스크립트가 깨진다. Go 의 %q 도 AppleScript 인용과
+// 규칙이 달라 안전하지 않다.
+func runArgs(script string, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
+	defer cancel()
+	argv := []string{"-e", "on run argv", "-e", script, "-e", "end run"}
+	argv = append(argv, args...)
+	out, err := exec.CommandContext(ctx, "osascript", argv...).CombinedOutput()
+	s := strings.TrimSpace(string(out))
+	if err != nil {
+		if ctx.Err() != nil {
+			return "", ErrTimeout
+		}
+		return "", classify(s)
+	}
+	return s, nil
+}
+
+// PlayByTitleArtist 는 방금 담긴 곡을 이름으로 찾아 튼다.
+//
+// Music.app 은 Apple Music 카탈로그 id 를 AppleScript 로 내주지 않는다.
+// persistent ID 는 곡이 라이브러리에 나타난 뒤에야 생기므로, 담자마자
+// 틀려면 이름으로 찾는 수밖에 없다. **이 경로가 제일 무른 곳이다.**
+//
+// 튼 뒤의 진짜 persistent ID 는 다음 폴링이 알려준다. 우리가 찾을 필요가 없다.
+func PlayByTitleArtist(title, artist string) error {
+	if !Running() {
+		return ErrNotRunning
+	}
+	// 정확히 같은 이름을 먼저 보고, 없으면 부분 일치로 한 번 더 본다.
+	// 카탈로그와 Music.app 이 같은 곡을 다르게 적는 일이 흔하다
+	// (feat. 표기, explicit/clean 판본).
+	_, err := runArgs(`tell application "Music"
+	set t to item 1 of argv
+	set a to item 2 of argv
+	try
+		play (first track of library playlist 1 whose name is t and artist is a)
+		return "ok"
+	end try
+	try
+		play (first track of library playlist 1 whose name contains t and artist is a)
+		return "ok"
+	end try
+	error "track not found"
+end tell`, title, artist)
 	return err
 }
