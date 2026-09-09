@@ -24,7 +24,7 @@ func (m Model) Facts() []app.Fact {
 		{Group: sources, Name: "Music.app", Detail: m.factPlayer()},
 		{Group: sources, Name: "Apple Music", Detail: m.factCatalog()},
 		{Group: sources, Name: "LRCLIB", Detail: "synced lyrics"},
-		{Group: sources, Name: "OpenAI", Detail: m.factOpenAI()},
+		{Group: sources, Name: "AI", Detail: m.factAI()},
 		{Group: library, Detail: factLibrary(data.Lib())},
 	}
 	// 명령은 이름만 늘어놓는다. 무엇을 하는지는 팔레트가 말하고(`/`),
@@ -70,7 +70,12 @@ func (m Model) factCatalog() string {
 	return "catalog search · signed in"
 }
 
-// OpenAI 도 카탈로그와 같다. 키가 없으면 기능만 없고 앱은 그대로 돈다.
+// AI 도 카탈로그와 같다. 키가 없으면 기능만 없고 앱은 그대로 돈다.
+//
+// 이름을 벤더가 아니라 **역할**로 적는다. 지금은 OpenAI 하나뿐이지만
+// 이름에 박아두면 프로바이더가 바뀔 때 화면까지 따라 바꿔야 한다.
+// 켜져 있을 때는 벤더를 설명 칸에 적는다 — **네 돈이 어디로 가는지는
+// 밝혀야 한다.** 꺼져 있을 때는 아직 정해진 곳이 없으니 적을 것도 없다.
 //
 // 한때 여기가 모델 이름을 무조건 적었다. **모델 이름은 "붙어 있다"는 뜻이
 // 아닌데** 붙어 있는 것처럼 보였고, 그래서 키가 없는 사람이 들어가서 문장을
@@ -79,11 +84,11 @@ func (m Model) factCatalog() string {
 //
 // 켜는 법까지 여기 적는다. 꺼진 것을 보여 놓고 어떻게 켜는지 말하지 않으면
 // 첫 화면을 나가서 팔레트를 뒤져야 한다.
-func (m Model) factOpenAI() string {
+func (m Model) factAI() string {
 	if !secrets.HasOpenAIKey() {
-		return "off · /openai <sk-…>"
+		return "off · /ai <key>"
 	}
-	return intent.Model() + " · " + intent.EditModel()
+	return "OpenAI · " + intent.Model() + " · " + intent.EditModel()
 }
 
 func factLibrary(l *data.Library) string {

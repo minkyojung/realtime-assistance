@@ -168,7 +168,7 @@ func (m *Model) applyMode() {
 			// 키가 없다고 Search 로 시작하면 AI 가 있다는 것 자체를 모르고
 			// 지나간다. 자리는 그대로 두고 **왜 못 쓰는지와 무엇을 하면
 			// 되는지**를 그 자리가 말한다 — 카탈로그가 꺼졌을 때와 같다.
-			m.input.Placeholder = "AI is off    /openai <sk-…>  to turn it on"
+			m.input.Placeholder = "AI is off    /ai <key>  to turn it on"
 		}
 	}
 	styles.Focused.Prompt = lipgloss.NewStyle().Foreground(color)

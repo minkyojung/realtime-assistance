@@ -493,25 +493,31 @@ func TestAskWithoutKeyDoesNotFire(t *testing.T) {
 		t.Error("키가 없는데 요청이 나갔다")
 	}
 	// 무엇을 하면 되는지를 말한다.
-	if !strings.Contains(errAIOff.Error(), "/openai") {
+	if !strings.Contains(errAIOff.Error(), "/ai ") {
 		t.Errorf("안내가 다음 행동을 안 말한다: %v", errAIOff)
 	}
 }
 
-// /openai 는 인자가 없으면 무엇을 달라는지 말한다.
-func TestOpenAICommandNeedsKey(t *testing.T) {
+// /ai 는 인자가 없으면 무엇을 달라는지 말한다.
+//
+// 이름이 벤더가 아니라 역할인 것도 함께 지킨다. 프로바이더가 바뀔 때
+// 사용자에게 보이는 이름까지 따라 바꾸지 않으려는 것이다.
+func TestAIKeyCommandNeedsKey(t *testing.T) {
 	var found bool
 	for _, c := range New().Commands() {
-		if c.Name != "/openai" {
+		if c.Name == "/openai" {
+			t.Error("명령 이름에 벤더가 박혀 있다 — /ai 여야 한다")
+		}
+		if c.Name != "/ai" {
 			continue
 		}
 		found = true
 		if c.Arg == "" {
-			t.Error("/openai 가 인자를 요구하지 않는다")
+			t.Error("/ai 가 인자를 요구하지 않는다")
 		}
 	}
 	if !found {
-		t.Fatal("/openai 명령이 없다")
+		t.Fatal("/ai 명령이 없다")
 	}
 }
 
@@ -520,24 +526,29 @@ func TestOpenAICommandNeedsKey(t *testing.T) {
 // 한때 이 줄이 모델 이름을 무조건 적었다. 모델 이름은 "붙어 있다"는 뜻이
 // 아닌데 붙어 있는 것처럼 보였고, 그래서 키가 없는 사람이 들어가서 문장을
 // 치고 나서야 안 되는 걸 알았다.
-func TestFactsTellTheTruthAboutOpenAI(t *testing.T) {
+func TestFactsTellTheTruthAboutAI(t *testing.T) {
 	t.Setenv("OPENAI_API_KEY", "")
 	if secrets.HasOpenAIKey() {
 		t.Skip("이 기계 키체인에 실제 키가 들어 있다")
 	}
-	off := factOf(t, New(), "OpenAI")
+	off := factOf(t, New(), "AI")
 	if !strings.Contains(off, "off") {
 		t.Errorf("키가 없는데 %q 라고 적는다", off)
 	}
 	// 켜는 법까지 적는다. 꺼진 것만 보여 주고 어떻게 켜는지 말하지 않으면
 	// 첫 화면을 나가서 팔레트를 뒤져야 한다.
-	if !strings.Contains(off, "/openai") {
+	if !strings.Contains(off, "/ai ") {
 		t.Errorf("켜는 법이 없다: %q", off)
 	}
 
 	t.Setenv("OPENAI_API_KEY", "sk-test")
-	if on := factOf(t, New(), "OpenAI"); strings.Contains(on, "off") {
+	on := factOf(t, New(), "AI")
+	if strings.Contains(on, "off") {
 		t.Errorf("키가 있는데 %q 라고 적는다", on)
+	}
+	// 켜져 있을 때는 벤더를 밝힌다 — 네 돈이 어디로 가는지는 알아야 한다.
+	if !strings.Contains(on, "OpenAI") {
+		t.Errorf("켜졌는데 어디에 붙었는지 안 적는다: %q", on)
 	}
 }
 

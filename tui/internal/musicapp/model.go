@@ -825,4 +825,4 @@ func (m Model) applyLibrary(msg libraryMsg) (app.App, tea.Cmd) {
 }
 
 // AI 가 꺼져 있을 때의 한 마디. 왜 안 되는지가 아니라 무엇을 하면 되는지다.
-var errAIOff = errors.New("AI is off  ·  /openai <sk-…> to turn it on")
+var errAIOff = errors.New("AI is off  ·  /ai <key> to turn it on")

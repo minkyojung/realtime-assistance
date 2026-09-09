@@ -60,8 +60,8 @@ func (m Model) Commands() []app.Command {
 			Run: func(string) tea.Cmd { return send(clearQueueMsg{}) }},
 		{Name: "/reload", Help: "read your library from Music.app again",
 			Run: m.reloadCmd},
-		{Name: "/openai", Arg: "<sk-…>", Help: "turn on AI · your OpenAI API key",
-			Run: openaiCmd},
+		{Name: "/ai", Arg: "<key>", Help: "turn on AI · your provider API key",
+			Run: aiKeyCmd},
 		{Name: "/setup", Arg: "<team ID>", Help: "connect Apple Music · your Apple Developer team ID",
 			Run: m.setupCmd},
 		{Name: "/login", Help: "connect your Apple Music account (opens a browser)",
@@ -294,14 +294,22 @@ func (m Model) setupCmd(arg string) tea.Cmd {
 var errNoTeamID = errors.New(
 	"which team? · /setup <team ID> — developer.apple.com › Membership")
 
-// openaiCmd — OpenAI 키를 키체인에 넣고 AI 를 켠다.
+// aiKeyCmd — AI 키를 키체인에 넣고 켠다.
+//
+// 명령 이름을 벤더가 아니라 **역할**로 부른다. 지금은 OpenAI 하나뿐이지만,
+// 이름에 벤더를 박아두면 프로바이더가 바뀌거나 늘 때 사용자에게 보이는
+// 것까지 전부 바꿔야 한다. 역할 이름은 추상화를 미리 만드는 것이 아니라
+// **이름에 벤더를 안 박는 것**이라 비용이 0이다.
+//
+// 안에서 쓰는 이름은 벤더 그대로 둔다(secrets.AccountOpenAI). 그건 실제로
+// OpenAI 키가 맞고, 두 번째가 생기면 따로 두는 것이 맞다.
 //
 // 환경변수로 받지 않는 이유는 그것이 셸에만 살기 때문이다. 터미널을 새로
 // 열거나 셸을 안 거치고 띄우면 사라진다 — 애플 뮤직 설정에서 이미 겪었다.
 //
 // 키체인인 이유는 **비밀이기 때문이다.** Key ID·Team ID 는 식별자라 설정
 // 파일에 두지만, 이 키는 뽑히면 남의 돈이 나간다(internal/secrets).
-func openaiCmd(arg string) tea.Cmd {
+func aiKeyCmd(arg string) tea.Cmd {
 	arg = strings.TrimSpace(arg)
 	if arg == "" {
 		return send(errMsg{errNoAPIKey})
@@ -314,4 +322,4 @@ func openaiCmd(arg string) tea.Cmd {
 }
 
 var errNoAPIKey = errors.New(
-	"which key? · /openai <sk-…> — platform.openai.com › API keys")
+	"which key? · /ai <key> — platform.openai.com › API keys")
