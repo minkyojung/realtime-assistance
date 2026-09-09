@@ -227,7 +227,8 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 
 func (m Model) bodyHeight() int {
 	// 입력창1 + 룰1 + 상태줄1 + 위아래 여백2
-	return style.Max(m.h-5, 3)
+	h := m.h - 5 - len(m.overlayRows(style.ContentWidth(m.w)))
+	return style.Max(h, 3)
 }
 
 func (m Model) View() tea.View {
@@ -238,13 +239,14 @@ func (m Model) View() tea.View {
 	bodyH := m.bodyHeight()
 
 	var b strings.Builder
-	if m.overlaying() {
-		b.WriteString(m.viewOverlay(w, bodyH))
-	} else {
-		b.WriteString(m.app().View(w, bodyH))
-	}
+	// 본문은 무엇을 하든 그대로다. 팔레트는 입력창 아래에 붙는다.
+	b.WriteString(m.app().View(w, bodyH))
 	b.WriteString("\n")
 	b.WriteString(m.input.View())
+	for _, r := range m.overlayRows(w) {
+		b.WriteString("\n")
+		b.WriteString(r)
+	}
 	b.WriteString("\n")
 	b.WriteString(style.Rule(w))
 	b.WriteString("\n")

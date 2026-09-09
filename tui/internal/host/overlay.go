@@ -96,33 +96,36 @@ func (m Model) runCommand() (tea.Model, tea.Cmd) {
 // runResultMsg 는 명령이 만든 Cmd 를 앱 쪽으로 흘려보내기 위한 껍데기다.
 type runResultMsg struct{ cmd tea.Cmd }
 
-func (m Model) viewOverlay(w, h int) string {
-	var rows []string
+// 팔레트는 입력창 바로 아래에 뜬다. 본문을 밀어내지 않는다.
+//
+// 이전에는 본문 자리를 통째로 빌려 썼는데, 명령을 고르는 동안 보고 있던
+// 목록이 사라져 맥락을 잃었다. 눈도 화면 위아래를 왕복해야 했다.
+// 입력창 아래에 붙이면 둘 다 사라진다 — agentic CLI 의 관례이기도 하다.
+const maxOverlayRows = 8
+
+func (m Model) overlayRows(w int) []string {
 	if m.showHelp {
+		out := make([]string, 0, len(helpRows))
 		for i, r := range helpRows {
-			rows = append(rows, m.renderHelp(i, r, w))
+			out = append(out, m.renderHelp(i, r, w))
 		}
-	} else {
-		cs := m.matchedCommands()
-		if len(cs) == 0 {
-			rows = append(rows, style.Faint.Render("No such command"))
-		}
-		for i, c := range cs {
-			rows = append(rows, m.renderCommand(i, c, w))
-		}
+		return out
 	}
-
-	head := style.Brand.Render("▌") + style.BrandBold.Render(" / Commands")
-	if m.showHelp {
-		head = style.Brand.Render("▌") + style.BrandBold.Render(" ? Help")
+	if !m.commanding() {
+		return nil
 	}
-
-	out := []string{head, style.RuleBrand(w)}
-	out = append(out, rows...)
-	for len(out) < h {
-		out = append(out, "")
+	cs := m.matchedCommands()
+	if len(cs) == 0 {
+		return []string{"  " + style.Faint.Render("No such command")}
 	}
-	return strings.Join(out[:h], "\n")
+	if len(cs) > maxOverlayRows {
+		cs = cs[:maxOverlayRows]
+	}
+	out := make([]string, 0, len(cs))
+	for i, c := range cs {
+		out = append(out, m.renderCommand(i, c, w))
+	}
+	return out
 }
 
 func (m Model) renderCommand(i int, c app.Command, w int) string {
