@@ -250,7 +250,7 @@ func (m Model) applyStep(msg stepMsg) (app.App, tea.Cmd) {
 		if msg.step.Text == "" {
 			return m, app.SayErr(m.Name(), errNothingToSay)
 		}
-		return m, app.Say(m.Name(), msg.step.Text)
+		return m.remember(msg.step.Text), app.Say(m.Name(), msg.step.Text)
 	}
 
 	// 한 걸음에 하나만 돌린다. 여럿을 한꺼번에 돌리면 서로의 결과를 못 보고
@@ -266,7 +266,7 @@ func (m Model) applyStep(msg stepMsg) (app.App, tea.Cmd) {
 	}
 	if known && spec.answers {
 		m.ask = m.ask.done()
-		return m, app.Say(m.Name(), result)
+		return m.remember(result), app.Say(m.Name(), result)
 	}
 
 	// 결과를 보고 한 걸음 더. 끝없이 돌지 않도록 상한을 둔다.
@@ -278,4 +278,32 @@ func (m Model) applyStep(msg stepMsg) (app.App, tea.Cmd) {
 	var ctx context.Context
 	m.ask, ctx = m.ask.extend(askTimeout)
 	return m, cmdStep(ctx, m.ask.seq, m.chat, m.toolDefs())
+}
+
+// 기억할 턴의 개수.
+//
+// 요약 두 줄짜리라 여섯이면 열두 줄이다. 토큰 한계에 닿을 일이 없으므로
+// 오래된 것을 요약해 접는 장치(pi 의 compaction)를 두지 않는다. 코딩 세션은
+// 몇 시간이지만 음악 대화는 몇 마디다. 닿지 않는 한계에 기계를 만들면
+// 그 기계가 새 버그의 자리가 된다.
+const maxMemory = 6
+
+// remember 는 이 턴을 기억에 적는다.
+//
+// **턴이 닫힐 때만 부른다.** 그만둔 턴도 실패한 턴도 적지 않는다 — 안 한
+// 일을 했다고 적어 두면 다음 턴에 모델이 그것을 사실로 읽는다.
+// pi 가 "어시스턴트 턴과 그 도구 결과가 다 끝난 뒤"에만 기록을 내리는 것과
+// 같은 자리다.
+func (m Model) remember(said string) Model {
+	if strings.TrimSpace(m.asked) == "" || strings.TrimSpace(said) == "" {
+		return m
+	}
+	next := append(append([]intent.Exchange{}, m.memory...),
+		intent.Exchange{Ask: m.asked, Said: said})
+	if len(next) > maxMemory {
+		next = next[len(next)-maxMemory:]
+	}
+	m.memory = next
+	m.asked = ""
+	return m
 }

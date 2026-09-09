@@ -71,6 +71,15 @@ type Model struct {
 	chat  intent.Chat
 	steps int
 
+	// 지금 물음의 문장. 턴이 닫힐 때 우리가 한 말과 짝지어 기억에 적는다.
+	asked string
+
+	// 턴을 넘어 살아남는 것은 이것뿐이다 — 주고받은 말.
+	//
+	// "아까 그거 말고"의 "그거"가 여기서 풀린다. 큐는 매 턴 새로 그려
+	// 넘기므로 상태를 여기 담을 이유가 없다 — intent 의 NewChat.
+	memory []intent.Exchange
+
 	spinner    spinner.Model
 	queueTitle string
 	note       string
@@ -172,7 +181,8 @@ func (m Model) Ask(prompt string) tea.Cmd {
 func (m Model) startAsk(prompt string) (Model, tea.Cmd) {
 	var ctx context.Context
 	m.ask, ctx = m.ask.start(askTimeout)
-	m.chat = intent.NewChat(prompt, m.current(), m.toolDefs())
+	m.chat = intent.NewChat(prompt, m.current(), m.memory)
+	m.asked = prompt
 	m.steps = 0
 	return m, cmdStep(ctx, m.ask.seq, m.chat, m.toolDefs())
 }
@@ -275,7 +285,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		if strings.TrimSpace(note) == "" {
 			note = msg.res.Title
 		}
-		return mm, tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
+		return mm.(Model).remember(note), tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
 
 	case libraryMsg:
 		return m.applyLibrary(msg)

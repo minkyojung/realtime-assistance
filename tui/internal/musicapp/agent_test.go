@@ -238,3 +238,84 @@ func TestLibraryFactsAreNumbersNotProse(t *testing.T) {
 		}
 	}
 }
+
+// 기억 — "아까 그거"가 무엇을 가리키는지 아는 데 필요한 최소한.
+
+// 주고받은 말이 남아야 다음 턴이 그것을 가리킬 수 있다.
+func TestFinishedTurnIsRemembered(t *testing.T) {
+	m := asked(t, New(), "안녕")
+
+	next, _ := m.Update(said(m, "안녕하세요"))
+	after := next.(Model)
+
+	if len(after.memory) != 1 {
+		t.Fatalf("기억이 %d 개다 — 하나여야 한다", len(after.memory))
+	}
+	if after.memory[0].Ask != "안녕" || after.memory[0].Said != "안녕하세요" {
+		t.Errorf("주고받은 말이 짝이 안 맞는다: %+v", after.memory[0])
+	}
+}
+
+// **그만둔 턴은 기억에 안 남는다.**
+//
+// 안 한 일을 했다고 적어 두면 다음 턴에 모델이 그것을 사실로 읽는다.
+// esc 로 물러난 요청은 일어나지 않은 일이다.
+func TestCancelledTurnLeavesNoTrace(t *testing.T) {
+	m := asked(t, New(), "조용한 거")
+
+	next, _ := m.Update(app.CancelMsg{})
+	if got := len(next.(Model).memory); got != 0 {
+		t.Errorf("그만둔 턴이 기억에 %d 개 남았다", got)
+	}
+}
+
+// 실패한 턴도 안 남는다. 하지 못한 일을 했다고 적을 이유가 없다.
+func TestFailedTurnLeavesNoTrace(t *testing.T) {
+	m := asked(t, New(), "조용한 거")
+
+	next, _ := m.Update(stepMsg{seq: m.ask.seq, err: errors.New("model unavailable")})
+	if got := len(next.(Model).memory); got != 0 {
+		t.Errorf("실패한 턴이 기억에 %d 개 남았다", got)
+	}
+}
+
+// 오래된 것부터 빠진다. 요약을 접는 장치를 두지 않는 대신 개수로 막는다.
+func TestMemoryKeepsOnlyTheRecentTurns(t *testing.T) {
+	m := New()
+	for i := 0; i < maxMemory+3; i++ {
+		m = asked(t, m, "물음 "+string(rune('a'+i)))
+		next, _ := m.Update(said(m, "답 "+string(rune('a'+i))))
+		m = next.(Model)
+	}
+
+	if len(m.memory) != maxMemory {
+		t.Fatalf("기억이 %d 개다 — 상한은 %d", len(m.memory), maxMemory)
+	}
+	// 마지막에 한 말이 마지막에 남아 있어야 한다.
+	if last := m.memory[len(m.memory)-1]; last.Ask != "물음 i" {
+		t.Errorf("가장 최근 물음이 %q 다", last.Ask)
+	}
+	// 맨 처음 것은 빠졌어야 한다.
+	for _, ex := range m.memory {
+		if ex.Ask == "물음 a" {
+			t.Error("상한을 넘겼는데 제일 오래된 것이 남아 있다")
+		}
+	}
+}
+
+// 기억이 실제로 다음 물음에 실려야 한다. 쌓아두고 안 쓰면 아무 소용이 없다.
+func TestMemoryIsCarriedIntoTheNextQuestion(t *testing.T) {
+	m := asked(t, New(), "조용한 거")
+	next, _ := m.Update(said(m, "8곡 담았습니다"))
+	m = next.(Model)
+
+	bare := New()
+	bare.bodyH = 20
+	bare = asked(t, bare, "아까 그거 말고")
+	with := asked(t, m, "아까 그거 말고")
+
+	if with.chat.Len() <= bare.chat.Len() {
+		t.Errorf("기억이 있는데 물음에 안 실렸다: %d 줄, 기억 없을 때 %d 줄",
+			with.chat.Len(), bare.chat.Len())
+	}
+}

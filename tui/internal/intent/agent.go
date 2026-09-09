@@ -87,14 +87,31 @@ type Chat struct {
 	msgs []openai.ChatCompletionMessageParamUnion
 }
 
+// Exchange 는 지난 턴 하나다 — 사람이 한 말과 우리가 한 말.
+//
+// 도구를 부른 내역은 담지 않는다. "아까 그거"가 무엇을 가리키는지 알려면
+// 주고받은 말이면 충분하고, 도구 결과까지 쌓으면 몇 턴 만에 프롬프트가
+// 부푼다 — library_facts 결과만 해도 숫자 뭉치다.
+type Exchange struct {
+	Ask  string
+	Said string
+}
+
 // NewChat 은 한 문장으로 대화를 연다.
 //
 // 라이브러리를 넣지 않는다. 이 층이 답할 물음은 "무엇을 할까"이지
 // "무엇이 좋을까"가 아니고, 그것이 이 층이 싼 이유의 전부다.
 // 곡을 고르는 일은 build_queue 도구 안에서 벌어진다.
-func NewChat(prompt string, cur Current, tools []Tool) Chat {
+//
+// 지난 대화가 앞에 오고 지금 큐가 그 뒤에 온다. 큐는 매 턴 새로 그려
+// 넘기므로, 기억은 **상태를 담는 곳이 아니라 말이 무엇을 가리키는지
+// 알려주는 곳**이다. "아까 그거 말고"의 "그거"가 여기서 풀린다.
+func NewChat(prompt string, cur Current, history []Exchange) Chat {
 	msgs := []openai.ChatCompletionMessageParamUnion{
 		openai.SystemMessage(agentPrompt),
+	}
+	for _, ex := range history {
+		msgs = append(msgs, openai.UserMessage(ex.Ask), openai.AssistantMessage(ex.Said))
 	}
 	if len(cur.Items) > 0 {
 		msgs = append(msgs, openai.SystemMessage(renderQueue(cur)))
@@ -114,6 +131,9 @@ something else, say so plainly in one line. Do not apologise at length and do
 not offer to do it anyway.
 
 Never claim you did something you did not do. If a tool fails, say what failed.`
+
+// Len 은 대화가 몇 줄인지다. 기억이 실렸는지 보거나 로그에 적을 때 쓴다.
+func (c Chat) Len() int { return len(c.msgs) }
 
 // Step 은 모델을 한 번 부르고, 그 답을 대화에 붙여 돌려준다.
 //
