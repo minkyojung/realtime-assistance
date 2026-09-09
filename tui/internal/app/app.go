@@ -74,6 +74,29 @@ type ResizeMsg struct{ Width, Height int }
 // 라우터가 이 앱을 지목했다는 뜻이다.
 type AskMsg struct{ Prompt string }
 
+// SayMsg 는 앱이 로그에 한 줄 남길 때 쓴다.
+//
+// 문장을 만드는 것은 앱이지만 보관하고 보여주는 것은 호스트다.
+// 프로세스가 stdout 에 쓰고 터미널이 스크롤백을 갖는 관계와 같다.
+//
+// 한 문장이 여러 앱에 갈 수 있으므로(“조용한 거 틀고 슬랙도 꺼줘”)
+// 로그는 어느 앱에도 속하지 않는다. 입력이 전역이면 출력도 전역이어야 한다.
+type SayMsg struct {
+	App  string // 누가 말했는지
+	Text string
+	Err  bool // 실패를 알리는 말인지
+}
+
+// Say 는 SayMsg 를 만드는 Cmd 를 돌려준다. 앱이 Update 에서 쓴다.
+func Say(name, text string) tea.Cmd {
+	return func() tea.Msg { return SayMsg{App: name, Text: text} }
+}
+
+// SayErr 는 실패를 로그에 남긴다. 실패도 대화의 일부다.
+func SayErr(name string, err error) tea.Cmd {
+	return func() tea.Msg { return SayMsg{App: name, Text: err.Error(), Err: true} }
+}
+
 // Command 는 슬래시 명령 하나다.
 type Command struct {
 	Name string // "/queue" — 앱 이름을 접두어로 붙이지 않는다

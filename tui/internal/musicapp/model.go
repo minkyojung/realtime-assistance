@@ -119,19 +119,23 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 
 	case savedMsg:
 		if msg.err != nil {
-			m.intentErr = msg.err
-		} else {
-			m.notice = "Saved \"" + msg.name + "\" to Apple Music"
+			return m, app.SayErr(m.Name(), msg.err)
 		}
-		return m, nil
+		return m, app.Say(m.Name(), "Saved \""+msg.name+"\" to Apple Music")
 
 	case queueMsg:
 		m.thinking = false
 		if msg.err != nil {
-			m.intentErr = msg.err
-			return m, nil
+			return m, app.SayErr(m.Name(), msg.err)
 		}
-		return m.applyQueue(msg.res)
+		mm, cmd := m.applyQueue(msg.res)
+		// 큐 전체에 대한 한 문장은 대화이므로 로그로 간다.
+		// 곡마다 붙는 근거는 곡의 속성이므로 목록에 남는다.
+		note := msg.res.Note
+		if strings.TrimSpace(note) == "" {
+			note = msg.res.Title
+		}
+		return mm, tea.Batch(cmd, app.Say(m.Name(), note))
 
 	case tickMsg:
 		return m, tea.Batch(fetchStatus, tick())
@@ -156,11 +160,9 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		return m, nil
 
 	case app.AskMsg:
-		// 호스트가 넘긴 자연어 요청.
+		// 호스트가 넘긴 자연어 요청. 기다린다는 표시는 호스트가 한다.
 		m.thinking = true
-		m.intentErr = nil
-		m.notice = ""
-		return m, tea.Batch(m.Ask(msg.Prompt), m.spinner.Tick)
+		return m, m.Ask(msg.Prompt)
 
 	case clearQueueMsg:
 		m.queue = nil
@@ -173,8 +175,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		return m, nil
 
 	case errMsg:
-		m.intentErr = msg.err
-		return m, nil
+		return m, app.SayErr(m.Name(), msg.err)
 
 	case app.ResizeMsg:
 		m.bodyH = msg.Height
@@ -234,8 +235,7 @@ func (m Model) applyQueue(res intent.Result) (app.App, tea.Cmd) {
 		})
 	}
 	if len(items) == 0 {
-		m.intentErr = errNoTracks
-		return m, nil
+		return m, app.SayErr(m.Name(), errNoTracks)
 	}
 
 	m.queue = items

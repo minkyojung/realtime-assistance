@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"amcli/tui/internal/api"
+	"amcli/tui/internal/app"
 	"amcli/tui/internal/data"
 	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
@@ -174,13 +175,17 @@ func TestPromptToQueue(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("enter 를 눌렀는데 아무 Cmd 도 나오지 않았다")
 	}
-	if out := m.View().Content; !strings.Contains(out, "Thinking") {
-		t.Error("요청 중인데 Thinking 표시가 없다")
+	if out := plain(m.View().Content); !strings.Contains(out, "묻는 중") {
+		t.Error("요청 중이라는 표시가 없다")
+	}
+	if out := plain(m.View().Content); !strings.Contains(out, "quiet") {
+		t.Error("내가 한 말이 로그에 없다")
 	}
 
 	l := data.Lib()
 	m, _ = m.Update(musicapp.QueueMsgFor(intent.Result{
 		Title: "quiet set",
+		Note:  "picked two you never played",
 		Picks: []intent.Pick{
 			{TrackID: l.Tracks[0].Id, Reason: "never played since you added it"},
 			{TrackID: l.Tracks[1].Id, Reason: "same record"},
@@ -188,9 +193,14 @@ func TestPromptToQueue(t *testing.T) {
 		Usage: api.Usage{PromptTokens: 10000, CompletionTokens: 500, CostUsd: 0.0074},
 	}, nil))
 
+	// 앱이 로그에 남기는 말은 Cmd 로 오지만, 여기서 Cmd 를 실행하면 진짜
+	// Music.app 을 건드린다. 그래서 로그 메시지만 직접 흘려보낸다.
+	m, _ = m.Update(app.SayMsg{App: "music", Text: "picked two you never played"})
+
 	out := plain(m.View().Content)
 	for _, want := range []string{
-		"never played since you added it", // 근거가 뜬다
+		"never played since you added it", // 곡별 근거는 앱이 그린다
+		"picked two you never played",     // 큐 전체 설명은 로그로 간다
 		"quiet set",                       // 큐 제목이 상태줄에
 		"Queue · 2",                       // 상태줄이 큐로 옮겨간 것을 보여준다
 		"$0.0074",                         // 사용량
@@ -199,8 +209,8 @@ func TestPromptToQueue(t *testing.T) {
 			t.Errorf("화면에 %q 가 없다", want)
 		}
 	}
-	if strings.Contains(out, "Thinking") {
-		t.Error("결과가 왔는데 Thinking 이 남아 있다")
+	if strings.Contains(out, "묻는 중") {
+		t.Error("결과가 왔는데 기다린다는 표시가 남아 있다")
 	}
 }
 
@@ -210,10 +220,11 @@ func TestQueueFailureShowsBadge(t *testing.T) {
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 	m, _ = m.Update(musicapp.QueueMsgFor(intent.Result{}, errors.New("model unavailable")))
+	m, _ = m.Update(app.SayMsg{App: "music", Text: "model unavailable", Err: true})
 
-	out := m.View().Content
-	if !strings.Contains(out, "FAILED") || !strings.Contains(out, "model unavailable") {
-		t.Error("실패 사유가 화면에 없다")
+	out := plain(m.View().Content)
+	if !strings.Contains(out, "model unavailable") {
+		t.Error("실패 사유가 로그에 없다")
 	}
 	if !strings.Contains(out, "Please Wait for Me") {
 		t.Error("실패했다고 목록이 사라지면 안 된다")

@@ -145,6 +145,7 @@ var helpRows = []struct{ key, what string }{
 	{"enter", "send the request · play the selected track"},
 	{"/", "commands"},
 	{"ctrl+f", "search"},
+	{"ctrl+j", "expand the log"},
 	{"↑ ↓", "move through the list"},
 	{"tab", "next section"},
 	{"shift+← →", "previous / next track"},

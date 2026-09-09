@@ -87,13 +87,13 @@
    [38;2;138;138;146mLisbon, OH                                                [m  [38;2;85;85;94m                         [m  [38;2;85;85;94m  ·[m  [38;2;85;85;94m1:33[m 
    [38;2;138;138;146mBeth/Rest (AIR Studios – 4AD/Jagjaguwar Session)          [m  [38;2;85;85;94m                         [m  [38;2;85;85;94m  ·[m  [38;2;85;85;94m6:44[m 
    [38;2;138;138;146mI Can't Make You Love Me (AIR Studios – 4AD/Jagjaguwar Se…[m  [38;2;85;85;94m                         [m  [38;2;85;85;94m  ·[m  [38;2;85;85;94m4:46[m 
-   [38;2;138;138;146mWash. (AIR Studios – 4AD/Jagjaguwar Session)              [m  [38;2;85;85;94m                         [m  [38;2;85;85;94m  ·[m  [38;2;85;85;94m5:24[m 
  [38;2;46;46;54m──────────────────────────────────────────────────────────────────────────────────────────────────[m 
  [38;2;250;0;44m› [m[7;38;2;250;0;44mW[m[38;2;85;85;94mhat do you want to hear?    /  commands     ?  help[m                                             
    [38;2;255;90;117mtype[m                                                           [38;2;85;85;94mask for a queue in your own words[m 
    [38;2;255;90;117menter[m                                                 [38;2;85;85;94msend the request · play the selected track[m 
    [38;2;255;90;117m/[m                                                                                       [38;2;85;85;94mcommands[m 
    [38;2;255;90;117mctrl+f[m                                                                                    [38;2;85;85;94msearch[m 
+   [38;2;255;90;117mctrl+j[m                                                                            [38;2;85;85;94mexpand the log[m 
    [38;2;255;90;117m↑ ↓[m                                                                        [38;2;85;85;94mmove through the list[m 
    [38;2;255;90;117mtab[m                                                                                 [38;2;85;85;94mnext section[m 
    [38;2;255;90;117mshift+← →[m                                                                  [38;2;85;85;94mprevious / next track[m 

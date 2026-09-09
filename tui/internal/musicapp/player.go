@@ -83,24 +83,11 @@ func (m Model) viewPlayer(w int) string {
 	return left + "  " + style.Progress(barW, ratio) + style.Faint.Render(timeLabel)
 }
 
-// 입력창 바로 위 한 줄. 상황에 따라 무엇이 오는지가 다르다.
+// 지금 재생 중인 곡의 선정 근거. **곡의 속성이므로 앱이 갖는다.**
 //
-//	요청 중  → 스피너
-//	실패     → 사유
-//	평소     → 지금 곡의 선정 근거 (있을 때만)
-//
-// 셋 다 없으면 줄 자체가 없다. 빈 줄을 남기지 않는다.
+// 큐 전체에 대한 한 문장(“8곡 31분짜리로 짰어요”)은 대화이므로 로그로 간다.
+// 요청 중이라는 표시와 실패 사유도 호스트가 맡는다.
 func (m Model) viewReason(w int) (string, bool) {
-	if m.thinking {
-		return m.spinner.View() + style.Dim.Render(" Thinking…"), true
-	}
-	if m.intentErr != nil {
-		return style.ErrorBadge.Render("FAILED") + " " +
-			style.Dim.Render(style.Truncate(m.intentErr.Error(), w-9)), true
-	}
-	if m.notice != "" {
-		return style.BrandSoft.Render("· ") + style.Dim.Render(style.Truncate(m.notice, w-2)), true
-	}
 	it, ok := m.nowPlayingItem()
 	if !ok || it.Reason == nil || *it.Reason == "" {
 		return "", false

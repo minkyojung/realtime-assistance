@@ -9,6 +9,7 @@ import (
 
 	"amcli/tui/internal/app"
 	"amcli/tui/internal/style"
+	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -38,6 +39,12 @@ type Model struct {
 	// 팔레트·도움말에서 고른 줄.
 	pick int
 
+	// 로그 — 호스트의 세 번째 자산. 입력의 짝이다.
+	log     []logEntry
+	logOpen bool
+	pending map[string]bool // 답을 기다리는 앱
+	spinner spinner.Model
+
 	w, h int
 	send func(tea.Msg)
 }
@@ -50,7 +57,11 @@ func New(apps ...app.App) Model {
 	styleInput(&ta)
 	ta.Focus() // 입력창은 늘 활성이다. 타이핑이 언제나 먼저 온다.
 
-	m := Model{apps: apps, input: ta}
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = lipgloss.NewStyle().Foreground(style.ColBrand)
+
+	m := Model{apps: apps, input: ta, spinner: sp, pending: map[string]bool{}}
 	(&m).applyMode()
 	return m
 }
@@ -58,7 +69,7 @@ func New(apps ...app.App) Model {
 func (m Model) app() app.App { return m.apps[m.current] }
 
 func (m Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{textarea.Blink}
+	cmds := []tea.Cmd{textarea.Blink, m.spinner.Tick}
 	for _, a := range m.apps {
 		cmds = append(cmds, a.Init(m.push))
 	}
@@ -103,6 +114,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Width:  style.ContentWidth(m.w),
 			Height: m.bodyHeight(),
 		})
+
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
+	case app.SayMsg:
+		return m.handleSay(msg), nil
 
 	case runResultMsg:
 		return m, msg.cmd
@@ -159,6 +178,11 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 			return true, m, nil
 		}
 
+	case "ctrl+j":
+		// 로그를 펼쳤다 접는다. 명령 팔레트와 같은 자리, 같은 방식이다.
+		m.logOpen = !m.logOpen
+		return true, m, nil
+
 	case "ctrl+f":
 		m.showHelp = false
 		m.mode = modeSearch
@@ -171,6 +195,10 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		// 한 단계씩 물러난다 — 도움말 → 검색 → 입력 비우기 → 종료.
 		if m.showHelp {
 			m.showHelp = false
+			return true, m, nil
+		}
+		if m.logOpen {
+			m.logOpen = false
 			return true, m, nil
 		}
 		m.notice = ""
@@ -219,7 +247,11 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 			m.input.Reset()
 			m.notice = ""
 			m.showHelp = false
-			return m.forward(app.AskMsg{Prompt: prompt})
+			// 한 말은 곧바로 로그에 남는다. 답을 기다리는 동안에도 보인다.
+			m.log = append(m.log, logEntry{text: prompt})
+			m.pending[m.app().Name()] = true
+			mm, cmd := m.forward(app.AskMsg{Prompt: prompt})
+			return mm, tea.Batch(cmd, m.spinner.Tick)
 		}
 	}
 	return m.forward(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -227,7 +259,8 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 
 func (m Model) bodyHeight() int {
 	// 입력창1 + 룰1 + 상태줄1 + 위아래 여백2
-	h := m.h - 5 - len(m.overlayRows(style.ContentWidth(m.w)))
+	w := style.ContentWidth(m.w)
+	h := m.h - 5 - len(m.overlayRows(w)) - len(m.logRows(w))
 	return style.Max(h, 3)
 }
 
@@ -241,6 +274,11 @@ func (m Model) View() tea.View {
 	var b strings.Builder
 	// 본문은 무엇을 하든 그대로다. 팔레트는 입력창 아래에 붙는다.
 	b.WriteString(m.app().View(w, bodyH))
+	// 로그는 입력창 바로 위, 팔레트는 바로 아래. 둘 다 본문을 밀어내지 않는다.
+	for _, r := range m.logRows(w) {
+		b.WriteString("\n")
+		b.WriteString(r)
+	}
 	b.WriteString("\n")
 	b.WriteString(m.input.View())
 	for _, r := range m.overlayRows(w) {

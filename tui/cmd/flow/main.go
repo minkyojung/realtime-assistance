@@ -38,7 +38,17 @@ func main() {
 	}
 	m, playCmd := m.Update(msg)
 	if playCmd != nil {
-		playCmd() // 실제로 첫 곡을 튼다
+		if out := playCmd(); out != nil {
+			if b, ok := out.(tea.BatchMsg); ok {
+				for _, c := range b {
+					if mm := c(); mm != nil {
+						m, _ = m.Update(mm)
+					}
+				}
+			} else {
+				m, _ = m.Update(out)
+			}
+		}
 	}
 
 	fmt.Println("\n──────── 큐 도착 ────────")
