@@ -112,6 +112,11 @@ Rules that matter:
   A library where the same handful of tracks take most of the plays is the
   problem this tool exists to solve. Do not force it when the request is
   specific about something else.
+- Read the signals column as evidence, not as a verdict. A skip count does not
+  say why a track was skipped, and this tool's own queue edits raise it too.
+  A few skips on a track with many plays means little. Skips on a track with
+  no plays mean they keep turning it down — that is not a track to give another
+  chance. Favorites are the one signal they set on purpose; lean on them.
 - Write title, note and reasons in the same language the person used.`
 
 // Current 는 이미 화면에 있는 큐다. 있으면 새로 만드는 대신 고칠 수 있다.
@@ -228,6 +233,15 @@ func renderCurrent(cur Current, ord map[int64]int) string {
 //
 // 재생 횟수와 마지막 재생일을 반드시 넣는다. 근거를 사실로 쓰게 하려면
 // 모델이 그 사실을 볼 수 있어야 한다.
+//
+// signals 칸은 스킵 횟수와 좋아요를 한 칸에 담는다. 둘을 따로 두지 않는
+// 이유는 값이 드물기 때문이다 — 실측 202곡에서 스킵이 있는 곡은 63곡,
+// 좋아요는 20곡이다. 칸을 나누면 139줄이 "0 skips" 라는 소음이 되고
+// 토큰도 3.5배 든다(실측 +742 대 +342).
+//
+// 별점은 넣지 않는다. 실측에서 202곡 전부 0 이었다 — Music.app 이 값을
+// 돌려주지 않는다. 없는 값을 칸으로 만들면 모델이 "아무도 별점을 안 줬다"는
+// 사실이 아닌 것을 읽는다. docs/05 가 loved·bpm 을 뺀 것과 같은 이유다.
 // listing 은 모델에게 준 목록이다. 줄번호(1..N)가 곧 모델이 돌려줄 trackId 다.
 //
 // 진짜 id 를 그대로 주지 않는 이유: persistent ID 를 수로 읽으므로 19자리가 된다.
@@ -241,9 +255,10 @@ type listing struct {
 func renderLibrary(tracks []api.Track, now time.Time) listing {
 	var b strings.Builder
 	ids := make([]int64, 0, len(tracks))
-	b.WriteString("The person's library. Columns: n | title | artist | album | genre | year | length | plays | last played | added\n")
+	b.WriteString("The person's library. Columns: n | title | artist | album | genre | year | length | plays | signals | last played | added\n")
 	b.WriteString("Use the n column as trackId when you pick a track.\n")
-	b.WriteString("\"added: not in library\" means the track sits in a playlist but was never added to the library, so no add date exists. Never claim a date for those.\n\n")
+	b.WriteString("\"added: not in library\" means the track sits in a playlist but was never added to the library, so no add date exists. Never claim a date for those.\n")
+	b.WriteString("signals is what their player recorded: skip count, and whether they marked it a favorite. \"-\" means neither.\n\n")
 	for _, t := range tracks {
 		if t.Excluded {
 			continue
@@ -270,11 +285,28 @@ func renderLibrary(tracks []api.Track, now time.Time) listing {
 			added = fmt.Sprintf("%dd ago", int(now.Sub(*t.AddedAt).Hours()/24))
 		}
 		ids = append(ids, t.Id)
-		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s | %s | %d plays | %s | %s\n",
+		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s | %s | %d plays | %s | %s | %s\n",
 			len(ids), t.Title, t.Artist.Name, album, genre, year,
-			mmss(t.DurationMs), t.PlayCount, last, added)
+			mmss(t.DurationMs), t.PlayCount, signals(t), last, added)
 	}
 	return listing{text: b.String(), ids: ids}
+}
+
+// signals 는 플레이어가 기록해 둔 것을 한 칸에 적는다.
+//
+// 값이 없으면 "-" 다. 빈 칸으로 두면 칸이 밀려 다음 값이 이 자리로 읽힌다.
+func signals(t api.Track) string {
+	var out []string
+	if t.SkipCount > 0 {
+		out = append(out, fmt.Sprintf("%d skips", t.SkipCount))
+	}
+	if t.Favorited {
+		out = append(out, "favorite")
+	}
+	if len(out) == 0 {
+		return "-"
+	}
+	return strings.Join(out, ", ")
 }
 
 func mmss(ms int) string {
