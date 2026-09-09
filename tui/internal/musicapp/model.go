@@ -60,7 +60,6 @@ type Model struct {
 	// 카탈로그 — 라이브러리 밖. 설정이 없으면 cat 이 nil 이고,
 	// 그때는 이 기능만 없다. 앱은 그대로 돈다.
 	cat      *applemusic.Client
-	catErr   error
 	catTerm  string
 	catHits  []api.CatalogTrack
 	catSeq   int
@@ -320,7 +319,6 @@ var (
 	errNoTracks = errors.New("None of those tracks are in your library")
 	errNoQueue  = errors.New("Nothing in the queue to save")
 	errSyncing  = errors.New("Already reading your library")
-	errNoTerm   = errors.New("Needs something to search for: /catalog <term>")
 	errNoName   = errors.New("Needs a playlist name: /save <name>")
 )
 

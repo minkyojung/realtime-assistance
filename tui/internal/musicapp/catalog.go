@@ -70,7 +70,6 @@ type (
 	}
 	storefrontMsg     struct{ id string }
 	loginStartedMsg   struct{}
-	loggedOutMsg      struct{}
 	catalogStartedMsg struct{}
 )
 
@@ -234,17 +233,8 @@ func (m Model) applyCatalog(msg tea.Msg) (app.App, tea.Cmd, bool) {
 		m.catLogin = true
 		return m, nil, true
 
-	case loggedOutMsg:
-		if m.cat != nil {
-			cp := *m.cat
-			cp.UserToken = ""
-			m.cat = &cp
-		}
-		// 검색은 계속 된다 — 개발자 토큰만 있으면 되기 때문이다.
-		return m, app.Say(m.Name(), "Signed out. Search still works"), true
-
 	case catalogReadyMsg:
-		m.cat, m.catErr = msg.client, msg.err
+		m.cat = msg.client
 		if m.cat == nil {
 			// 설정이 없는 것은 정상 상태다. 첫 화면에서 안 쓸 기능의
 			// 실패를 읽게 할 이유가 없다.

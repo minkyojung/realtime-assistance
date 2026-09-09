@@ -96,9 +96,9 @@
    [38;2;232;232;234m/save[m[38;2;85;85;94m <name>[m                                           [38;2;85;85;94msave the queue as an Apple Music playlist[m 
    [38;2;232;232;234m/clear[m                                                                           [38;2;85;85;94mempty the queue[m 
    [38;2;232;232;234m/reload[m                                                   [38;2;85;85;94mread your library from Music.app again[m 
-   [38;2;232;232;234m/catalog[m[38;2;85;85;94m <term>[m                                 [38;2;85;85;94msearch all of Apple Music, not just your library[m 
    [38;2;232;232;234m/login[m                                        [38;2;85;85;94mconnect your Apple Music account (opens a browser)[m 
-   [38;2;232;232;234m/logout[m                                                       [38;2;85;85;94mforget the saved Apple Music login[m 
+   [38;2;232;232;234m/cost[m                                                                [38;2;85;85;94mwhat this session has spent[m 
+   [38;2;232;232;234m/help[m                                                                          [38;2;85;85;94mkeys and commands[m 
  [38;2;46;46;54m──────────────────────────────────────────────────────────────────────────────────────────────────[m 
  [38;2;138;138;146mRecently Added[m[38;2;85;85;94m · 157[m                                                                               
                                                                                                     
