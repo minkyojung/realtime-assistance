@@ -217,6 +217,15 @@ const (
 
 // renderWordmark 는 픽셀 그림을 반블록 문자로 옮긴다.
 //
+// 본 글자에는 세로 그라데이션이 깔린다 — 위가 밝고 아래로 갈수록 짙다.
+// 한때 있었다가(5d1c4a5) 이름표를 반블록으로 다시 그리면서(e98bfeb)
+// 딸려 나갔던 것인데, 나빠서 뺀 것이 아니라 렌더러가 통째로 갈리며
+// 단색 하나만 받게 됐던 것이다.
+//
+// 되살리니 전보다 곱다. 그때는 한 텍스트 줄이 한 색이라 다섯 단이었는데,
+// 반블록은 한 칸에 위아래 픽셀을 따로 칠하므로 낱자 높이 그대로 열두 단이
+// 된다. 위아래 색이 다른 칸은 글자색과 배경색을 함께 쓴다.
+//
 // 겹은 둘이다. 본 글자는 속을 채우고, 그 뒤에 (dx, dy) 만큼 밀린 그림자
 // 글자가 서는데 속을 비우고 윤곽선만 남긴다 — 윤곽선은 그림자 글자가
 // 아니면서 상하좌우 중 하나가 그림자 글자인 칸, 즉 실루엣 바깥 한 칸이다.
@@ -224,7 +233,7 @@ const (
 // 배경색으로 칠하면 배경이 단색이 아닐 때 사각형 얼룩으로 보인다.
 //
 // 겹치는 칸은 언제나 본 글자가 이긴다.
-func renderWordmark(px []string, dx, dy int, face, shadow color.Color) []string {
+func renderWordmark(px []string, dx, dy int, top, bottom, shadow color.Color) []string {
 	grid := make([][]rune, len(px))
 	width := 0
 	for i, row := range px {
@@ -252,32 +261,48 @@ func renderWordmark(px []string, dx, dy int, face, shadow color.Color) []string 
 		return wordmarkBlank
 	}
 
+	// 본 글자 색은 픽셀 줄마다 다르다. 낱자 높이에 걸쳐 top 에서 bottom 까지
+	// 간다 — 그림자가 밀려 늘어난 줄까지 세면 아래쪽이 덜 짙어진다.
+	faceAt := func(y int) color.Color {
+		if len(grid) < 2 {
+			return top
+		}
+		return lerpColor(top, bottom, float64(style.Clamp(y, 0, len(grid)-1))/float64(len(grid)-1))
+	}
+
 	// 위/아래 픽셀 조합마다 쓸 문자와 스타일을 미리 정해둔다. 런을 묶을 때
-	// 주소를 비교하므로 스타일은 한 번만 만들어야 한다.
-	col := [3]color.Color{nil, face, shadow}
-	var cellRune [3][3]rune
-	var cellStyle [3][3]lipgloss.Style
-	for t := range col {
-		for b := range col {
-			switch {
-			case t == wordmarkBlank && b == wordmarkBlank:
-				cellRune[t][b] = ' '
-			case t == b:
-				cellRune[t][b] = '█'
-				cellStyle[t][b] = lipgloss.NewStyle().Foreground(col[t])
-			case b == wordmarkBlank:
-				cellRune[t][b] = '▀'
-				cellStyle[t][b] = lipgloss.NewStyle().Foreground(col[t])
-			case t == wordmarkBlank:
-				cellRune[t][b] = '▄'
-				cellStyle[t][b] = lipgloss.NewStyle().Foreground(col[b])
-			default:
-				// 위아래가 서로 다른 색일 때만 배경을 쓴다. 이 칸은 둘 다
-				// 불투명해서 배경이 비칠 일이 없다.
-				cellRune[t][b] = '▀'
-				cellStyle[t][b] = lipgloss.NewStyle().Foreground(col[t]).Background(col[b])
+	// 주소를 비교하므로 스타일은 줄 안에서 한 번만 만들어야 한다.
+	//
+	// 표를 줄마다 새로 짓는 이유는 본 글자 색이 줄마다 다르기 때문이다.
+	// 한 줄에 아홉 칸이고 이름표는 여섯 줄이라, 그려도 쉰네 개다.
+	cells := func(yTop, yBottom int) ([3][3]rune, [3][3]lipgloss.Style) {
+		topCol := [3]color.Color{nil, faceAt(yTop), shadow}
+		botCol := [3]color.Color{nil, faceAt(yBottom), shadow}
+		var cellRune [3][3]rune
+		var cellStyle [3][3]lipgloss.Style
+		for t := range topCol {
+			for b := range botCol {
+				switch {
+				case t == wordmarkBlank && b == wordmarkBlank:
+					cellRune[t][b] = ' '
+				case b == wordmarkBlank:
+					cellRune[t][b] = '▀'
+					cellStyle[t][b] = lipgloss.NewStyle().Foreground(topCol[t])
+				case t == wordmarkBlank:
+					cellRune[t][b] = '▄'
+					cellStyle[t][b] = lipgloss.NewStyle().Foreground(botCol[b])
+				case sameColor(topCol[t], botCol[b]):
+					cellRune[t][b] = '█'
+					cellStyle[t][b] = lipgloss.NewStyle().Foreground(topCol[t])
+				default:
+					// 위아래가 서로 다른 색일 때만 배경을 쓴다. 이 칸은 둘 다
+					// 불투명해서 배경이 비칠 일이 없다.
+					cellRune[t][b] = '▀'
+					cellStyle[t][b] = lipgloss.NewStyle().Foreground(topCol[t]).Background(botCol[b])
+				}
 			}
 		}
+		return cellRune, cellStyle
 	}
 
 	// 그림자 윤곽선이 본 글자 바깥으로 한 칸 더 나간다. 그만큼 넓혀 잡지
@@ -286,6 +311,8 @@ func renderWordmark(px []string, dx, dy int, face, shadow color.Color) []string 
 
 	out := make([]string, (rows+1)/2)
 	for r := range out {
+		cellRune, cellStyle := cells(2*r, 2*r+1)
+
 		// 칸이 비어 있으면 지금 진행 중인 색을 그대로 물고 간다 —
 		// 매번 색을 끊으면 한 번에 그리던 줄이 조각나 달라 보인다.
 		var b strings.Builder
@@ -321,6 +348,28 @@ func renderWordmark(px []string, dx, dy int, face, shadow color.Color) []string 
 		out[r] = b.String()
 	}
 	return out
+}
+
+// lerpColor 는 두 색 사이를 t(0~1) 만큼 섞는다.
+//
+// RGBA() 는 16비트를 돌려주므로 257 로 나눠 8비트로 되돌린다. 감마를 풀고
+// 섞지 않는다 — 두 색이 같은 계열이라 눈에 보이는 차이가 없고, 여기서
+// 필요한 것은 정확한 물리량이 아니라 고르게 짙어지는 열두 단이다.
+func lerpColor(a, b color.Color, t float64) color.Color {
+	ar, ag, ab, _ := a.RGBA()
+	br, bg, bb, _ := b.RGBA()
+	mix := func(x, y uint32) uint8 {
+		return uint8((float64(x)*(1-t) + float64(y)*t) / 257)
+	}
+	return color.RGBA{R: mix(ar, br), G: mix(ag, bg), B: mix(ab, bb), A: 0xFF}
+}
+
+// sameColor 는 두 색이 같은 칸을 채워도 되는지 본다. 같으면 █ 한 글자로
+// 끝나고, 다르면 글자색과 배경색을 함께 써야 한다.
+func sameColor(a, b color.Color) bool {
+	ar, ag, ab, aa := a.RGBA()
+	br, bg, bb, ba := b.RGBA()
+	return ar == br && ag == bg && ab == bb && aa == ba
 }
 
 // 관문 — 홈에서 할 수 있는 일의 전부다.
@@ -380,7 +429,7 @@ func (m Model) viewHome(w, h int) string {
 			big = append(big, "") // 두 단어 사이. 빈 줄에 색을 입히지 않는다
 		}
 		for _, line := range renderWordmark(word, wordmarkShadowDX, wordmarkShadowDY,
-			style.ColBrand, style.ColBrandShadow) {
+			style.ColBrandSoft, style.ColBrandDeep, style.ColBrandShadow) {
 			big = append(big, line)
 		}
 	}
