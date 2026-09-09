@@ -64,6 +64,18 @@ var errorHints = map[string]string{
 	"ratelimited":            "호출이 너무 잦습니다",
 }
 
+// missingScope 는 권한 부족인지 본다.
+//
+// 권한 부족은 앱을 못 쓰게 만드는 실패가 아니라 "그것만 못 한다"는 뜻이다.
+// DM 은 열리는데 채널은 안 열리는 상태가 정상적으로 존재한다.
+func missingScope(err error) bool {
+	var e apiError
+	if !asAPIError(err, &e) {
+		return false
+	}
+	return e.Code == "missing_scope" || e.Code == "not_allowed_token_type"
+}
+
 func asAPIError(err error, out *apiError) bool {
 	e, ok := err.(apiError)
 	if ok {
@@ -281,6 +293,62 @@ func (c webClient) userName(ctx context.Context, id string) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+// Message 는 대화 안의 한 줄이다.
+type Message struct {
+	User string // 보낸 사람의 id. 봇이면 비어 있을 수 있다
+	Name string // 봇이 스스로 밝힌 이름. 사람은 여기가 비고 users 캐시를 본다
+	Text string
+	At   time.Time
+}
+
+// history 는 대화 하나의 최근 메시지를 가져온다.
+//
+// Slack 은 최신부터 준다. 화면은 위에서 아래로 흐르므로 뒤집어서 돌려준다.
+//
+// 권한이 종류마다 다르다 — DM 은 im:history, 채널은 channels:history.
+// 그래서 DM 은 열리는데 채널은 안 열리는 상태가 정상적으로 존재한다.
+func (c webClient) history(ctx context.Context, channel string, limit int) ([]Message, error) {
+	var out struct {
+		Messages []struct {
+			User     string `json:"user"`
+			Username string `json:"username"`
+			BotID    string `json:"bot_id"`
+			Subtype  string `json:"subtype"`
+			Text     string `json:"text"`
+			Ts       string `json:"ts"`
+		} `json:"messages"`
+	}
+	err := c.call(ctx, "conversations.history", url.Values{
+		"channel": {channel},
+		"limit":   {strconv.Itoa(limit)},
+	}, &out)
+	if err != nil {
+		return nil, err
+	}
+
+	msgs := make([]Message, 0, len(out.Messages))
+	for i := len(out.Messages) - 1; i >= 0; i-- { // 오래된 것부터
+		raw := out.Messages[i]
+		// 들어오고 나간 기록은 대화가 아니다.
+		if skipSubtypes[raw.Subtype] || strings.TrimSpace(raw.Text) == "" {
+			continue
+		}
+		name := raw.Username
+		if name == "" && raw.User == "" && raw.BotID != "" {
+			name = "bot"
+		}
+		msgs = append(msgs, Message{
+			User: raw.User, Name: name, Text: raw.Text, At: parseTS(raw.Ts),
+		})
+	}
+	return msgs, nil
+}
+
+var skipSubtypes = map[string]bool{
+	"channel_join": true, "channel_leave": true,
+	"group_join": true, "group_leave": true,
 }
 
 func (c webClient) postMessage(ctx context.Context, channel, text string) error {

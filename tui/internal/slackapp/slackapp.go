@@ -61,6 +61,12 @@ type Model struct {
 	live      bool  // Socket Mode 가 붙어 있는가
 	socketErr error // 안 붙어 있으면 왜인지
 
+	// 방 — 열려 있는 대화 하나. 빈 문자열이면 목록을 보고 있다
+	openID      string
+	msgs        []Message
+	msgsErr     error
+	loadingMsgs bool
+
 	// 목록 상태
 	sel        int
 	top        int
@@ -172,6 +178,9 @@ func (m Model) View(w, h int) string {
 	if err := m.Ready(); err != nil {
 		return m.viewGate(w, h, err)
 	}
+	if m.inRoom() {
+		return m.viewRoom(w, h)
+	}
 
 	var b strings.Builder
 	b.WriteString(m.viewHead(w))
@@ -224,6 +233,9 @@ func (m Model) liveLabel() string {
 //
 // 빈 줄을 남기지 않는 것이 이 화면들의 규칙이다.
 func (m Model) hint() string {
+	if m.inRoom() {
+		return m.roomHint()
+	}
 	if m.appToken == "" {
 		return "SLACK_APP_TOKEN 이 없어 새 메시지가 저절로 오지 않습니다 — docs/08 5절"
 	}
@@ -280,7 +292,11 @@ func (m Model) Status() string {
 	if m.team != "" {
 		parts = append(parts, m.team)
 	}
-	parts = append(parts, plural(len(m.convs), "conversation"))
+	if conv, ok := m.openConv(); ok {
+		parts = append(parts, conv.Name)
+	} else {
+		parts = append(parts, plural(len(m.convs), "conversation"))
+	}
 	if n := m.Badge(); n > 0 {
 		parts = append(parts, strconv.Itoa(n)+" unread")
 	}
@@ -320,7 +336,21 @@ func (m Model) Ask(prompt string) tea.Cmd {
 	if err := m.Ready(); err != nil {
 		return app.SayErr(m.Name(), err)
 	}
+	if channel, direct := m.askTarget(); direct {
+		return cmdSendTo(m.token(), channel, prompt)
+	}
 	return cmdAct(m.token(), prompt, m.convs)
+}
+
+// askTarget 은 이 문장이 어디로 갈지 정한다.
+//
+// **방 안이면 받는 사람이 이미 정해져 있다.** 모델에게 물어볼 것이 없으므로
+// 친 그대로 나간다. 목록에서는 "누구에게 무엇을" 이 비어 있어서 모델이 채운다.
+func (m Model) askTarget() (channel string, direct bool) {
+	if m.inRoom() {
+		return m.openID, true
+	}
+	return "", false
 }
 
 // Filter 는 검색어를 받는다. 즉시 반영되어야 하므로 Cmd 를 돌려주지 않는다.
@@ -385,6 +415,25 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		m.clampList()
 		return m, nil
 
+	case openedMsg:
+		// 여는 사이에 다른 방으로 옮겼으면 늦게 온 답은 버린다.
+		if msg.Channel != m.openID {
+			return m, nil
+		}
+		m.loadingMsgs = false
+		m.msgs, m.msgsErr = msg.Msgs, msg.Err
+		if msg.Err != nil {
+			return m, app.SayErr(m.Name(), msg.Err)
+		}
+		return m, tea.Batch(m.unknownSenders()...)
+
+	case sentMsg:
+		if msg.Err != nil {
+			return m, app.SayErr(m.Name(), msg.Err)
+		}
+		// 보낸 것이 화면에 보여야 대화가 이어진다. 다시 읽어 온다.
+		return m, cmdHistory(m.token(), msg.Channel)
+
 	case incomingMsg:
 		return m.receive(msg)
 
@@ -443,6 +492,12 @@ func (m Model) receive(in incomingMsg) (app.App, tea.Cmd) {
 		return m, nil
 	}
 
+	// 보고 있는 방에서 온 것은 안 읽음이 아니다. 이미 보고 있다.
+	seeing := m.openID == in.Channel
+	if seeing {
+		m = m.receiveInRoom(in)
+	}
+
 	// 슬라이스는 Model 복사본끼리 공유된다. 값을 고칠 때는 새로 만든다.
 	convs := make([]Conversation, len(m.convs))
 	copy(convs, m.convs)
@@ -454,7 +509,9 @@ func (m Model) receive(in incomingMsg) (app.App, tea.Cmd) {
 			continue
 		}
 		found = true
-		convs[i].Unread++
+		if !seeing {
+			convs[i].Unread++
+		}
 		convs[i].Last = in.Text
 		convs[i].LastBy = in.User
 		convs[i].At = in.At
@@ -502,6 +559,14 @@ func (m Model) rename(msg nameMsg) app.App {
 // 방향키와 tab 은 호스트가 안 쓰는 키라 여기로 내려온다.
 // 새로 만드는 것이 아니라 이미 있는 조작법을 이 목록에 붙이는 것이다.
 func (m Model) handleKey(msg tea.KeyPressMsg) (app.App, tea.Cmd) {
+	// 방 안에서는 목록의 조작이 뜻을 잃는다. 나오는 길 하나만 있으면 된다.
+	if m.inRoom() {
+		if s := msg.String(); s == "left" || s == "esc" {
+			return m.close(), nil
+		}
+		return m, nil
+	}
+
 	n := m.rowCount()
 	switch msg.String() {
 	case "up", "ctrl+p":
@@ -516,7 +581,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (app.App, tea.Cmd) {
 	case "shift+tab":
 		m.sel = m.nextUnread(-1)
 		m.clampList()
-	case "enter":
+	case "enter", "right":
 		return m.openSelected()
 	}
 	return m, nil
@@ -538,26 +603,16 @@ func (m Model) nextUnread(step int) int {
 	return m.sel
 }
 
-// enter 는 고른 대화를 본 것으로 친다.
+// enter 는 고른 대화를 연다. 여는 것이 곧 읽는 것이므로 안 읽음도 지운다.
 //
 // 우리 쪽 숫자만 내린다. Slack 서버의 읽음 위치를 옮기는 것은 다른 일이고
 // (conversations.mark), 진짜 앱에서 안 읽음이 사라지는 것은 지금 범위 밖이다.
 func (m Model) openSelected() (app.App, tea.Cmd) {
 	rows := m.rows()
-	if m.sel < 0 || m.sel >= len(rows) || rows[m.sel].Unread == 0 {
+	if m.sel < 0 || m.sel >= len(rows) {
 		return m, nil
 	}
-	target := rows[m.sel]
-
-	convs := make([]Conversation, len(m.convs))
-	copy(convs, m.convs)
-	for i := range convs {
-		if convs[i].ID == target.ID {
-			convs[i].Unread = 0
-		}
-	}
-	m.convs = convs
-	return m, app.Say(m.Name(), target.Name+" 을 읽음으로 표시했습니다")
+	return m.open(rows[m.sel])
 }
 
 // clampList — 고른 줄이 늘 보이도록 스크롤 위치를 맞춘다.

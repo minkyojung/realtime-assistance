@@ -124,23 +124,105 @@ func TestRename(t *testing.T) {
 	}
 }
 
-// enter 는 고른 대화를 읽음으로 바꾸고, **그 사실을 로그에 남긴다.**
-// 자기 화면에만 쓰면 다른 앱을 보는 사용자에게는 아무 일도 안 일어난 것과 같다.
-func TestOpenSaysToLog(t *testing.T) {
+// enter 는 고른 대화를 연다. 여는 것이 곧 읽는 것이다.
+func TestEnterOpensRoom(t *testing.T) {
 	m := loaded(t)
 	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if got := next.(Model).Badge(); got != 0 {
-		t.Errorf("읽음 처리 뒤 Badge = %d, want 0", got)
+	m = next.(Model)
+
+	if !m.inRoom() || m.openID != "D1" {
+		t.Fatalf("방이 안 열렸다: openID=%q", m.openID)
+	}
+	if !m.loadingMsgs {
+		t.Error("읽는 중 표시가 없다")
+	}
+	if m.Badge() != 0 {
+		t.Errorf("열었는데 안 읽음이 %d 남았다", m.Badge())
 	}
 	if cmd == nil {
-		t.Fatal("로그에 남기는 Cmd 가 없다")
+		t.Error("메시지를 가지러 가지 않는다")
 	}
-	say, ok := cmd().(app.SayMsg)
-	if !ok {
-		t.Fatalf("SayMsg 가 아니다: %T", cmd())
+	if !strings.Contains(m.View(80, 20), "@minkyo") {
+		t.Error("방 화면에 대화 이름이 없다")
 	}
-	if say.App != "chat" {
-		t.Errorf("누가 말했는지가 %q 다", say.App)
+}
+
+// ← 로 목록에 돌아온다. esc 는 호스트가 먹으므로 여기까지 오지 않지만,
+// 언젠가 넘어오면 같은 뜻이어야 한다.
+func TestLeftClosesRoom(t *testing.T) {
+	m := loaded(t)
+	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	next, _ = next.(Model).Update(tea.KeyPressMsg{Code: tea.KeyLeft})
+	m = next.(Model)
+
+	if m.inRoom() {
+		t.Error("← 를 눌렀는데 방에 남아 있다")
+	}
+	if len(m.msgs) != 0 {
+		t.Error("나왔는데 읽은 내용이 남아 있다")
+	}
+	if !strings.Contains(m.View(80, 20), "#general") {
+		t.Error("목록으로 안 돌아왔다")
+	}
+}
+
+// **이 기능의 핵심.** 방 안에서는 모델을 거치지 않고 친 그대로 나간다.
+func TestAskGoesStraightToTheOpenRoom(t *testing.T) {
+	m := loaded(t)
+
+	if _, direct := m.askTarget(); direct {
+		t.Error("목록에서인데 곧바로 보내려 한다")
+	}
+
+	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = next.(Model)
+
+	channel, direct := m.askTarget()
+	if !direct {
+		t.Fatal("방 안인데 모델을 거치려 한다")
+	}
+	if channel != "D1" {
+		t.Errorf("받는 곳 = %q, want D1", channel)
+	}
+}
+
+// 열려 있는 방에 온 메시지는 안 읽음이 아니다. 이미 보고 있다.
+func TestIncomingIntoOpenRoom(t *testing.T) {
+	m := loaded(t)
+	next, _ := m.Update(openedMsg{Channel: "D1"}) // 여는 중이 아니어도 무시된다
+	m = next.(Model)
+
+	next, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = next.(Model)
+	m.loadingMsgs = false
+
+	before := m.Badge()
+	next, _ = m.Update(IncomingMsgFor("D1", "U9", "지금 갈게요", time.Now()))
+	m = next.(Model)
+
+	if m.Badge() != before {
+		t.Errorf("보고 있는 방인데 안 읽음이 올랐다: %d → %d", before, m.Badge())
+	}
+	if len(m.msgs) != 1 || m.msgs[0].Text != "지금 갈게요" {
+		t.Errorf("화면에 안 붙었다: %+v", m.msgs)
+	}
+	if !strings.Contains(m.View(80, 20), "지금 갈게요") {
+		t.Error("방 화면에 새 메시지가 안 보인다")
+	}
+}
+
+// 여는 사이에 다른 방으로 옮겼으면 늦게 온 답은 버린다.
+func TestStaleHistoryIsDropped(t *testing.T) {
+	m := loaded(t)
+	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter}) // D1 을 연다
+	m = next.(Model)
+
+	next, _ = m.Update(openedMsg{
+		Channel: "C1",
+		Msgs:    []Message{{User: "U9", Text: "다른 방 것"}},
+	})
+	if got := next.(Model).msgs; len(got) != 0 {
+		t.Errorf("다른 방의 내용이 들어왔다: %+v", got)
 	}
 }
 
@@ -640,6 +722,71 @@ func TestRequestedScopesCoverRequestedTypes(t *testing.T) {
 		}
 		if !granted[scope] {
 			t.Errorf("%s 를 가져오는데 %s 권한을 요청하지 않는다", typ, scope)
+		}
+	}
+}
+
+// 접기 — 한글은 한 글자가 2칸이다.
+func TestWrap(t *testing.T) {
+	if got := wrap("", 10); len(got) != 0 {
+		t.Errorf("빈 글에서 %d줄", len(got))
+	}
+	if got := wrap("짧다", 10); len(got) != 1 || got[0] != "짧다" {
+		t.Errorf("%q", got)
+	}
+
+	// 폭을 넘지 않아야 한다.
+	long := "오늘 회의는 세 시로 미뤄졌습니다 확인 부탁드립니다 감사합니다"
+	for _, w := range []int{8, 12, 20, 40} {
+		for _, line := range wrap(long, w) {
+			if lipgloss.Width(line) > w {
+				t.Errorf("w=%d 인데 %q 는 %d칸", w, line, lipgloss.Width(line))
+			}
+		}
+	}
+
+	// 줄바꿈은 문단을 나눈다.
+	if got := wrap("첫 줄\n둘째 줄", 20); len(got) != 2 {
+		t.Errorf("줄바꿈이 안 나뉘었다: %q", got)
+	}
+
+	// 한 낱말이 폭보다 길면 잘라서 잇는다. 무한 루프에 빠지면 안 된다.
+	got := wrap("https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 10)
+	if len(got) < 2 {
+		t.Errorf("긴 낱말이 안 잘렸다: %q", got)
+	}
+	for _, line := range got {
+		if lipgloss.Width(line) > 10 {
+			t.Errorf("%q 가 폭을 넘는다", line)
+		}
+	}
+	// 폭이 한 글자도 안 되면 그냥 돌려준다.
+	_ = wrap("한글", 1)
+}
+
+// 방 화면도 받은 크기를 넘지 않는다.
+func TestRoomViewFits(t *testing.T) {
+	m := loaded(t)
+	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = next.(Model)
+	m.loadingMsgs = false
+	m.msgs = []Message{
+		{User: "U9", Text: "오늘 회의는 세 시로 미뤄졌습니다 확인 부탁드립니다", At: time.Now()},
+		{User: "U0", Text: "네 알겠습니다", At: time.Now()},
+		{User: "U9", Text: strings.Repeat("길다 ", 40), At: time.Now()},
+	}
+
+	for _, w := range []int{30, 40, 60, 80, 120} {
+		for _, h := range []int{4, 6, 12, 24} {
+			lines := strings.Split(m.View(w, h), "\n")
+			if len(lines) > h {
+				t.Errorf("w=%d h=%d: %d줄", w, h, len(lines))
+			}
+			for i, l := range lines {
+				if got := lipgloss.Width(l); got > w {
+					t.Errorf("w=%d h=%d 줄%d: 폭 %d", w, h, i, got)
+				}
+			}
 		}
 	}
 }
