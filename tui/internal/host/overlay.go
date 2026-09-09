@@ -1,6 +1,7 @@
 package host
 
 import (
+	"charm.land/lipgloss/v2"
 	"fmt"
 	"strings"
 
@@ -111,11 +112,10 @@ func (m Model) overlayCount() int {
 	if m.showHelp {
 		return len(helpRows)
 	}
-	n := len(m.matchedCommands())
-	if n > maxOverlayRows {
-		return maxOverlayRows - 1 // 마지막 줄은 "+N more" 다
-	}
-	return n
+	// 보이는 줄이 아니라 **고를 수 있는 줄**을 센다. 화면에 여덟 줄만
+	// 보여도 ↓ 로 끝까지 갈 수 있어야 한다 — 예전에는 여기서 멈춰서,
+	// 나머지 명령에 닿는 길이 타이핑뿐이었다.
+	return len(m.matchedCommands())
 }
 
 func (m Model) runCommand() (tea.Model, tea.Cmd) {
@@ -182,32 +182,50 @@ func (m Model) overlayRows(w int) []string {
 	if len(cs) == 0 {
 		return []string{"  " + style.Faint.Render("No such command")}
 	}
-	// 잘린 것이 있으면 마지막 줄로 말한다. 말없이 자르면 없는 명령으로 보인다.
-	more := 0
-	if len(cs) > maxOverlayRows {
-		more = len(cs) - maxOverlayRows + 1
-		cs = cs[:maxOverlayRows-1]
+	// 창을 옮겨 고른 줄이 늘 보이게 한다. 자리를 따로 기억하지 않는다 —
+	// 고른 줄만 알면 어디를 보여줄지가 정해진다.
+	start := 0
+	if m.pick >= maxOverlayRows {
+		start = m.pick - maxOverlayRows + 1
 	}
-	out := make([]string, 0, len(cs)+1)
-	for i, c := range cs {
-		out = append(out, m.renderCommand(i, c, w))
-	}
-	if more > 0 {
-		out = append(out, "  "+style.Faint.Render(fmt.Sprintf("+%d more — keep typing", more)))
+	start = style.Clamp(start, 0, style.Max(len(cs)-maxOverlayRows, 0))
+	end := style.Min(start+maxOverlayRows, len(cs))
+
+	out := make([]string, 0, end-start)
+	for i := start; i < end; i++ {
+		out = append(out, m.renderCommand(i, cs[i], w))
 	}
 	return out
 }
+
+// 이름을 적는 칸.
+//
+// 고정폭이다. 양끝 정렬로 두면 창이 넓을수록 이름과 설명이 멀어져, 짝을
+// 맞추려고 눈이 화면을 가로질러야 한다. 고정폭이면 설명이 늘 같은 자리에서
+// 시작하므로 세로로 훑힌다 — 목록이 하는 일이 원래 그것이다.
+//
+// `/repeat <off|one|all>` 이 21칸으로 제일 길다. 그보다 긴 이름(플레이리스트)은
+// 자른다. 칸이 흔들리면 고정폭인 뜻이 없다.
+const cmdNameCol = 24
 
 func (m Model) renderCommand(i int, c app.Command, w int) string {
 	rail := "  "
 	if i == m.pick {
 		rail = style.Brand.Render("▌ ")
 	}
+	name := c.Name
+	if c.Arg != "" {
+		name += " " + c.Arg
+	}
+	name = style.Truncate(name, cmdNameCol-1)
+	pad := strings.Repeat(" ", style.Max(cmdNameCol-lipgloss.Width(name), 1))
+
 	left := style.Body.Render(c.Name)
 	if c.Arg != "" {
-		left += style.Faint.Render(" " + c.Arg)
+		left += style.Faint.Render(style.Truncate(" "+c.Arg, cmdNameCol-1-lipgloss.Width(c.Name)))
 	}
-	return rail + style.Row(left, style.Faint.Render(c.Help), w-2)
+	rest := style.Max(w-2-cmdNameCol, 10)
+	return rail + left + pad + style.Faint.Render(style.Truncate(c.Help, rest))
 }
 
 var helpRows = []struct{ key, what string }{
