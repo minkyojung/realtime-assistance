@@ -539,6 +539,31 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
+  /playback/artwork:
+    get:
+      tags: [playback]
+      summary: 지금 곡의 앨범 커버
+      description: |
+        화면 S2 의 왼쪽 절반이 이것이다. Music.app 이 바이너리로 준다.
+
+        **저장하지 않는다** — 우리 것이 아니고, 라이브러리 1만 곡의
+        커버를 들고 있을 이유도 없다. 곡이 바뀌면 다시 부른다.
+
+        커버가 없는 곡이 있다. 그때는 `404` 이고, 화면은 그 자리를
+        비운 채 나머지를 그린다.
+      operationId: getArtwork
+      responses:
+        '200':
+          description: 이미지 바이트
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/png:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
   /playback/lyrics:
     get:
       tags: [playback]
@@ -1473,6 +1498,9 @@ components:
         appleTeamId:
           type: string
           description: '`/setup <team ID>`'
+        appleUserToken:
+          type: string
+          description: '`/login` 이 브라우저에서 받아 온 MusicKit 사용자 토큰'
         aiApiKey:
           type: string
           description: '`/ai <key>`. 서버가 키체인에 넣고 DB 에는 남기지 않는다'
