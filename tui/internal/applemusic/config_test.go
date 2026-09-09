@@ -28,9 +28,10 @@ func TestEmbeddedTokenNeedsNoP8(t *testing.T) {
 
 // 개발 빌드는 지금까지처럼 환경변수를 요구한다.
 func TestWithoutEmbeddedTokenConfigIsRequired(t *testing.T) {
-	t.Setenv("AM_P8", "")
-	t.Setenv("AM_KEY_ID", "")
-	t.Setenv("AM_TEAM_ID", "")
+	// 설정 폴더도 함께 비워야 한다. 환경변수만 지우면 이 기계에 실제로
+	// 놓인 config.json 과 p8 을 읽어서 "설정이 있다"가 되어 버린다 —
+	// 개발자 기계에 그것이 놓이는 순간 조용히 통과했다.
+	sandbox(t)
 
 	old := EmbeddedToken
 	EmbeddedToken = ""
