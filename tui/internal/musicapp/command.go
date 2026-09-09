@@ -24,6 +24,7 @@ func (m Model) Commands() []app.Command {
 	// 라이브러리에 따라 액션이 통째로 밀려난다.
 	fixed, playlists := m.jumpCommands()
 	fixed = append(fixed, stageCommands()...)
+	fixed = append(fixed, m.modeCommands()...)
 	return append(append(fixed, []app.Command{
 		{Name: "/save", Arg: "<name>", Help: "save the queue as an Apple Music playlist",
 			Run: m.saveCmd},

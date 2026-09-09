@@ -33,6 +33,16 @@ type PlayerState struct {
 	Artist       string
 	PositionMs   int
 	DurationMs   int
+
+	// 켜져 있는 것들. 같은 왕복에 실어 온다 — 따로 물으면 1초마다 두 번
+	// 묻게 되고, 그 값이 서로 다른 순간의 것이라 화면이 어긋난다.
+	//
+	// 우리가 켠 것을 기억하지 않고 매번 읽는 이유는, 사용자가 Music.app
+	// 에서 직접 켤 수도 있기 때문이다. 그때 화면이 옛말을 하면 거짓말이
+	// 된다 — "Music.app 이 말해주는 것을 그대로 그린다"(player.go).
+	Shuffle   bool
+	Repeat    Repeat
+	Favorited bool
 }
 
 // Running 은 Music.app 이 떠 있는지 본다.
@@ -46,13 +56,19 @@ func Running() bool {
 // tell 블록 안에서는 `as text` 를 쓴다. `as string` 은 구문 오류가 난다.
 const statusScript = `tell application "Music"
 	set ps to (player state as text)
-	if ps is "stopped" then return "stopped|||||"
+	set sh to (shuffle enabled as text)
+	set rp to (song repeat as text)
+	if ps is "stopped" then return "stopped|||||" & "|" & sh & "|" & rp & "|false"
 	set t to current track
 	set pos to 0
 	try
 		set pos to player position
 	end try
-	return ps & "|" & (persistent ID of t) & "|" & (name of t) & "|" & (artist of t) & "|" & (pos as text) & "|" & ((duration of t) as text)
+	set fav to false
+	try
+		set fav to favorited of t
+	end try
+	return ps & "|" & (persistent ID of t) & "|" & (name of t) & "|" & (artist of t) & "|" & (pos as text) & "|" & ((duration of t) as text) & "|" & sh & "|" & rp & "|" & (fav as text)
 end tell`
 
 // Status 는 현재 재생 상태를 읽는다. 1초 주기 폴링에 쓰인다.
@@ -64,21 +80,30 @@ func Status() (PlayerState, error) {
 	if err != nil {
 		return PlayerState{}, err
 	}
-	f := strings.Split(out, "|")
+	return parseStatus(out), nil
+}
+
+// parseStatus 는 스크립트가 뱉은 한 줄을 읽는다.
+//
+// 읽기와 나누어 둔 이유는 이것만 테스트할 수 있게 하기 위해서다.
+// 실제로 돌리는 테스트는 이 기계의 Music.app 상태에 기댄다.
+func parseStatus(out string) PlayerState {
+	f := strings.Split(strings.TrimRight(out, "\n"), "|")
 	if len(f) < 6 {
-		return PlayerState{}, nil
+		return PlayerState{}
 	}
+	modes := parseModes(f)
 	if f[0] == "stopped" {
-		return PlayerState{Stopped: true}, nil
+		modes.Stopped = true
+		return modes
 	}
-	return PlayerState{
-		Playing:      f[0] == "playing",
-		PersistentID: f[1],
-		Title:        f[2],
-		Artist:       f[3],
-		PositionMs:   seconds(f[4]),
-		DurationMs:   seconds(f[5]),
-	}, nil
+	modes.Playing = f[0] == "playing"
+	modes.PersistentID = f[1]
+	modes.Title = f[2]
+	modes.Artist = f[3]
+	modes.PositionMs = seconds(f[4])
+	modes.DurationMs = seconds(f[5])
+	return modes
 }
 
 // PlayPersistentID 는 곡을 찾아 튼다.

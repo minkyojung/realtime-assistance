@@ -84,72 +84,24 @@ func SetRating(stars int) error {
 	return simple(fmt.Sprintf("set rating of current track to %d", stars*20))
 }
 
-// Modes 는 지금 켜져 있는 것들이다.
+// parseModes 는 상태 한 줄의 뒷칸에서 켜져 있는 것들을 읽는다.
 //
-// 우리가 켠 것을 기억하지 않고 매번 읽는다. 사용자가 Music.app 에서 직접
-// 켤 수도 있는데, 그때 화면이 옛말을 하면 그것이 거짓말이 된다 —
-// "Music.app 이 말해주는 것을 그대로 그린다"(player.go).
-type Modes struct {
-	Shuffle bool
-	Repeat  Repeat
-
-	// Favorited 는 지금 나오는 곡이 좋아요인지다.
-	Favorited bool
-
-	// Volume 은 0–100 이다.
-	Volume int
-}
-
-const modesScript = `tell application "Music"
-	set fav to false
-	try
-		set fav to favorited of current track
-	end try
-	return (shuffle enabled as text) & "|" & (song repeat as text) & "|" & (fav as text) & "|" & (sound volume as text)
-end tell`
-
-// ReadModes 는 켜져 있는 것들을 읽어 온다.
-func ReadModes() (Modes, error) {
-	if !Running() {
-		return Modes{}, ErrNotRunning
-	}
-	out, err := run(modesScript)
-	if err != nil {
-		return Modes{}, err
-	}
-	return parseModes(out), nil
-}
-
-// parseModes 는 스크립트가 뱉은 한 줄을 읽는다.
+// 따로 묻지 않는다. 1초마다 두 번 물으면 두 값이 서로 다른 순간의 것이 되어
+// 화면이 어긋나고, Apple 이벤트도 두 배가 된다.
 //
-// 읽기와 나누어 둔 이유는 이것만 테스트할 수 있게 하기 위해서다.
-// 실제로 돌리는 테스트는 이 기계의 Music.app 상태에 기댄다.
-func parseModes(out string) Modes {
-	f := strings.Split(strings.TrimSpace(out), "|")
-	if len(f) < 4 {
-		return Modes{}
+// 칸이 모자라면(옛 스크립트) 전부 꺼진 것으로 본다. 잘못된 표시를 띄우는
+// 것보다 안 띄우는 편이 낫다.
+func parseModes(f []string) PlayerState {
+	if len(f) < 9 {
+		return PlayerState{}
 	}
-	m := Modes{
-		Shuffle:   f[0] == "true",
-		Repeat:    Repeat(strings.TrimSpace(f[1])),
-		Favorited: f[2] == "true",
-		Volume:    atoiSafe(f[3]),
+	r := Repeat(strings.TrimSpace(f[7]))
+	if !r.Valid() {
+		r = RepeatOff
 	}
-	// 모르는 값은 껐다고 본다. 화면에 표시가 안 뜰 뿐이고, 잘못된 표시를
-	// 띄우는 것보다 낫다.
-	if !m.Repeat.Valid() {
-		m.Repeat = RepeatOff
+	return PlayerState{
+		Shuffle:   strings.TrimSpace(f[6]) == "true",
+		Repeat:    r,
+		Favorited: strings.TrimSpace(f[8]) == "true",
 	}
-	return m
-}
-
-func atoiSafe(s string) int {
-	n := 0
-	for _, r := range strings.TrimSpace(s) {
-		if r < '0' || r > '9' {
-			return n
-		}
-		n = n*10 + int(r-'0')
-	}
-	return n
 }

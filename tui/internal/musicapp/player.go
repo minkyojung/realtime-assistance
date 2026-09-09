@@ -108,6 +108,12 @@ func (m Model) Status() string {
 	left := style.Dim.Render(where) +
 		style.Faint.Render(fmt.Sprintf(" · %d", m.rowCount()))
 
+	// 켜져 있는 것을 앞쪽에 둔다. 한두 글자인데 동작을 바꾸는 것들이라,
+	// 좁아져서 뒤쪽이 잘려도 이것만은 살아남아야 한다(modes.go).
+	if s := m.marks(); s != "" {
+		left += "   " + s
+	}
+
 	// 빈 목록이 왜 비었는지를 목록 대신 여기가 말한다.
 	// 한 번이라도 읽은 뒤에는 말하지 않는다 — 다시 읽는 것은 티가 안 나야 한다.
 	if !m.synced && m.rowCount() == 0 {

@@ -2,36 +2,55 @@ package music
 
 import "testing"
 
-// 읽어 온 한 줄을 해석하는 자리. 여기서 틀리면 화면이 켜지지도 않은 것을
+// 상태 한 줄의 뒷칸을 읽는 자리. 여기서 틀리면 화면이 켜지지도 않은 것을
 // 켜졌다고 말한다.
-func TestReadingModes(t *testing.T) {
+func TestReadingModesFromStatus(t *testing.T) {
+	// 앞 여섯 칸은 재생 상태다. 뒤 셋이 이 테스트의 관심사다.
+	head := "playing|PID|Title|Artist|10|200"
+
 	for _, c := range []struct {
 		name string
-		out  string
-		want Modes
+		tail string
+		want PlayerState
 	}{
-		{"전부 꺼짐", "false|off|false|100",
-			Modes{Repeat: RepeatOff, Volume: 100}},
-		{"섞기만 켜짐", "true|off|false|60",
-			Modes{Shuffle: true, Repeat: RepeatOff, Volume: 60}},
-		{"한 곡 반복", "false|one|false|60",
-			Modes{Repeat: RepeatOne, Volume: 60}},
-		{"좋아요", "false|all|true|0",
-			Modes{Repeat: RepeatAll, Favorited: true}},
-		{"줄 끝 공백", "  true|all|true|55  ",
-			Modes{Shuffle: true, Repeat: RepeatAll, Favorited: true, Volume: 55}},
-
-		// 모르는 값은 껐다고 본다. 잘못된 표시를 띄우는 것보다 안 띄우는 편이 낫다.
-		{"모르는 반복 값", "false|weird|false|10",
-			Modes{Repeat: RepeatOff, Volume: 10}},
-		{"칸이 모자람", "false|off", Modes{}},
-		{"빈 줄", "", Modes{}},
+		{"전부 꺼짐", "false|off|false", PlayerState{Repeat: RepeatOff}},
+		{"섞기", "true|off|false", PlayerState{Shuffle: true, Repeat: RepeatOff}},
+		{"한 곡 반복", "false|one|false", PlayerState{Repeat: RepeatOne}},
+		{"좋아요", "false|all|true", PlayerState{Repeat: RepeatAll, Favorited: true}},
+		{"모르는 반복 값은 껐다고 본다", "false|weird|false", PlayerState{Repeat: RepeatOff}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			if got := parseModes(c.out); got != c.want {
-				t.Errorf("%q → %+v, 원한 것 %+v", c.out, got, c.want)
+			got := parseStatus(head + "|" + c.tail)
+			if got.Shuffle != c.want.Shuffle || got.Repeat != c.want.Repeat || got.Favorited != c.want.Favorited {
+				t.Errorf("%q → 섞기 %v 반복 %q 좋아요 %v", c.tail, got.Shuffle, got.Repeat, got.Favorited)
+			}
+			// 재생 정보는 그대로 살아 있어야 한다.
+			if got.Title != "Title" || !got.Playing {
+				t.Errorf("모드를 읽다 재생 정보를 잃었다: %+v", got)
 			}
 		})
+	}
+}
+
+// 옛 스크립트가 짧은 줄을 뱉어도 죽지 않는다. 전부 꺼진 것으로 본다.
+func TestShortStatusLineIsSafe(t *testing.T) {
+	got := parseStatus("playing|PID|Title|Artist|10|200")
+	if got.Shuffle || got.Favorited || got.Repeat != "" {
+		t.Errorf("칸이 모자란데 켜졌다고 한다: %+v", got)
+	}
+	if got.Title != "Title" {
+		t.Error("칸이 모자라다고 재생 정보까지 잃었다")
+	}
+}
+
+// 멈춰 있어도 켜진 것은 읽어야 한다. 섞기는 곡과 무관한 상태다.
+func TestStoppedStillReportsModes(t *testing.T) {
+	got := parseStatus("stopped|||||" + "|true|all|false")
+	if !got.Stopped {
+		t.Error("멈춘 것을 못 읽었다")
+	}
+	if !got.Shuffle || got.Repeat != RepeatAll {
+		t.Errorf("멈췄다고 모드를 버렸다: %+v", got)
 	}
 }
 
@@ -82,10 +101,10 @@ func TestStarsBecomeMusicAppRating(t *testing.T) {
 //
 // 되돌리기 쉬운 자리라 못 박아 둔다 — 이름만 보면 loved 가 맞아 보인다.
 func TestFavoriteNeverUsesLoved(t *testing.T) {
-	if got := modesScript; contains(got, "loved") {
-		t.Errorf("loved 를 읽는다 — 접근이 막힌 속성이다:\n%s", got)
+	if contains(statusScript, "loved") {
+		t.Errorf("loved 를 읽는다 — 접근이 막힌 속성이다:\n%s", statusScript)
 	}
-	if !contains(modesScript, "favorited") {
+	if !contains(statusScript, "favorited") {
 		t.Error("favorited 를 안 읽는다")
 	}
 }
