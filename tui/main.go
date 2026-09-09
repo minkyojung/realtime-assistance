@@ -7,17 +7,15 @@ import (
 	"fmt"
 	"os"
 
-	"amcli/tui/internal/cameraapp"
 	"amcli/tui/internal/host"
 	"amcli/tui/internal/musicapp"
-	"amcli/tui/internal/slackapp"
 	tea "charm.land/bubbletea/v2"
 )
 
 func main() {
 	// 앱은 컴파일 타임에 등록한다. 플러그인 시스템을 두지 않는 이유는
 	// 확장성을 여는 순간 Zellij 의 무게가 따라오기 때문이다 — docs/07 6절.
-	m := host.New(musicapp.New(), slackapp.New(), cameraapp.New())
+	m := host.New(musicapp.New())
 	p := tea.NewProgram(&m)
 	// 앱이 이벤트 루프 밖에서 메시지를 넣을 통로를 준다.
 	m.SetSend(func(msg tea.Msg) { p.Send(msg) })
