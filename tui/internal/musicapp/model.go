@@ -108,10 +108,6 @@ type Model struct {
 	art    image.Image
 	artPID string
 
-	// 무대 — 커버 오른쪽 자리에 무엇이 서 있나. stage.go
-	stage stage
-	talk  talk
-
 	// 가사. 커버와 같은 규칙으로 곡이 바뀔 때만 받는다 — lyrics.go
 	lyrics    *lyrics.Lyrics
 	lyricsPID string
