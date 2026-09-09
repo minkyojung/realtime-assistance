@@ -44,20 +44,22 @@ func loaded(t *testing.T) Model {
 
 // 1단계 — 토큰이 없으면 관문에서 막고, 다음에 뭘 할지 화면이 말한다.
 //
-// client_id 가 없는 빌드다. 사용자가 앱을 직접 만들어야 하므로
-// 화면이 그 순서를 안내한다.
+// 사용자가 할 일은 /login 하나다. 앱을 만들고 권한을 고르는 일은
+// 우리가 이미 했다.
 func TestGate(t *testing.T) {
-	t.Setenv("SLACK_CLIENT_ID", "")
 	m := Model{users: map[string]string{}}
-	if m.Ready() == nil {
-		t.Fatal("토큰이 없는데 Ready 가 nil 이다")
+	if err := m.Ready(); err != errNoLogin {
+		t.Fatalf("Ready = %v, want errNoLogin", err)
 	}
 	v := m.View(80, 12)
 	if !strings.Contains(v, "LOGIN") {
 		t.Error("관문 화면에 LOGIN 배지가 없다")
 	}
-	if !strings.Contains(v, "api.slack.com/apps") {
-		t.Error("관문 화면이 다음에 할 일을 안 알려준다")
+	if !strings.Contains(v, "/login") {
+		t.Error("관문 화면이 /login 을 안 알려준다")
+	}
+	if strings.Contains(v, "User Token Scopes") {
+		t.Error("사용자에게 앱을 직접 만들라고 안내한다")
 	}
 	if m.Badge() != 0 {
 		t.Error("로그인 전인데 배지가 0 이 아니다")
@@ -145,8 +147,10 @@ func TestOpenSaysToLog(t *testing.T) {
 // 앱은 자기 키 바인딩을 만들지 않는다. 하고 싶은 것은 전부 팔레트로 간다.
 func TestCommandsRegistered(t *testing.T) {
 	m := loaded(t)
-	t.Setenv("SLACK_CLIENT_ID", "")
-	want := map[string]bool{"/unread": false, "/all": false, "/dnd": false, "/undnd": false, "/read": false}
+	want := map[string]bool{
+		"/unread": false, "/all": false, "/dnd": false, "/undnd": false,
+		"/read": false, "/login": false, "/logout": false,
+	}
 	for _, c := range m.Commands() {
 		if _, ok := want[c.Name]; !ok {
 			t.Errorf("모르는 명령 %q", c.Name)
@@ -274,46 +278,6 @@ func TestParseTS(t *testing.T) {
 // ─────────────────────────────────────────────────────────────
 // 브라우저 로그인
 // ─────────────────────────────────────────────────────────────
-
-// client_id 가 있는 빌드에서는 사용자가 할 일이 /login 하나다.
-// 앱을 만드는 순서를 보여줄 이유가 없다 — 우리가 이미 만들었다.
-func TestGateWithLogin(t *testing.T) {
-	t.Setenv("SLACK_CLIENT_ID", "123.456")
-	m := Model{users: map[string]string{}}
-
-	if err := m.Ready(); err != errNoLogin {
-		t.Errorf("Ready = %v, want errNoLogin", err)
-	}
-	v := m.View(80, 12)
-	if !strings.Contains(v, "/login") {
-		t.Error("관문 화면이 /login 을 안 알려준다")
-	}
-	if strings.Contains(v, "User Token Scopes") {
-		t.Error("로그인이 되는데도 앱을 직접 만들라고 안내한다")
-	}
-}
-
-// 못 하는 것을 팔레트에 올리면 팔레트가 거짓말을 하는 셈이다.
-func TestLoginCommandsAppearOnlyWhenPossible(t *testing.T) {
-	has := func(m Model, name string) bool {
-		for _, c := range m.Commands() {
-			if c.Name == name {
-				return true
-			}
-		}
-		return false
-	}
-	m := loaded(t)
-
-	t.Setenv("SLACK_CLIENT_ID", "")
-	if has(m, "/login") {
-		t.Error("client_id 가 없는데 /login 이 팔레트에 있다")
-	}
-	t.Setenv("SLACK_CLIENT_ID", "123.456")
-	if !has(m, "/login") || !has(m, "/logout") {
-		t.Error("client_id 가 있는데 /login · /logout 이 없다")
-	}
-}
 
 // 로그인이 끝나면 토큰이 앉고 곧바로 목록을 읽으러 간다.
 func TestLoginThenLogout(t *testing.T) {
@@ -638,5 +602,22 @@ func TestEveryPortMakesALoopbackURI(t *testing.T) {
 		if u.Scheme != "http" || u.Hostname() != "localhost" || u.Path != callbackPath {
 			t.Errorf("%s 가 루프백 주소가 아니다", u)
 		}
+	}
+}
+
+// client_id 가 박혀 있어야 다운로드한 사람이 환경변수 없이 로그인한다.
+// 이 값은 비밀이 아니다 — PKCE 앱은 client_secret 을 쓰지 않는다.
+func TestClientIDIsBakedIn(t *testing.T) {
+	t.Setenv("SLACK_CLIENT_ID", "")
+	if clientID == "" {
+		t.Fatal("client_id 가 비어 있다. 배포판에서 /login 이 안 된다")
+	}
+	if oauthClientID() != clientID {
+		t.Error("환경변수가 비었는데 박힌 값을 안 쓴다")
+	}
+	// 환경변수가 있으면 그것이 이긴다.
+	t.Setenv("SLACK_CLIENT_ID", "other.id")
+	if oauthClientID() != "other.id" {
+		t.Error("환경변수가 안 이긴다")
 	}
 }

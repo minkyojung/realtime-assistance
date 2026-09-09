@@ -117,15 +117,8 @@ func (m Model) Tagline() string { return "reads and sends, nothing more" }
 // 1단계 — 관문
 // ─────────────────────────────────────────────────────────────
 
-var (
-	errNoLogin = errors.New(
-		"Slack 에 로그인하지 않았습니다. /login 을 입력하면 브라우저가 열립니다")
-	errNoToken = errors.New(
-		"Slack 토큰이 없습니다. api.slack.com/apps 에서 앱을 만들고 .env 를 채우세요")
-)
-
-// 로그인이 가능한 빌드인가. client_id 가 있어야 브라우저를 열 수 있다.
-func canLogin() bool { return oauthClientID() != "" }
+var errNoLogin = errors.New(
+	"Slack 에 로그인하지 않았습니다. /login 을 입력하면 브라우저가 열립니다")
 
 // Ready 는 앱이 쓸 수 있는 상태인지 본다.
 //
@@ -136,10 +129,7 @@ func canLogin() bool { return oauthClientID() != "" }
 // 읽기·쓰기는 그대로 된다. 못 하는 것 하나 때문에 되는 것까지 막지 않는다.
 func (m Model) Ready() error {
 	if m.token() == "" {
-		if canLogin() {
-			return errNoLogin
-		}
-		return errNoToken
+		return errNoLogin
 	}
 	if m.loadErr != nil {
 		return m.loadErr
@@ -253,11 +243,7 @@ func (m Model) viewGate(w, h int, err error) string {
 			style.Body.Render(style.Truncate(err.Error(), style.Max(w-8, 10))),
 		"",
 	}
-	steps := gateSteps
-	if canLogin() {
-		steps = loginSteps
-	}
-	for _, s := range steps {
+	for _, s := range gateSteps {
 		lines = append(lines, style.Faint.Render(style.Truncate(s, w)))
 	}
 	for len(lines) < h {
@@ -266,22 +252,12 @@ func (m Model) viewGate(w, h int, err error) string {
 	return strings.Join(lines[:style.Min(len(lines), h)], "\n")
 }
 
-// 로그인이 되는 빌드에서는 사용자가 할 일이 하나다.
-// 나머지(앱 생성·권한 선택)는 우리가 이미 했다.
-var loginSteps = []string{
+// 사용자가 할 일은 하나다. 앱을 만드는 것도 권한을 고르는 것도
+// 우리가 이미 했다 — 남은 것은 그 사람이 승인하는 일뿐이다.
+var gateSteps = []string{
 	"/login  브라우저에서 Slack 이 열리고, 승인하면 여기로 돌아옵니다",
 	"",
 	"승인 화면에서 워크스페이스를 고르면 됩니다. 토큰을 복사할 일은 없습니다.",
-}
-
-var gateSteps = []string{
-	"1. api.slack.com/apps 에서 앱을 만듭니다",
-	"2. Socket Mode 를 켜고 app-level token (xapp-) 을 받습니다",
-	"3. User Token Scopes: channels:read groups:read im:read im:history",
-	"   chat:write dnd:write users:read",
-	"4. 워크스페이스에 설치하고 user token (xoxp-) 을 받습니다",
-	"5. 저장소 루트 .env 에 SLACK_APP_TOKEN · SLACK_USER_TOKEN 을 넣고",
-	"   set -a && . ./.env && set +a 로 다시 켭니다",
 }
 
 // Status 는 상태줄에 들어갈 한 줄이다. 배경에 있어도 호출된다.

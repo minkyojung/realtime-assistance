@@ -36,18 +36,13 @@ func (m Model) Commands() []app.Command {
 			Run: func(string) tea.Cmd { return send(readAllMsg{}) }},
 	}
 
-	// 로그인은 되는 빌드에서만 보인다. 못 하는 것을 팔레트에 올려두면
-	// 팔레트가 거짓말을 하는 셈이다.
-	if canLogin() {
-		cmds = append(cmds,
-			app.Command{Name: "/login", Help: "sign in to Slack in your browser",
-				Run: func(string) tea.Cmd {
-					return tea.Batch(send(loginStartedMsg{}), cmdLogin())
-				}},
-			app.Command{Name: "/logout", Help: "forget the saved Slack token",
-				Run: func(string) tea.Cmd { return cmdLogout() }})
-	}
-	return cmds
+	return append(cmds,
+		app.Command{Name: "/login", Help: "sign in to Slack in your browser",
+			Run: func(string) tea.Cmd {
+				return tea.Batch(send(loginStartedMsg{}), cmdLogin())
+			}},
+		app.Command{Name: "/logout", Help: "forget the saved Slack token",
+			Run: func(string) tea.Cmd { return cmdLogout() }})
 }
 
 // 명령의 결과는 메시지로 돌아온다. 그래야 상태가 Update 한 곳에서만 바뀐다.

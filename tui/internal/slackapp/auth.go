@@ -39,16 +39,20 @@ import (
 // 아니라 앱당 하나라 배포할 수도 없다. 배포판의 실시간 수신은 다른
 // 문제이고, 그때까지 이 앱은 앱 토큰이 있으면 켜고 없으면 끈다.
 
-// clientID 는 배포할 때 여기에 박는다. 공개값이라 숨길 이유가 없다.
+// clientID 는 우리 Slack 앱의 것이다.
 //
-// 비어 있으면 환경변수를 본다. 값을 받기 전에도 시험해 볼 수 있어야 한다.
-const clientID = ""
+// **비밀이 아니다.** PKCE 를 켠 앱은 public client 라 client_secret 을
+// 쓰지 않고, 그 자리를 code_verifier 가 대신한다. 그래서 바이너리에
+// 박아 배포해도 된다 — 이 값 하나로 남의 워크스페이스에 할 수 있는 일이
+// 없다. 승인은 언제나 그 사람의 브라우저에서 그 사람이 한다.
+const clientID = "8320775146081.12018510596481"
 
+// 환경변수가 이긴다. 다른 앱을 잠깐 물려 시험할 수 있어야 한다.
 func oauthClientID() string {
-	if clientID != "" {
-		return clientID
+	if id := strings.TrimSpace(os.Getenv("SLACK_CLIENT_ID")); id != "" {
+		return id
 	}
-	return strings.TrimSpace(os.Getenv("SLACK_CLIENT_ID"))
+	return clientID
 }
 
 // 리다이렉트 주소는 앱 설정에 **글자 그대로** 등록된 것과 같아야 하므로
