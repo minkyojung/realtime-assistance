@@ -2,6 +2,7 @@ package musicapp
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -19,13 +20,34 @@ import (
 // 호스트가 전부 모아 하나의 팔레트로 보여준다 — docs/07-호스트-계약.md 3-1.
 //
 // 명령이 모델을 거치지 않는 것이 체감 속도를 지탱한다.
+// 팔레트에 먼저 보일 순서.
+//
+// `/` 만 치면 여덟 줄이 보인다(host/overlay.go). **그 여덟 줄이 "이 앱으로
+// 무엇을 할 수 있는가"의 답이다.** 예전에는 여덟 줄이 전부 섹션 이동이라,
+// 정작 할 수 있는 일(/remove·/love·/shuffle)이 아래로 밀려 보이지 않았다.
+//
+// 기준은 **`/` 말고 다른 길이 있는가**다. 섹션은 tab 으로도 가고 /pause 는
+// shift+↓ 로도 된다. 여기서만 갈 수 있는 것을 앞에 둔다.
+//
+// 여기 없는 이름은 이 뒤에 원래 순서대로 붙는다 — 섹션, 그다음 플레이리스트.
+var paletteOrder = []string{
+	"/remove", "/love", "/shuffle", "/save", "/shazam", "/clear", "/repeat", "/rate",
+	"/volume", "/pause", "/reload", "/setup", "/login",
+}
+
+func paletteRank(name string) int {
+	for i, n := range paletteOrder {
+		if n == name {
+			return i
+		}
+	}
+	return len(paletteOrder)
+}
+
 func (m Model) Commands() []app.Command {
-	// 고정 섹션 → 액션 → 플레이리스트 순. 팔레트는 여덟 줄만 보여주므로
-	// (host/overlay.go) 순서가 곧 "`/` 만 쳤을 때 보이는 것"이다.
 	// 플레이리스트는 수가 정해져 있지 않아 맨 뒤에 둔다 — 앞에 두면
-	// 라이브러리에 따라 액션이 통째로 밀려난다.
-	fixed, playlists := m.jumpCommands()
-	fixed = append(fixed, m.modeCommands()...)
+	// 라이브러리에 따라 나머지가 통째로 밀려난다.
+	jumps, playlists := m.jumpCommands()
 	actions := []app.Command{
 		{Name: "/save", Arg: "<name>", Help: "save the queue as an Apple Music playlist",
 			Run: m.saveCmd},
@@ -50,7 +72,12 @@ func (m Model) Commands() []app.Command {
 			Run: m.shazamCmd,
 		})
 	}
-	return append(append(fixed, actions...), playlists...)
+	actions = append(actions, m.modeCommands()...)
+	// 순위대로 세운다. 같은 순위는 원래 자리를 지킨다.
+	sort.SliceStable(actions, func(i, j int) bool {
+		return paletteRank(actions[i].Name) < paletteRank(actions[j].Name)
+	})
+	return append(append(actions, jumps...), playlists...)
 }
 
 // 액션 명령의 이름. 섹션 이름이 여기에 겹치지 않게 하는 데 쓴다.

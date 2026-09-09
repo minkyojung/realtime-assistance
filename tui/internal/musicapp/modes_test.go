@@ -133,3 +133,67 @@ func findCmd(t *testing.T, m Model, name string) app.Command {
 }
 
 var _ tea.Cmd = cmdShuffle(true)
+
+// `/` 만 쳤을 때 보이는 여덟 줄이 "이 앱으로 무엇을 할 수 있는가"의 답이다.
+//
+// 예전에는 여덟 줄이 전부 섹션 이동이라, 정작 할 수 있는 일이 아래로 밀려
+// 보이지 않았다. 되돌아가기 쉬운 자리라 못 박아 둔다.
+func TestPaletteShowsActionsBeforeNavigation(t *testing.T) {
+	m := New()
+	m.bodyH = 20
+
+	const visible = 8 // host/overlay.go 의 maxOverlayRows
+	cmds := m.Commands()
+	if len(cmds) < visible {
+		t.Fatalf("명령이 %d개뿐이다", len(cmds))
+	}
+
+	// 첫 여덟 줄에 섹션 이동이 끼어 있으면 안 된다.
+	jumps, _ := m.jumpCommands()
+	isJump := map[string]bool{}
+	for _, j := range jumps {
+		isJump[j.Name] = true
+	}
+	for i, c := range cmds[:visible] {
+		if isJump[c.Name] {
+			t.Errorf("%d번째 줄이 섹션 이동이다: %s — tab 으로도 갈 수 있는 것은 뒤로", i+1, c.Name)
+		}
+	}
+
+	// 그리고 여기서만 갈 수 있는 것들이 보여야 한다.
+	seen := map[string]bool{}
+	for _, c := range cmds[:visible] {
+		seen[c.Name] = true
+	}
+	for _, want := range []string{"/remove", "/love", "/shuffle"} {
+		if !seen[want] {
+			t.Errorf("%s 가 첫 여덟 줄에 없다 — `/` 말고는 길이 없는 명령이다", want)
+		}
+	}
+}
+
+// 다른 길이 있는 것은 뒤로 간다.
+func TestCommandsWithAKeyRankLower(t *testing.T) {
+	// /pause 는 shift+↓ 로도 된다. /remove 는 `/` 뿐이다.
+	if paletteRank("/pause") <= paletteRank("/remove") {
+		t.Error("키가 있는 /pause 가 키가 없는 /remove 보다 앞이다")
+	}
+}
+
+// 플레이리스트는 수가 정해져 있지 않아 맨 뒤여야 한다.
+// 앞에 두면 라이브러리에 따라 나머지가 통째로 밀려난다.
+func TestPlaylistsStayLast(t *testing.T) {
+	m := New()
+	m.bodyH = 20
+	_, playlists := m.jumpCommands()
+	if len(playlists) == 0 {
+		t.Skip("픽스처에 플레이리스트가 없다")
+	}
+	cmds := m.Commands()
+	first := len(cmds) - len(playlists)
+	for i, c := range cmds {
+		if c.Name == playlists[0].Name && i != first {
+			t.Errorf("플레이리스트가 %d번째에 있다 — 맨 뒤(%d)여야 한다", i, first)
+		}
+	}
+}
