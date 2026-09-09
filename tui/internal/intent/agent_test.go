@@ -1,6 +1,11 @@
 package intent
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	"amcli/tui/internal/api"
+)
 
 // Chat 은 값이다. 복사가 곧 스냅샷이라 걸음마다 들고 다닐 수 있고, 도중에
 // 그만두면 그냥 버리면 된다.
@@ -38,4 +43,41 @@ func TestChatMentionsTheQueueOnlyWhenThereIsOne(t *testing.T) {
 	if len(full.msgs) != len(empty.msgs)+1 {
 		t.Errorf("큐가 있을 때 한 줄이 더 붙어야 한다: %d 대 %d", len(full.msgs), len(empty.msgs))
 	}
+}
+
+// 모델이 보는 큐. 1부터 세고, 지금 나오는 곡에 표가 있어야 한다.
+func TestRenderedQueueIsNumberedFromOne(t *testing.T) {
+	cur := queueOf(11, 22, 33)
+	cur.Playing = 22
+
+	got := renderQueue(cur)
+	for _, want := range []string{"  1 | track 11", "▶ 2 | track 22", "  3 | track 33"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("큐에 %q 가 없다:\n%s", want, got)
+		}
+	}
+}
+
+func queueOf(ids ...int64) Current {
+	items := make([]api.QueueItem, 0, len(ids))
+	for _, id := range ids {
+		items = append(items, api.QueueItem{Track: api.Track{
+			Id:     id,
+			Title:  "track " + itoa(id),
+			Artist: api.Artist{Name: "someone"},
+		}})
+	}
+	return Current{Items: items}
+}
+
+func itoa(n int64) string {
+	if n == 0 {
+		return "0"
+	}
+	var b []byte
+	for n > 0 {
+		b = append([]byte{byte('0' + n%10)}, b...)
+		n /= 10
+	}
+	return string(b)
 }

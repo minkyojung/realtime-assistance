@@ -65,7 +65,12 @@ type Model struct {
 	//
 	// 도는 요청은 turn 한 덩어리로 들고 있는다. 번호·손잡이·기다림이
 	// 언제나 함께 움직여야 하기 때문이다 — turn.go
-	ask        turn
+	ask turn
+
+	// 이 턴 동안의 대화와, 모델을 몇 번 불렀는지. 턴을 넘어 살아남지 않는다.
+	chat  intent.Chat
+	steps int
+
 	spinner    spinner.Model
 	queueTitle string
 	note       string
@@ -159,19 +164,17 @@ func (m Model) Ask(prompt string) tea.Cmd {
 	return cmd
 }
 
-// startAsk 는 요청을 띄우고 취소 손잡이를 들고 있는다.
+// startAsk 는 물음 하나를 연다.
 //
-// 큐가 이미 있으면 곧장 선곡으로 가지 않는다. "이 곡 빼줘"는 라이브러리를
-// 다시 읽을 이유가 없는 말인데, Build 는 언제나 목록 전체를 돌려주므로
-// 한 곡을 빼려고 나머지를 전부 다시 고르게 된다(intent/edit.go).
+// 곧장 선곡으로 가지 않는다. 무엇을 시키는 말인지 먼저 모델에게 고르게 하고,
+// 필요한 도구가 있으면 그때 부른다(agent.go). 라이브러리를 읽는 값은
+// build_queue 안에서만 치른다.
 func (m Model) startAsk(prompt string) (Model, tea.Cmd) {
 	var ctx context.Context
 	m.ask, ctx = m.ask.start(askTimeout)
-
-	if len(m.queue) > 0 {
-		return m, cmdTriage(ctx, m.ask.seq, prompt, m.current())
-	}
-	return m, cmdBuildQueue(ctx, m.ask.seq, prompt, data.Lib().Tracks, m.current())
+	m.chat = intent.NewChat(prompt, m.current(), m.toolDefs())
+	m.steps = 0
+	return m, cmdStep(ctx, m.ask.seq, m.chat, m.toolDefs())
 }
 
 // current 는 모델에게 보여줄 "지금 화면의 큐"다.
@@ -245,30 +248,12 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		}
 		return m, app.Say(m.Name(), "Saved \""+msg.name+"\" to Apple Music")
 
-	case triagedMsg:
+	case stepMsg:
 		// 그만뒀거나 더 새 물음이 떠 있으면 늦게 온 답이다. 버린다.
 		if !m.ask.fresh(msg.seq) {
 			return m, nil
 		}
-		m.usage.PromptTokens += msg.edit.Usage.PromptTokens
-		m.usage.CompletionTokens += msg.edit.Usage.CompletionTokens
-		m.usage.CostUsd += msg.edit.Usage.CostUsd
-
-		// 판단이 실패하면 새로 짜는 쪽으로 간다. 느릴 뿐 틀리지는 않는다.
-		if msg.err != nil || msg.edit.Kind != intent.EditRemove {
-			if errors.Is(msg.err, context.Canceled) {
-				return m, nil
-			}
-			// 같은 물음의 두 번째 걸음이다. 번호를 그대로 두므로 여기서
-			// 그만두면 판단과 선곡이 함께 버려진다.
-			var ctx context.Context
-			m.ask, ctx = m.ask.extend(askTimeout)
-			return m, cmdBuildQueue(ctx, m.ask.seq, msg.prompt, data.Lib().Tracks, m.current())
-		}
-
-		// 고치라는 말이었다. 사람이 /remove 를 눌렀을 때와 **같은 문**으로 간다.
-		m.ask = m.ask.done()
-		return m.removeTracks(msg.edit.TrackIDs, msg.edit.Note)
+		return m.applyStep(msg)
 
 	case queueMsg:
 		// 그만뒀거나 더 새 물음이 떠 있으면 늦게 온 답이다. 버린다.

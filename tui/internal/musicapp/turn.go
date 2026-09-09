@@ -26,6 +26,12 @@ type turn struct {
 
 	// cancel 은 도는 요청을 끊는 손잡이다. live 가 아니면 nil 이다.
 	cancel context.CancelFunc
+
+	// ctx 는 이 턴 안에서 나가는 모든 요청이 매달릴 자리다.
+	//
+	// 손잡이와 함께 둔다. 한 턴이 여러 걸음으로 나뉘고 걸음마다 도구가
+	// 요청을 더 낼 수 있으므로, 그때 쓸 ctx 를 찾아 헤매지 않아야 한다.
+	ctx context.Context
 }
 
 // start 는 새 턴을 연다. 앞의 턴은 버린다 — 한 번에 하나만 기다린다.
@@ -47,6 +53,7 @@ func (t turn) extend(timeout time.Duration) (turn, context.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	t.live = true
 	t.cancel = cancel
+	t.ctx = ctx
 	return t, ctx
 }
 
@@ -60,6 +67,7 @@ func (t turn) done() turn {
 	}
 	t.live = false
 	t.cancel = nil
+	t.ctx = nil
 	return t
 }
 

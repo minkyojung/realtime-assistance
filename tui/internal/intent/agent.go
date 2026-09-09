@@ -3,6 +3,7 @@ package intent
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -27,6 +28,12 @@ var errNoChoices = errors.New("the response had no choices")
 
 // 이 층은 고르기만 한다. 무거운 일은 도구 안에서 벌어지므로 작은 모델로 족하다.
 const agentModel = openai.ChatModelGPT5_4Mini
+
+// EditModel 은 첫 화면이 무엇으로 고치는지 적을 때 쓴다. Model 의 짝이다.
+//
+// 이름이 "고치는 모델"인 것은 이 층이 큐를 고치는 말을 받아내던 시절의
+// 흔적이다. 지금은 도구를 고르는 층이고, 고치는 것도 그중 하나다.
+func EditModel() string { return agentModel }
 
 // Tool 은 모델이 부를 수 있는 것 하나다.
 type Tool struct {
@@ -160,4 +167,25 @@ func (c Chat) WithResult(callID, result string) Chat {
 	c.msgs = append(append([]openai.ChatCompletionMessageParamUnion{}, c.msgs...),
 		openai.ToolMessage(result, callID))
 	return c
+}
+
+// renderQueue 는 지금 큐를 자리번호와 함께 적는다.
+//
+// 라이브러리 목록(renderLibrary)과 달리 재생 횟수나 날짜를 적지 않는다.
+// 이 층이 답할 물음은 "무엇을 할까"이지 "무엇이 좋을까"가 아니다.
+func renderQueue(cur Current) string {
+	var b strings.Builder
+	b.WriteString("The queue on screen")
+	if cur.Title != "" {
+		fmt.Fprintf(&b, " — %q", cur.Title)
+	}
+	b.WriteString(" (▶ is playing now):\n")
+	for i, it := range cur.Items {
+		mark := " "
+		if it.Track.Id == cur.Playing {
+			mark = "▶"
+		}
+		fmt.Fprintf(&b, "%s %d | %s | %s\n", mark, i+1, it.Track.Title, it.Track.Artist.Name)
+	}
+	return b.String()
 }
