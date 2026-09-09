@@ -24,6 +24,9 @@ type logEntry struct {
 
 // waiting 은 답을 기다리는 앱 이름들이다. 스피너에 쓴다.
 func (m Model) waiting() []string {
+	if m.routing {
+		return []string{"…"}
+	}
 	out := make([]string, 0, len(m.pending))
 	for name := range m.pending {
 		out = append(out, name)
@@ -62,8 +65,12 @@ func (m Model) logRows(w int) []string {
 		}
 	}
 	if len(waiting) > 0 {
+		label := strings.Join(waiting, ", ") + " 에게 묻는 중…"
+		if m.routing {
+			label = "어디로 보낼지 정하는 중…"
+		}
 		out = append(out, m.spinner.View()+" "+
-			style.Dim.Render(style.Truncate(strings.Join(waiting, ", ")+" 에게 묻는 중…", w-2)))
+			style.Dim.Render(style.Truncate(label, w-2)))
 	}
 	return out
 }

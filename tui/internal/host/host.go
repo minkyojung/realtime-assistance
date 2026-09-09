@@ -42,6 +42,7 @@ type Model struct {
 	// 로그 — 호스트의 세 번째 자산. 입력의 짝이다.
 	log     []logEntry
 	logOpen bool
+	routing bool            // 라우터의 답을 기다리는 중
 	pending map[string]bool // 답을 기다리는 앱
 	spinner spinner.Model
 
@@ -123,6 +124,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case app.SayMsg:
 		return m.handleSay(msg), nil
 
+	case routedMsg:
+		return m.deliver(msg)
+
 	case runResultMsg:
 		return m, msg.cmd
 
@@ -157,6 +161,58 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmd, appCmd)
 	}
 	return m.forward(msg)
+}
+
+// dispatch 는 문장을 어느 앱에게 줄지 정해 보낸다.
+//
+// 라우터를 부르지 않는 경우가 대부분이다 — 앱이 하나이거나, 사용자가
+// @ 로 지정했으면 답이 이미 정해져 있다.
+func (m Model) dispatch(prompt string) (tea.Model, tea.Cmd) {
+	if name, rest := m.mention(prompt); name != "" {
+		return m.ask([]string{name}, rest)
+	}
+	if len(m.apps) == 1 {
+		return m.ask([]string{m.app().Name()}, prompt)
+	}
+	m.routing = true
+	return m, tea.Batch(
+		cmdRoute(prompt, m.specs(), m.app().Name()),
+		m.spinner.Tick,
+	)
+}
+
+// deliver 는 라우터의 결과를 받아 앱들에게 넘긴다.
+func (m Model) deliver(msg routedMsg) (tea.Model, tea.Cmd) {
+	m.routing = false
+	names := msg.apps
+	// 라우터가 실패하거나 아무도 못 고르면 지금 보고 있는 앱에게 준다.
+	// 틀려도 망하지 않는다 — 그 앱이 못 하겠다고 로그에 남기고 끝이다.
+	if msg.err != nil || len(names) == 0 {
+		names = []string{m.app().Name()}
+	}
+	return m.ask(names, msg.prompt)
+}
+
+// ask 는 지목된 앱들에게 동시에 묻는다.
+//
+// 순서를 보장하지 않는다. "틀고 꺼줘"는 순서 의존이 없고, 순서가 필요한
+// 요청("A 하고 나서 B")은 지금 범위 밖이다. 결과는 도착하는 대로 로그에 쌓인다.
+func (m Model) ask(names []string, prompt string) (tea.Model, tea.Cmd) {
+	cmds := []tea.Cmd{m.spinner.Tick}
+	for _, name := range names {
+		for i, a := range m.apps {
+			if a.Name() != name {
+				continue
+			}
+			m.pending[name] = true
+			next, cmd := a.Update(app.AskMsg{Prompt: prompt})
+			m.apps[i] = next
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
+	}
+	return m, tea.Batch(cmds...)
 }
 
 // forward 는 메시지를 지금 앱에게 넘긴다.
