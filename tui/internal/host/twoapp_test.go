@@ -207,27 +207,35 @@ func TestDetailToggle(t *testing.T) {
 		},
 	})
 
-	if out := plain(m.View().Content); strings.Contains(out, "candidates 195") {
-		t.Error("접혀 있어야 하는데 상세가 보인다")
-	}
-
-	m, _ = m.Update(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
+	// 기본이 펼침이다. 근거를 보려고 키를 눌러야 했던 시절은 지났다 —
+	// 목록 상한을 걷어내면서 대화 띠에 자리가 생겼다.
 	out := plain(m.View().Content)
 	for _, want := range []string{
+		"두 곡을 골랐어요",
 		"candidates 195",
 		"Perth",
 		"40일 전에 담고 한 번도 재생 안 함",
 		"$0.0106",
 	} {
 		if !strings.Contains(out, want) {
-			t.Errorf("펼쳤는데 %q 가 없다", want)
+			t.Errorf("대화 띠에 %q 가 없다", want)
 		}
 	}
 
-	// esc 는 한 단계씩 물러난다.
-	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
-	if out := plain(m.View().Content); strings.Contains(out, "candidates 195") {
-		t.Error("esc 를 눌렀는데 상세가 남아 있다")
+	// ctrl+j 로 접으면 마지막 한 줄만 남는다. 목록을 더 볼 때다.
+	m, _ = m.Update(tea.KeyPressMsg{Code: 'j', Mod: tea.ModCtrl})
+	shut := plain(m.View().Content)
+	if strings.Contains(shut, "candidates 195") {
+		t.Error("접었는데 근거가 남아 있다")
+	}
+	if !strings.Contains(shut, "두 곡을 골랐어요") {
+		t.Error("접었는데 마지막 한 줄까지 사라졌다")
+	}
+
+	// 다시 누르면 펼쳐진다.
+	m, _ = m.Update(tea.KeyPressMsg{Code: 'j', Mod: tea.ModCtrl})
+	if !strings.Contains(plain(m.View().Content), "candidates 195") {
+		t.Error("다시 눌렀는데 안 펼쳐졌다")
 	}
 }
 

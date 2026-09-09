@@ -23,7 +23,6 @@ func (m Model) Commands() []app.Command {
 	// 플레이리스트는 수가 정해져 있지 않아 맨 뒤에 둔다 — 앞에 두면
 	// 라이브러리에 따라 액션이 통째로 밀려난다.
 	fixed, playlists := m.jumpCommands()
-	fixed = append(fixed, stageCommands()...)
 	fixed = append(fixed, m.modeCommands()...)
 	return append(append(fixed, []app.Command{
 		{Name: "/save", Arg: "<name>", Help: "save the queue as an Apple Music playlist",

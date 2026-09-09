@@ -36,49 +36,68 @@ func (m Model) waiting() []string {
 	return out
 }
 
-// 펼쳤을 때 보여줄 줄 수의 상한.
-const maxLogRows = 8
+// 대화 띠가 쓸 수 있는 줄 수의 상한. 넘으면 오래된 것부터 잘린다.
+const maxLogRows = 10
 
-// logRows 는 입력창 위에 붙일 줄들이다.
+// logRows 는 입력창 바로 위에 붙는 대화 띠다.
 //
-// 평소에는 마지막 한 줄만 보여준다. "화면에 상시로 자리를 주지 않는다"는
-// 원칙 때문이고, ctrl+j 로 펼치면 더 보여준다.
+// **마지막 한 판을 통째로 보여준다** — 내가 한 말, 앱의 답, 곡별 근거,
+// 비용까지. 한때 이것이 한 줄이었고 근거는 ctrl+o 로 열어야 보였다.
+// 자리가 없어서였는데, 목록 상한을 걷어내고 배치를 정리하니 자리가 생겼다.
+//
+// 입력창 **바로 위**인 것이 요점이다. 답이 화면 꼭대기에 뜨면 바닥에서 치고
+// 꼭대기에서 읽느라 눈이 왕복한다. agentic CLI 가 전부 입력창 위에서
+// 답을 키우는 이유다.
+//
+// 아무것도 안 물어봤으면 **한 줄도 그리지 않는다.** 그 자리는 목록이 쓴다.
 func (m Model) logRows(w int) []string {
 	waiting := m.waiting()
-	keep := 1
-	if m.logOpen {
-		keep = maxLogRows
-	}
-	// 기다리는 동안에는 방금 한 말이 보여야 한다. 무엇에 대한 답인지
-	// 모르면 스피너가 불안하기만 하다.
-	if len(waiting) > 0 && !m.logOpen {
-		keep = 1
+	if m.logShut {
+		// 접었으면 마지막 한 줄만. 목록을 더 보고 싶을 때다.
+		if len(m.log) == 0 {
+			return m.spinnerRows(waiting, w)
+		}
+		return append([]string{m.renderLogEntry(m.log[len(m.log)-1], w)},
+			m.spinnerRows(waiting, w)...)
 	}
 
-	out := make([]string, 0, keep+1)
-	if len(m.log) > 0 {
-		entries := m.log
-		if len(entries) > keep {
-			entries = entries[len(entries)-keep:]
-		}
-		last := len(entries) - 1
-		for i, e := range entries {
-			out = append(out, m.renderLogEntry(e, w))
-			// 상세는 가장 최근 응답 하나만 펼친다. 전부 펼치면 본문이 사라진다.
-			if m.detailOpen && i == last && len(e.detail) > 0 {
-				out = append(out, m.renderDetail(e.detail, w)...)
-			}
+	out := make([]string, 0, maxLogRows)
+	for _, e := range m.lastExchange() {
+		out = append(out, m.renderLogEntry(e, w))
+		if len(e.detail) > 0 {
+			out = append(out, m.renderDetail(e.detail, w)...)
 		}
 	}
-	if len(waiting) > 0 {
-		label := strings.Join(waiting, ", ") + " 에게 묻는 중…"
-		if m.routing {
-			label = "어디로 보낼지 정하는 중…"
-		}
-		out = append(out, m.spinner.View()+" "+
-			style.Dim.Render(style.Truncate(label, w-2)))
+	// 넘치면 앞을 자른다. 방금 온 답이 잘리면 안 된다.
+	if len(out) > maxLogRows {
+		out = out[len(out)-maxLogRows:]
 	}
-	return out
+	return append(out, m.spinnerRows(waiting, w)...)
+}
+
+// lastExchange — 마지막으로 내가 한 말과, 그 뒤에 온 답들.
+//
+// 한 문장이 여러 앱에 갈 수 있으므로 답이 여럿일 수 있다. 그 앞의 판은
+// 지나간 것이다 — 필요하면 ctrl+j 로 접었다 펴는 대신 위로 스크롤하는
+// 것이 맞지만, 세션 기록을 화면에 쌓지 않기로 했으므로 한 판만 둔다.
+func (m Model) lastExchange() []logEntry {
+	for i := len(m.log) - 1; i >= 0; i-- {
+		if m.log[i].who == "" {
+			return m.log[i:]
+		}
+	}
+	return m.log
+}
+
+func (m Model) spinnerRows(waiting []string, w int) []string {
+	if len(waiting) == 0 {
+		return nil
+	}
+	label := strings.Join(waiting, ", ") + " 에게 묻는 중…"
+	if m.routing {
+		label = "어디로 보낼지 정하는 중…"
+	}
+	return []string{m.spinner.View() + " " + style.Dim.Render(style.Truncate(label, w-2))}
 }
 
 func (m Model) renderLogEntry(e logEntry, w int) string {

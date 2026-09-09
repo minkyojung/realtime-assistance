@@ -56,13 +56,14 @@ type Model struct {
 	home bool
 
 	// 로그 — 호스트의 세 번째 자산. 입력의 짝이다.
-	log        []logEntry
-	logOpen    bool
-	detailOpen bool
-	routing    bool            // 라우터의 답을 기다리는 중
-	routeSeq   int             // 취소된 요청의 늦은 답을 버리는 데 쓴다
-	pending    map[string]bool // 답을 기다리는 앱
-	spinner    spinner.Model
+	log []logEntry
+	// 대화 띠를 접었나. 기본은 펼침 — 답과 근거가 그냥 보인다.
+	// 목록을 더 보고 싶을 때 ctrl+j 로 접는다.
+	logShut  bool
+	routing  bool            // 라우터의 답을 기다리는 중
+	routeSeq int             // 취소된 요청의 늦은 답을 버리는 데 쓴다
+	pending  map[string]bool // 답을 기다리는 앱
+	spinner  spinner.Model
 
 	w, h int
 	send func(tea.Msg)
@@ -395,26 +396,14 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 			return true, m, nil
 		}
 
-	case "ctrl+o":
-		// 가장 최근 응답이 무슨 일을 했는지 펼친다.
-		m.detailOpen = !m.detailOpen
-		return true, m, nil
-
 	case "ctrl+j":
-		// 앱의 화면을 한 칸 넘긴다. 앱 하나가 본문을 여러 가지로 나눠 쓸 때
-		// (음악은 가사·대화·이력) 손으로 넘길 길이다.
+		// 대화 띠를 접었다 편다.
 		//
-		// 원래는 로그를 펼치는 키였다. 앱이 자기 대화를 본문에 펼쳐 보여주게
-		// 되면서 그 자리가 비었고, "무엇을 보여줘"라는 뜻은 그대로 남았다.
-		// 호스트 로그의 상세는 ctrl+o 가 계속 맡는다.
-		//
-		// 홈에는 넘길 화면이 없다. 안 보이는 앱의 무대를 넘기면, 돌아갔을 때
-		// 고르지도 않은 화면이 서 있다.
-		if m.home {
-			return true, m, nil
-		}
-		mm, cmd := m.forward(app.CycleMsg{})
-		return true, mm, cmd
+		// 기본이 펼침이다. 답과 곡별 근거가 눌러야 보이던 시절에는 이 키가
+		// "펼쳐라"였는데, 이제 그것이 기본이므로 뜻이 뒤집혔다 — 목록을 더
+		// 보고 싶을 때 접는다.
+		m.logShut = !m.logShut
+		return true, m, nil
 
 	case "ctrl+f":
 		(&m).setMode(modeSearch)
@@ -447,14 +436,6 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		}
 		if m.showHelp {
 			m.showHelp = false
-			return true, m, nil
-		}
-		if m.detailOpen {
-			m.detailOpen = false
-			return true, m, nil
-		}
-		if m.logOpen {
-			m.logOpen = false
 			return true, m, nil
 		}
 		m.notice = ""

@@ -289,10 +289,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		if strings.TrimSpace(note) == "" {
 			note = msg.res.Title
 		}
-		// 답이 왔으니 대화 무대가 선다. 무엇을 왜 골랐는지가 그냥 보인다 —
-		// 자리가 있는데 ctrl+o 로 열어 보게 할 이유가 없다(stage.go).
-		next := mm.(Model).remember(note).rememberTalk(m.talk.prompt, note, msg.res)
-		return next, tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
+		return mm.(Model).remember(note), tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
 
 	case libraryMsg:
 		return m.applyLibrary(msg)
@@ -354,11 +351,6 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 
 	case app.AskMsg:
 		// 호스트가 넘긴 자연어 요청. 기다린다는 표시는 호스트가 한다.
-		//
-		// 무대를 지금 세운다. 답을 기다리는 7초 동안 내가 무엇을 물었는지
-		// 화면에 남아 있어야 한다 — 스피너만 도는 것은 불안하기만 하다.
-		m.stage = stageTalk
-		m.talk = talk{prompt: msg.Prompt}
 		return m.startAsk(msg.Prompt)
 
 	case queueWrittenMsg:
@@ -384,23 +376,6 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		m.queuePID = ""
 		m.queueTitle, m.note, m.notice = "", "", ""
 		m.jumpTo(secRecent, "")
-		return m, nil
-
-	case stageMsg:
-		m.stage = msg.to
-		return m, nil
-
-	case app.CycleMsg:
-		// ctrl+j — 무대를 한 칸 넘긴다. 둘뿐이라 왕복이다.
-		//
-		// 목록은 넣지 않는다. 섹션이 열 개를 넘어서 들어갈 때 "어느 섹션"
-		// 까지 따라붙는데, 순환에 끼우면 그것을 기억해야 한다. 목록은
-		// 원래 tab 으로 가던 곳이다.
-		if m.stage == stageTalk {
-			m.stage = stageNowPlaying
-		} else {
-			m.stage = stageTalk
-		}
 		return m, nil
 
 	case jumpMsg:
@@ -649,12 +624,6 @@ func (m Model) enterGroup(g data.Group) (app.App, tea.Cmd) {
 // 나온 자리에 커서를 되돌린다. 훑던 중이었으므로 목록 맨 위로 튕기면
 // 어디를 보고 있었는지 잃는다.
 func (m Model) Back() (app.App, bool) {
-	// 대화를 보고 있었으면 그것이 첫 칸이다. 파고든 목록보다 먼저인 이유는
-	// 방금 세워진 무대가 방금 한 일이기 때문이다 — 가장 최근 것부터 물러난다.
-	if m.stage != stageNowPlaying {
-		m.stage = stageNowPlaying
-		return m, true
-	}
 	if m.drill == nil {
 		return m, false
 	}
@@ -724,12 +693,19 @@ func (m *Model) clampList() {
 
 // 한 번에 보여줄 목록 줄 수의 상한.
 // 화면을 꽉 채우면 읽을 게 아니라 스캔할 것이 되어버린다.
-const maxListRows = 14
-
-// 본문 세로 예산: 재생바1 + 룰1 + 목록 + 룰1 + 근거(0|1)
+// 본문 세로 예산: 머리 + 룰1 + 목록 + 룰1 + 근거(0|1)
 // 머리가 몇 줄을 먹었나. 한 줄짜리 재생 바면 1 이다.
 func headHeight(head string) int { return strings.Count(head, "\n") + 1 }
 
+// listHeight — 목록은 남는 자리를 전부 먹는다.
+//
+// 한때 열네 줄 상한이 있었다. 명령 팔레트가 뜰 때 목록이 밀리지 않게 하려던
+// 것이었는데, 입력창을 바닥에 붙이면서 팔레트가 남는 자리를 쓰게 되어
+// 근거가 사라졌다. 상한만 남아서 **창을 키워도 목록이 안 늘고, 그 아래가
+// 스무 줄씩 비었다.**
+//
+// 고정 줄 수를 두는 TUI 는 없다. lazygit·k9s·ncmpcpp 어디도 그러지 않는다.
+// 칸은 남는 자리의 몫으로 정해지지, 숫자로 정해지지 않는다.
 func (m Model) listHeight(h int) int {
 	reserved := 3
 	if _, ok := m.viewGateHint(10); ok {
@@ -737,7 +713,7 @@ func (m Model) listHeight(h int) int {
 	} else if _, ok := m.viewCatalogHint(10); ok {
 		reserved++
 	}
-	return style.Min(style.Max(h-reserved, 3), maxListRows)
+	return style.Max(h-reserved, 3)
 }
 
 // View 는 본문을 그린다. 크기는 호스트가 알려주므로 기억하지 않는다.
@@ -746,10 +722,7 @@ func (m Model) View(w, h int) string {
 	if !big {
 		// 커버를 못 그리는 사정이면(좁거나·낮거나·커버가 없거나·관문)
 		// 한 줄짜리 재생 바로 물러난다. artwork.go
-		//
-		// **무대는 그래도 남긴다.** 무대는 커버의 부속이 아니라 본문이다.
-		// 커버가 없다고 같이 사라지면 ctrl+j 가 아무 일도 안 하는 키가 된다.
-		head = m.headWithoutArt(w, h)
+		head = m.viewPlayer(w)
 	}
 	listH := m.listHeight(h - headHeight(head) + 1)
 
