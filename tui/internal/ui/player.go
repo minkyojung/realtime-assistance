@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"amcli/tui/internal/style"
 	"fmt"
 
 	"amcli/tui/internal/api"
@@ -16,15 +17,15 @@ import (
 func (m Model) viewGate(w int) (string, bool) {
 	switch m.playerErr {
 	case music.ErrPermissionDenied:
-		return stErrorBadge.Render("PERMISSION") + " " +
-			stBody.Render(truncate("Allow Terminal to control Music, then it just works", w-14)), true
+		return style.ErrorBadge.Render("PERMISSION") + " " +
+			style.Body.Render(style.Truncate("Allow Terminal to control Music, then it just works", w-14)), true
 	case music.ErrNotRunning:
-		return stErrorBadge.Render("MUSIC APP") + " " +
-			stBody.Render(truncate("Music is not running. Open it to start playback", w-13)), true
+		return style.ErrorBadge.Render("MUSIC APP") + " " +
+			style.Body.Render(style.Truncate("Music is not running. Open it to start playback", w-13)), true
 	case nil:
 		return "", false
 	default:
-		return stWarn.Render("! ") + stDim.Render(truncate(m.playerErr.Error(), w-2)), true
+		return style.Warn.Render("! ") + style.Dim.Render(style.Truncate(m.playerErr.Error(), w-2)), true
 	}
 }
 
@@ -32,9 +33,9 @@ func (m Model) viewGate(w int) (string, bool) {
 func (m Model) viewGateHint(w int) (string, bool) {
 	switch m.playerErr {
 	case music.ErrPermissionDenied:
-		return stFaint.Render(truncate("ctrl+g  open System Settings › Privacy & Security › Automation", w)), true
+		return style.Faint.Render(style.Truncate("ctrl+g  open System Settings › Privacy & Security › Automation", w)), true
 	case music.ErrNotRunning:
-		return stFaint.Render(truncate("open -a Music     · no sign-in needed, it uses the app you already use", w)), true
+		return style.Faint.Render(style.Truncate("open -a Music     · no sign-in needed, it uses the app you already use", w)), true
 	}
 	return "", false
 }
@@ -53,33 +54,33 @@ func (m Model) viewPlayer(w int) string {
 	}
 	if title == "" {
 		if !m.polled {
-			return stFaint.Render("Connecting to Music…")
+			return style.Faint.Render("Connecting to Music…")
 		}
-		return stFaint.Render(truncate("Nothing playing · pick a track and press enter", w))
+		return style.Faint.Render(style.Truncate("Nothing playing · pick a track and press enter", w))
 	}
 
-	icon := stBrand.Render("▶")
+	icon := style.Brand.Render("▶")
 	if !m.playing {
-		icon = stFaint.Render("❚❚")
+		icon = style.Faint.Render("❚❚")
 	}
 
-	label := stBody.Render(truncate(title, 28)) +
-		stFaint.Render(" — "+truncate(artist, 20))
+	label := style.Body.Render(style.Truncate(title, 28)) +
+		style.Faint.Render(" — "+style.Truncate(artist, 20))
 
-	pos := clamp(m.positionMs, 0, durationMs)
-	timeLabel := fmt.Sprintf(" %s / %s", mmss(pos), mmss(durationMs))
+	pos := style.Clamp(m.positionMs, 0, durationMs)
+	timeLabel := fmt.Sprintf(" %s / %s", style.MMSS(pos), style.MMSS(durationMs))
 	left := icon + "  " + label
 
 	barW := w - lipgloss.Width(left) - lipgloss.Width(timeLabel) - 3
 	if barW < 8 {
-		return row(left, stFaint.Render(timeLabel), w)
+		return style.Row(left, style.Faint.Render(timeLabel), w)
 	}
 
 	ratio := 0.0
 	if durationMs > 0 {
 		ratio = float64(pos) / float64(durationMs)
 	}
-	return left + "  " + progress(barW, ratio) + stFaint.Render(timeLabel)
+	return left + "  " + style.Progress(barW, ratio) + style.Faint.Render(timeLabel)
 }
 
 // 입력창 바로 위 한 줄. 상황에 따라 무엇이 오는지가 다르다.
@@ -91,27 +92,27 @@ func (m Model) viewPlayer(w int) string {
 // 셋 다 없으면 줄 자체가 없다. 빈 줄을 남기지 않는다.
 func (m Model) viewReason(w int) (string, bool) {
 	if m.thinking {
-		return m.spinner.View() + stDim.Render(" Thinking…"), true
+		return m.spinner.View() + style.Dim.Render(" Thinking…"), true
 	}
 	if m.intentErr != nil {
-		return stErrorBadge.Render("FAILED") + " " +
-			stDim.Render(truncate(m.intentErr.Error(), w-9)), true
+		return style.ErrorBadge.Render("FAILED") + " " +
+			style.Dim.Render(style.Truncate(m.intentErr.Error(), w-9)), true
 	}
 	if m.notice != "" {
-		return stBrandSoft.Render("· ") + stDim.Render(truncate(m.notice, w-2)), true
+		return style.BrandSoft.Render("· ") + style.Dim.Render(style.Truncate(m.notice, w-2)), true
 	}
 	it, ok := m.nowPlayingItem()
 	if !ok || it.Reason == nil || *it.Reason == "" {
 		return "", false
 	}
-	return stBrand.Render("▸ ") + stDim.Render(truncate(*it.Reason, w-2)), true
+	return style.Brand.Render("▸ ") + style.Dim.Render(style.Truncate(*it.Reason, w-2)), true
 }
 
 // 하단 상태줄 — 왼쪽은 큐 요약, 오른쪽은 누적 사용량.
 // 사용량을 상시 노출하는 것은 agentic CLI 의 관례이자,
 // 사용자가 AI 사용량을 스스로 통제할 수 있게 하는 장치다.
 func (m Model) viewStatus(w int) string {
-	left := stFaint.Render("no queue yet")
+	left := style.Faint.Render("no queue yet")
 	if n := len(m.queue); n > 0 {
 		total := 0
 		never := 0
@@ -123,19 +124,19 @@ func (m Model) viewStatus(w int) string {
 		}
 		label := fmt.Sprintf("%d tracks · %d min", n, total/60000)
 		if m.queueTitle != "" {
-			label = truncate(m.queueTitle, w/2) + stFaint.Render("  ·  ") + label
+			label = style.Truncate(m.queueTitle, w/2) + style.Faint.Render("  ·  ") + label
 		}
-		left = stDim.Render(label) +
-			stFaint.Render(fmt.Sprintf(" · %d never played", never))
+		left = style.Dim.Render(label) +
+			style.Faint.Render(fmt.Sprintf(" · %d never played", never))
 	}
 
 	u := m.usage
 	if u.PromptTokens == 0 && u.CompletionTokens == 0 {
-		return stFaint.Render(truncate(stripStyle(left), w))
+		return style.Faint.Render(style.Truncate(stripStyle(left), w))
 	}
-	right := stFaint.Render(fmt.Sprintf("↑%s ↓%s  $%.4f",
-		tokens(u.PromptTokens), tokens(u.CompletionTokens), u.CostUsd))
-	return row(left, right, w)
+	right := style.Faint.Render(fmt.Sprintf("↑%s ↓%s  $%.4f",
+		style.Tokens(u.PromptTokens), style.Tokens(u.CompletionTokens), u.CostUsd))
+	return style.Row(left, right, w)
 }
 
 // 스타일이 섞인 문자열을 그대로 자르면 escape 가 깨진다.

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"amcli/tui/internal/style"
 	"strings"
 
 	"amcli/tui/internal/data"
@@ -58,32 +59,32 @@ func (m Model) viewSidebar(height int) string {
 	// 목록에 왜 다른 것이 보이는지가 여기서 설명된다.
 	switch {
 	case m.showHelp:
-		write(stBrand.Render("▌") + stBrandBold.Render(" ? Help"))
+		write(style.Brand.Render("▌") + style.BrandBold.Render(" ? Help"))
 		write("")
 	case m.commanding():
-		write(stBrand.Render("▌") + stBrandBold.Render(" / Commands"))
+		write(style.Brand.Render("▌") + style.BrandBold.Render(" / Commands"))
 		write("")
 	case m.mode == modeSearch:
-		write(stBrand.Render("▌") + stBrandBold.Render(" ⌕ Search"))
+		write(style.Brand.Render("▌") + style.BrandBold.Render(" ⌕ Search"))
 		write("")
 	}
 
-	write(stFaint.Render("LIBRARY"))
+	write(style.Faint.Render("LIBRARY"))
 	for i, s := range m.sections {
 		if s.kind == secPlaylist && (i == 0 || m.sections[i-1].kind != secPlaylist) {
 			write("")
-			write(stFaint.Render("PLAYLISTS"))
+			write(style.Faint.Render("PLAYLISTS"))
 		}
 		if s.kind == secQueue {
 			write("")
 		}
 
-		label := truncate(s.label, sidebarWidth-2)
+		label := style.Truncate(s.label, sidebarWidth-2)
 		// 다른 것을 보고 있을 때는 섹션 선택 표시를 죽인다.
 		if i == m.sectionIdx && !m.overlaying() {
-			write(stBrand.Render("▌") + stBrandBold.Render(" "+label))
+			write(style.Brand.Render("▌") + style.BrandBold.Render(" "+label))
 		} else {
-			write("  " + stFaint.Render(label))
+			write("  " + style.Faint.Render(label))
 		}
 	}
 

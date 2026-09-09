@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"amcli/tui/internal/style"
 	"errors"
 	"fmt"
 	"strings"
@@ -91,7 +92,7 @@ func New() Model {
 
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
-	sp.Style = lipgloss.NewStyle().Foreground(colBrand)
+	sp.Style = lipgloss.NewStyle().Foreground(style.ColBrand)
 
 	m := Model{
 		sections: buildSections(l),
@@ -177,7 +178,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
-		m.input.SetWidth(contentWidth(m.w))
+		m.input.SetWidth(style.ContentWidth(m.w))
 		return m, nil
 
 	case tea.KeyPressMsg:
@@ -231,11 +232,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "up", "ctrl+p":
-			m.listIdx = clamp(m.listIdx-1, 0, maxInt(m.rowCount()-1, 0))
+			m.listIdx = style.Clamp(m.listIdx-1, 0, style.Max(m.rowCount()-1, 0))
 			m.clampList()
 			return m, nil
 		case "down", "ctrl+n":
-			m.listIdx = clamp(m.listIdx+1, 0, maxInt(m.rowCount()-1, 0))
+			m.listIdx = style.Clamp(m.listIdx+1, 0, style.Max(m.rowCount()-1, 0))
 			m.clampList()
 			return m, nil
 
@@ -396,14 +397,14 @@ func (m *Model) ensureQueued(t api.Track) {
 func (m *Model) clampList() {
 	h := m.listHeight()
 	n := m.rowCount()
-	m.listIdx = clamp(m.listIdx, 0, maxInt(n-1, 0))
+	m.listIdx = style.Clamp(m.listIdx, 0, style.Max(n-1, 0))
 	if m.listIdx < m.listTop {
 		m.listTop = m.listIdx
 	}
 	if m.listIdx >= m.listTop+h {
 		m.listTop = m.listIdx - h + 1
 	}
-	m.listTop = clamp(m.listTop, 0, maxInt(n-h, 0))
+	m.listTop = style.Clamp(m.listTop, 0, style.Max(n-h, 0))
 }
 
 // 한 번에 보여줄 목록 줄 수의 상한.
@@ -418,15 +419,15 @@ func (m Model) listHeight() int {
 	} else if _, ok := m.viewReason(10); ok {
 		reserved++
 	}
-	h := maxInt(m.h-reserved, 3)
-	return minInt(h, maxListRows)
+	h := style.Max(m.h-reserved, 3)
+	return style.Min(h, maxListRows)
 }
 
 func (m Model) View() tea.View {
 	if m.w == 0 || m.h == 0 {
 		return tea.NewView("")
 	}
-	w := contentWidth(m.w)
+	w := style.ContentWidth(m.w)
 	listW := w - sidebarWidth - 1
 	listH := m.listHeight()
 
@@ -435,16 +436,16 @@ func (m Model) View() tea.View {
 	// 섹션 제목과 곡 수는 뺐다 — 사이드바의 레일이 이미 어디인지 말해준다.
 	b.WriteString(m.viewPlayer(w))
 	b.WriteString("\n")
-	b.WriteString(ruleBrand(w))
+	b.WriteString(style.RuleBrand(w))
 	b.WriteString("\n")
 
 	body := lipgloss.JoinHorizontal(lipgloss.Top,
 		m.viewSidebar(listH),
-		stRule.Render(strings.Repeat("│\n", listH)),
+		style.RuleStyle.Render(strings.Repeat("│\n", listH)),
 		m.viewList(listW, listH))
 	b.WriteString(body)
 	b.WriteString("\n")
-	b.WriteString(rule(w))
+	b.WriteString(style.Rule(w))
 	b.WriteString("\n")
 
 	// 관문 안내가 있으면 근거 자리를 그것이 쓴다. 둘 다 뜨는 일은 없다.
@@ -457,7 +458,7 @@ func (m Model) View() tea.View {
 	}
 	b.WriteString(m.input.View())
 	b.WriteString("\n")
-	b.WriteString(rule(w))
+	b.WriteString(style.Rule(w))
 	b.WriteString("\n")
 	b.WriteString(m.viewStatus(w))
 
@@ -475,27 +476,10 @@ func styleInput(ta *textarea.Model) {
 		st.Base = lipgloss.NewStyle()
 		st.CursorLine = lipgloss.NewStyle()
 		st.EndOfBuffer = lipgloss.NewStyle()
-		st.Text = lipgloss.NewStyle().Foreground(colFg)
-		st.Prompt = lipgloss.NewStyle().Foreground(colBrand)
-		st.Placeholder = lipgloss.NewStyle().Foreground(colFaint)
+		st.Text = lipgloss.NewStyle().Foreground(style.ColFg)
+		st.Prompt = lipgloss.NewStyle().Foreground(style.ColBrand)
+		st.Placeholder = lipgloss.NewStyle().Foreground(style.ColFaint)
 	}
-	styles.Cursor.Color = colBrand
+	styles.Cursor.Color = style.ColBrand
 	ta.SetStyles(styles)
-}
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func clamp(v, lo, hi int) int {
-	if v < lo {
-		return lo
-	}
-	if v > hi {
-		return hi
-	}
-	return v
 }

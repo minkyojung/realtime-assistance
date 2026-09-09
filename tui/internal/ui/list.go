@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"amcli/tui/internal/style"
 	"fmt"
 	"strings"
 
@@ -12,7 +13,7 @@ import (
 // 가운데 목록 패널. 사이드바가 무엇을 고르든 이 패널 하나가 다 그린다.
 // 그래서 화면이 늘어나지 않는다.
 
-// row 한 줄이 곡일 수도, 묶음(아티스트·앨범)일 수도 있다.
+// style.Row 한 줄이 곡일 수도, 묶음(아티스트·앨범)일 수도 있다.
 type listRow struct {
 	track *api.Track
 	group *data.Group
@@ -96,7 +97,7 @@ func (m Model) viewList(w, h int) string {
 				msg = "Type to search your library"
 			}
 		}
-		return lipgloss.NewStyle().Width(w).Height(h).Render(stFaint.Render(msg))
+		return lipgloss.NewStyle().Width(w).Height(h).Render(style.Faint.Render(msg))
 	}
 
 	start := m.listTop
@@ -135,45 +136,38 @@ func (m Model) renderRow(r listRow, selected bool, w int) string {
 	// 선택 표시는 왼쪽 레일이다. 배경을 채우면 채워진 빨강 = 오류 규칙과 부딪힌다.
 	rail := "  "
 	if selected {
-		rail = stBrand.Render("▌ ")
+		rail = style.Brand.Render("▌ ")
 	}
 	inner := w - 2
 
 	if g := r.group; g != nil {
-		left := stBody.Render(truncate(g.Name, inner-24))
-		right := stFaint.Render(fmt.Sprintf("%d tracks · %s", g.TrackCount, g.Subtitle))
-		return rail + row(left, right, inner)
+		left := style.Body.Render(style.Truncate(g.Name, inner-24))
+		right := style.Faint.Render(fmt.Sprintf("%d tracks · %s", g.TrackCount, g.Subtitle))
+		return rail + style.Row(left, right, inner)
 	}
 
 	t := r.track
 	nowPlaying := m.nowPlayingID != 0 && t.Id == m.nowPlayingID
 
-	title := truncate(t.Title, maxInt(inner-36, 12))
+	title := style.Truncate(t.Title, style.Max(inner-36, 12))
 	if nowPlaying {
-		title = stBrandBold.Render(title)
+		title = style.BrandBold.Render(title)
 	} else if t.PlayCount == 0 {
 		// 한 번도 안 들은 곡은 흐리게. 색이 없다는 게 곧 침묵이다.
-		title = stDim.Render(title)
+		title = style.Dim.Render(title)
 	} else {
-		title = stBody.Render(title)
+		title = style.Body.Render(title)
 	}
 
-	artist := stFaint.Render(truncate(t.Artist.Name, 22))
-	dur := stFaint.Render(mmss(t.DurationMs))
+	artist := style.Faint.Render(style.Truncate(t.Artist.Name, 22))
+	dur := style.Faint.Render(style.MMSS(t.DurationMs))
 
-	playCol := stFaint.Render(fmt.Sprintf("%3d", t.PlayCount))
+	playCol := style.Faint.Render(fmt.Sprintf("%3d", t.PlayCount))
 	if t.PlayCount == 0 {
-		playCol = stFaint.Render("  ·")
+		playCol = style.Faint.Render("  ·")
 	}
 
 	left := title
 	right := artist + "   " + playCol + "  " + dur
-	return rail + row(left, right, inner)
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
+	return rail + style.Row(left, right, inner)
 }

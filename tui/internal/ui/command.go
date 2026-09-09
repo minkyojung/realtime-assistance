@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"amcli/tui/internal/style"
 	"fmt"
 	"strings"
 
@@ -50,13 +51,13 @@ func (m Model) matchedCommands() []command {
 func (m Model) renderCommand(c command, selected bool, w int) string {
 	rail := "  "
 	if selected {
-		rail = stBrand.Render("▌ ")
+		rail = style.Brand.Render("▌ ")
 	}
-	left := stBody.Render(c.name)
+	left := style.Body.Render(c.name)
 	if c.arg != "" {
-		left += stFaint.Render(" " + c.arg)
+		left += style.Faint.Render(" " + c.arg)
 	}
-	return rail + row(left, stFaint.Render(c.help), w-2)
+	return rail + style.Row(left, style.Faint.Render(c.help), w-2)
 }
 
 // runCommand 는 명령을 실행한다. 모르는 명령은 조용히 무시하지 않고 말한다.
@@ -135,7 +136,7 @@ var helpRows = []struct{ key, what string }{
 
 func (m Model) renderHelpRow(i int, w int) string {
 	r := helpRows[i]
-	return "  " + row(stBrandSoft.Render(r.key), stFaint.Render(r.what), w-2)
+	return "  " + style.Row(style.BrandSoft.Render(r.key), style.Faint.Render(r.what), w-2)
 }
 
 // UnplayedTracks — 담아두고 한 번도 재생하지 않은 곡.
