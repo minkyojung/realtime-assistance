@@ -235,7 +235,7 @@ var helpRows = []struct{ key, what string }{
 	{"ctrl+f", "switch between ask and search"},
 	{"ctrl+j", "fold the conversation strip"},
 	{"↑ ↓", "move through the list"},
-	{"tab", "next section · / goes straight to one"},
+	{"tab · shift+tab", "next · previous section — / goes straight to one"},
 	{"shift+← ↓ →", "previous · play / pause · next"},
 	{"esc", "back out one step"},
 	{"ctrl+c", "quit"},

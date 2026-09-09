@@ -137,7 +137,7 @@
    [38;2;255;143;163mctrl+f[m                                                             [38;2;85;85;94mswitch between ask and search[m 
    [38;2;255;143;163mctrl+j[m                                                               [38;2;85;85;94mfold the conversation strip[m 
    [38;2;255;143;163m↑ ↓[m                                                                        [38;2;85;85;94mmove through the list[m 
-   [38;2;255;143;163mtab[m                                                        [38;2;85;85;94mnext section · / goes straight to one[m 
+   [38;2;255;143;163mtab · shift+tab[m                                 [38;2;85;85;94mnext · previous section — / goes straight to one[m 
    [38;2;255;143;163mshift+← ↓ →[m                                                       [38;2;85;85;94mprevious · play / pause · next[m 
    [38;2;255;143;163mesc[m                                                                            [38;2;85;85;94mback out one step[m 
    [38;2;255;143;163mctrl+c[m                                                                                      [38;2;85;85;94mquit[m 

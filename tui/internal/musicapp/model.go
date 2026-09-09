@@ -435,13 +435,15 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		case "down", "ctrl+n":
 			m.move(1)
 		case "tab":
-			// 다음 칸으로만 간다. 먼 섹션에는 `/` 로 곧장 간다(command.go).
+			m = m.gotoSection(m.sectionIdx + 1)
+		case "shift+tab":
+			// 한 쌍을 돌려준다. 호스트가 모드 전환에 쓰다가 ctrl+f 로
+			// 옮기면서 이 키가 비었다.
 			//
-			// 되돌아가는 shift+tab 은 지금 비어 있다. 호스트가 모드 전환에
-			// 쓰다가 ctrl+f 로 옮겼다 — 붙이는 것은 따로 한다.
-			m.sectionIdx = (m.sectionIdx + 1) % len(m.sections)
-			m.drill = nil
-			m.listIdx, m.listTop = 0, 0
+			// 짝이 없던 동안 tab 은 한 방향으로만 돌았고, 한 칸 지나치면
+			// 목록을 한 바퀴 돌아야 했다. 먼 섹션에는 `/` 로 곧장
+			// 간다(command.go) — 그것은 그대로다.
+			m = m.gotoSection(m.sectionIdx - 1)
 		case "shift+down":
 			// 재생 제어는 shift+화살표 한 가족이다. 수식키+화살표라
 			// 입력창도 한글 조합도 건드리지 않는다 — 알파벳이나 space 를
@@ -456,6 +458,18 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+// gotoSection 은 섹션을 옮긴다. 양끝에서 돌아 나온다.
+//
+// 파고든 것을 놓고, 커서를 맨 위로 되돌린다. 섹션마다 줄 수가 달라서
+// 자리를 물려주면 없는 줄을 가리키게 된다.
+func (m Model) gotoSection(i int) Model {
+	n := len(m.sections)
+	m.sectionIdx = ((i % n) + n) % n // 음수도 감싼다
+	m.drill = nil
+	m.listIdx, m.listTop = 0, 0
+	return m
 }
 
 // applyQueue 는 의도 층의 결과를 화면에 앉힌다.

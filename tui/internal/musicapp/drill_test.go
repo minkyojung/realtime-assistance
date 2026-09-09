@@ -37,8 +37,9 @@ func key(t *testing.T, m Model, k tea.KeyPressMsg) Model {
 }
 
 var (
-	enter = tea.KeyPressMsg{Code: tea.KeyEnter}
-	tab   = tea.KeyPressMsg{Code: tea.KeyTab}
+	enter    = tea.KeyPressMsg{Code: tea.KeyEnter}
+	tab      = tea.KeyPressMsg{Code: tea.KeyTab}
+	shiftTab = tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}
 )
 
 func TestEnterOpensAGroup(t *testing.T) {
@@ -123,5 +124,56 @@ func TestStatusNamesTheGroup(t *testing.T) {
 	got := m.Status()
 	if !strings.Contains(got, m.drill.Name) || !strings.Contains(got, "Artists") {
 		t.Errorf("상태줄이 어디인지 말하지 않는다: %q", got)
+	}
+}
+
+// tab 과 shift+tab 은 한 쌍이다.
+//
+// 호스트가 shift+tab 을 모드 전환에 쓰던 동안 tab 은 한 방향으로만 돌았고,
+// 한 칸 지나치면 목록을 한 바퀴 돌아야 했다. 모드 전환이 ctrl+f 로 옮겨
+// 가면서 짝을 돌려받았다.
+func TestShiftTabWalksBack(t *testing.T) {
+	m := New()
+	m.bodyH = 20
+	start := m.sectionIdx
+
+	m = key(t, m, tab)
+	if m.sectionIdx == start {
+		t.Fatal("tab 에 섹션이 안 넘어갔다")
+	}
+	m = key(t, m, shiftTab)
+	if m.sectionIdx != start {
+		t.Errorf("shift+tab 으로 돌아와야 하는데 %d 에 있다", m.sectionIdx)
+	}
+}
+
+// 양끝에서 감싼다. 첫 칸에서 뒤로 가면 마지막 칸이다.
+func TestShiftTabWrapsAtTheStart(t *testing.T) {
+	m := New()
+	m.bodyH = 20
+	m.sectionIdx = 0
+
+	m = key(t, m, shiftTab)
+	if want := len(m.sections) - 1; m.sectionIdx != want {
+		t.Errorf("첫 칸에서 뒤로 가면 %d 여야 하는데 %d 다", want, m.sectionIdx)
+	}
+}
+
+// 섹션을 옮기면 파고든 것을 놓고 커서가 맨 위로 간다.
+// 섹션마다 줄 수가 달라 자리를 물려주면 없는 줄을 가리킨다.
+func TestMovingSectionsResetsTheCursor(t *testing.T) {
+	m := atSection(t, secArtists)
+	m = key(t, m, enter) // 묶음을 편다
+	if m.drill == nil {
+		t.Fatal("묶음이 안 열렸다")
+	}
+	m.listIdx = 3
+
+	m = key(t, m, shiftTab)
+	if m.drill != nil {
+		t.Error("섹션을 옮겼는데 파고든 것이 남아 있다")
+	}
+	if m.listIdx != 0 || m.listTop != 0 {
+		t.Errorf("커서가 맨 위로 안 갔다: idx=%d top=%d", m.listIdx, m.listTop)
 	}
 }
