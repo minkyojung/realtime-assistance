@@ -57,7 +57,7 @@ var errorHints = map[string]string{
 	"invalid_auth":           "토큰이 유효하지 않습니다",
 	"token_revoked":          "토큰이 취소되었습니다. 다시 발급하세요",
 	"account_inactive":       "비활성 계정의 토큰입니다",
-	"missing_scope":          "권한(scope)이 모자랍니다",
+	"missing_scope":          "권한(scope)이 모자랍니다. 앱 설정을 고치고 /login 을 다시 하세요",
 	"not_allowed_token_type": "이 메서드에 맞지 않는 종류의 토큰입니다",
 	"channel_not_found":      "그 대화를 찾을 수 없습니다",
 	"not_in_channel":         "그 채널에 들어가 있지 않습니다",
@@ -186,6 +186,21 @@ type rawConversation struct {
 	User   string `json:"user"` // IM 일 때 상대방
 }
 
+// 어떤 종류의 대화를 가져올지, 그리고 그 종류마다 필요한 권한.
+//
+// **둘은 반드시 같이 움직인다.** types 에 넣었는데 권한이 없으면 Slack 은
+// 그것만 빼주는 게 아니라 호출 전체를 missing_scope 로 막는다. 한쪽만
+// 고치면 로그인은 되는데 목록이 안 뜨는 상태가 된다.
+var conversationScopes = map[string]string{
+	"public_channel":  "channels:read",
+	"private_channel": "groups:read",
+	"im":              "im:read",
+	"mpim":            "mpim:read",
+}
+
+// 요청 순서를 고정한다. map 순회는 순서가 없다.
+var conversationTypes = []string{"public_channel", "private_channel", "im", "mpim"}
+
 // myConversations 는 사용자가 속한 대화를 가져온다.
 //
 // conversations.list 가 아니라 users.conversations 인 이유: 워크스페이스의
@@ -195,7 +210,7 @@ func (c webClient) myConversations(ctx context.Context, limit int) ([]rawConvers
 		Channels []rawConversation `json:"channels"`
 	}
 	err := c.call(ctx, "users.conversations", url.Values{
-		"types":            {"public_channel,private_channel,im,mpim"},
+		"types":            {strings.Join(conversationTypes, ",")},
 		"exclude_archived": {"true"},
 		"limit":            {strconv.Itoa(limit)},
 	}, &out)

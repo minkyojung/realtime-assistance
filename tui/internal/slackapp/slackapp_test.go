@@ -621,3 +621,25 @@ func TestClientIDIsBakedIn(t *testing.T) {
 		t.Error("환경변수가 안 이긴다")
 	}
 }
+
+// 가져올 대화 종류와 요청하는 권한은 반드시 같이 움직인다.
+//
+// types 에 넣었는데 권한이 없으면 Slack 은 그것만 빼주지 않고 호출 전체를
+// missing_scope 로 막는다. 로그인은 되는데 목록이 안 뜨는 상태가 된다 —
+// 실제로 한 번 그랬다.
+func TestRequestedScopesCoverRequestedTypes(t *testing.T) {
+	granted := map[string]bool{}
+	for _, s := range userScopes {
+		granted[s] = true
+	}
+	for _, typ := range conversationTypes {
+		scope, ok := conversationScopes[typ]
+		if !ok {
+			t.Errorf("%s 에 필요한 권한이 안 적혀 있다", typ)
+			continue
+		}
+		if !granted[scope] {
+			t.Errorf("%s 를 가져오는데 %s 권한을 요청하지 않는다", typ, scope)
+		}
+	}
+}

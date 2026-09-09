@@ -69,10 +69,20 @@ func redirectURI(port int) string {
 	return fmt.Sprintf("http://localhost:%d%s", port, callbackPath)
 }
 
-// 요청하는 권한. 관문 화면이 안내하는 것과 같은 목록이어야 한다.
+// 요청하는 권한.
+//
+// **대화 종류마다 읽기 권한이 따로다**(client.go 의 conversationScopes).
+// 하나라도 빠지면 목록 호출 전체가 missing_scope 로 막힌다. 테스트가
+// 그 둘이 어긋나지 않는지 본다.
 var userScopes = []string{
-	"channels:read", "groups:read", "im:read", "im:history",
-	"chat:write", "dnd:write", "users:read",
+	"channels:read", // public_channel
+	"groups:read",   // private_channel
+	"im:read",       // im
+	"mpim:read",     // mpim — 그룹 DM
+	"im:history",    // DM 의 마지막 메시지
+	"chat:write",    // 보내기
+	"dnd:write",     // 방해금지
+	"users:read",    // 보낸 사람 이름
 }
 
 // 사람이 브라우저에서 앱을 고르고 승인하는 데 걸리는 시간.
