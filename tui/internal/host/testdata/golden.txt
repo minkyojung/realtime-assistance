@@ -111,7 +111,7 @@
    [38;2;232;232;234m/queue[m                                                                               [38;2;85;85;94mgo to Queue[m 
    [38;2;232;232;234m/unplayed[m                                                      [38;2;85;85;94mtracks you added but never played[m 
    [38;2;232;232;234m/shuffle[m                                                                         [38;2;85;85;94mturn shuffle on[m 
-   [38;2;85;85;94m+16 more — keep typing[m                                                                           
+   [38;2;85;85;94m+17 more — keep typing[m                                                                           
  [38;2;138;138;146mRecently Added[m[38;2;85;85;94m · 157[m                                                                               
                                                                                                     
 === help ===
