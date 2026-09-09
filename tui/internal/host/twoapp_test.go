@@ -395,31 +395,23 @@ func TestLongAnswerWraps(t *testing.T) {
 	}
 }
 
-// 내가 한 말과 앱의 답은 바탕색이 다르다. 여러 줄이 되면 기호만으로는
-// 어디까지가 한 마디인지 흐려진다.
-func TestSaidByMeAndAppDiffer(t *testing.T) {
+// 내가 한 말에만 바탕색이 깔린다. 둘 다 칠하면 둘이 구별되지 않는다.
+func TestOnlyMyWordsAreFilled(t *testing.T) {
 	m, _ := twoAppHost()
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	m = typeText(m, "조용한 거")
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요"})
+	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요", Detail: []string{"195 → 6 tracks"}})
 
-	var mine, theirs bool
 	for _, l := range strings.Split(m.View().Content, "\n") {
-		if !strings.Contains(l, "48;2;") {
-			continue
+		filled := strings.Contains(l, "48;2;")
+		switch {
+		case strings.Contains(plain(l), "조용한 거") && !filled:
+			t.Error("내가 한 말에 바탕색이 없다")
+		case strings.Contains(plain(l), "골랐어요") && filled:
+			t.Error("답에 바탕색이 깔렸다")
+		case strings.Contains(plain(l), "195 → 6 tracks") && filled:
+			t.Error("근거에 바탕색이 깔렸다 — 답의 일부이므로 없어야 한다")
 		}
-		if strings.Contains(plain(l), "조용한 거") {
-			mine = true
-		}
-		if strings.Contains(plain(l), "골랐어요") {
-			theirs = true
-		}
-	}
-	if !mine {
-		t.Error("내가 한 말에 바탕색이 없다")
-	}
-	if !theirs {
-		t.Error("앱의 답에 바탕색이 없다")
 	}
 }

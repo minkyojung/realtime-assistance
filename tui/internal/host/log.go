@@ -7,7 +7,6 @@ import (
 	"amcli/tui/internal/app"
 	"amcli/tui/internal/style"
 	"charm.land/lipgloss/v2"
-	"image/color"
 )
 
 // 로그 — 호스트의 세 번째 자산이다. 입력의 짝.
@@ -114,13 +113,17 @@ func (m Model) spinnerRows(waiting []string, w int) []string {
 // 사람이 쓴 문장과 그 답은 끝까지 읽어야 한다. 답이 잘리면 무슨 말인지
 // 모르는 채로 남는다.
 //
-// 내가 한 말과 앱의 답은 **바탕색으로 가른다.** 기호(› ▸)만으로는 여러
-// 줄이 되는 순간 어디까지가 한 마디인지 흐려진다. 색이 덩어리를 만든다.
+// **내가 한 말에만 바탕색을 깐다.** 기호(› ▸)만으로는 여러 줄이 되는 순간
+// 어디까지가 한 마디인지 흐려지는데, 둘 다 칠하면 이번에는 둘이 구별되지
+// 않는다. 하나만 칠하면 나머지는 저절로 갈린다.
+//
+// 칠하는 쪽을 내 말로 정한 이유는, 답이 길고 내 말이 짧기 때문이다.
+// 긴 쪽을 칠하면 화면의 절반이 색면이 된다.
 func (m Model) renderLogEntry(e logEntry, w int) []string {
-	mark, bg := style.Faint.Render("› "), style.ColSaidByMe
+	mark, mine := style.Faint.Render("› "), true
 	name := ""
 	if e.who != "" {
-		mark, bg = style.Brand.Render("▸ "), style.ColSaidByApp
+		mark, mine = style.Brand.Render("▸ "), false
 		if e.err {
 			mark = style.Warn.Render("▸ ")
 		}
@@ -139,7 +142,11 @@ func (m Model) renderLogEntry(e logEntry, w int) []string {
 		if i > 0 {
 			head, who = "  ", strings.Repeat(" ", lipgloss.Width(name))
 		}
-		out = append(out, fill(head+who+style.Dim.Render(l), w, bg))
+		row := head + who + style.Dim.Render(l)
+		if mine {
+			row = fill(row, w)
+		}
+		out = append(out, row)
 	}
 	return out
 }
@@ -147,11 +154,11 @@ func (m Model) renderLogEntry(e logEntry, w int) []string {
 // fill — 줄 오른쪽 끝까지 바탕색을 채운다.
 //
 // 색이 글자 뒤에서 끊기면 덩어리가 아니라 얼룩으로 보인다.
-func fill(s string, w int, bg color.Color) string {
+func fill(s string, w int) string {
 	if pad := w - lipgloss.Width(s); pad > 0 {
 		s += strings.Repeat(" ", pad)
 	}
-	return lipgloss.NewStyle().Background(bg).Render(s)
+	return lipgloss.NewStyle().Background(style.ColSaidByMe).Render(s)
 }
 
 // 상세는 들여쓰고 흐리게. 본문이 아니라 주석이라는 뜻이다.
@@ -160,7 +167,7 @@ func fill(s string, w int, bg color.Color) string {
 // 여기는 접지 않고 자른다. 표라서 자리가 정해져 있고, 근거 한 줄이
 // 두 줄로 늘어나면 곡 목록이 아니라 문단으로 읽힌다.
 //
-// 바탕색은 답과 같다. 근거는 답의 일부이지 따로 온 말이 아니다.
+// 바탕색은 깔지 않는다. 근거는 답의 일부이고, 답에는 색이 없다.
 func (m Model) renderDetail(lines []string, w int) []string {
 	const indent = "    "
 	inner := style.Max(w-len(indent), 20)
@@ -173,7 +180,7 @@ func (m Model) renderDetail(lines []string, w int) []string {
 	for _, l := range lines {
 		left, right, split := strings.Cut(l, "|")
 		if !split {
-			out = append(out, fill(indent+style.Faint.Render(style.Truncate(l, inner)), w, style.ColSaidByApp))
+			out = append(out, indent+style.Faint.Render(style.Truncate(l, inner)))
 			continue
 		}
 		cell := style.Truncate(left, cols[0])
@@ -184,7 +191,7 @@ func (m Model) renderDetail(lines []string, w int) []string {
 		if cols[1] > 0 {
 			row += "  " + style.Faint.Render(style.Truncate(right, cols[1]))
 		}
-		out = append(out, fill(indent+row, w, style.ColSaidByApp))
+		out = append(out, indent+row)
 	}
 	return out
 }
