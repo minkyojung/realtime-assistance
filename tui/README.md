@@ -91,9 +91,31 @@ go test ./...             폭 계산 · 필수 요소 검증
 ## 배포
 
 ```
-scripts/build.sh          토큰을 박아 배포물을 만든다  → dist/amcli
+scripts/release.sh        빌드 · 서명 · 공증 · 검역 검증  → dist/amcli.zip
+scripts/build.sh          빌드만                        → dist/amcli
 scripts/build.sh --dev    토큰 없이. 각자 자기 설정으로 돈다
 ```
+
+**`release.sh` 가 네 단계를 한 번에 한다.** 손으로 이으면 다음에 배포할 때
+순서를 다시 기억해야 하고, 하나를 빠뜨려도 **받는 사람 기계에서만 티가 난다.**
+
+마지막 단계가 요점이다 — 압축을 풀어 **검역 표시를 직접 붙이고** Gatekeeper
+판정을 받아 본다. 브라우저로 받으면 그 표시가 붙는데, 그 상태에서 통과하는지가
+진짜 질문이기 때문이다. 공증이 "Accepted" 라고 나와도 여기서 막히면 배포가
+안 된 것이다.
+
+준비물(인증서 · 공증 자격 증명)이 없으면 **무엇을 하면 되는지 말하고 멈춘다.**
+반쯤 만들어진 배포물을 남기지 않는다 — 서명만 되고 공증이 안 된 파일은 겉으로
+멀쩡해 보인다.
+
+한 번만 해 두면 되는 것:
+
+```
+xcrun notarytool store-credentials amcli \
+  --apple-id <애플 ID> --team-id <팀 ID> --password <앱 암호>
+```
+
+앱 암호는 appleid.apple.com › 로그인 및 보안 › 앱 암호 에서 만든다.
 
 **p8 은 배포물에 넣지 않는다.** 넣으면 누구나 뽑아서 우리 명의로 API 를
 쓴다. 대신 그 키로 미리 서명해 둔 **개발자 토큰**을 박는다 — 유효기간이
@@ -109,13 +131,16 @@ scripts/build.sh --dev    토큰 없이. 각자 자기 설정으로 돈다
 | Music.app 자동화 권한 | 앱이 화면으로 안내한다 (`ctrl+g`) |
 | `/ai <key>` | 건너뛰면 AI 만 꺼진다 |
 
-서명하지 않으면 Gatekeeper 가 막는다. Music.app 자동화 권한도 서명이
-있어야 안정적으로 기억된다.
+**서명하지 않으면 브라우저로 받은 사람이 막힌다.** `curl` 이나 Homebrew 로
+받으면 검역 표시가 안 붙어서 서명 없이도 돌지만, 어느 쪽으로 받을지는
+우리가 못 정한다.
 
-```
-codesign --deep --force --options runtime \
-  --sign "Developer ID Application: …" dist/amcli
-```
+자동화 권한은 서명과 무관하다. 터미널에서 실행하면 애플 이벤트를 요청하는
+주체가 **터미널**이라(화면도 "Allow Terminal to control Music" 이라고 적는다)
+권한은 터미널에 붙지 우리 바이너리에 안 붙는다.
+
+**단일 실행파일은 도장(stapler)을 못 박는다.** 그래서 zip 으로 배포하고,
+받는 쪽이 애플 서버에 온라인으로 확인한다.
 
 ## 조작
 
