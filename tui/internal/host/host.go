@@ -459,6 +459,19 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Quit):
 		return true, m, tea.Quit
 
+	case key.Matches(msg, keys.Pause):
+		// 셸로 잠깐 나간다. fg 로 돌아온다.
+		//
+		// 껍데기를 벗고 원래 화면을 돌려주는 것은 Bubble Tea 가 한다.
+		// 우리가 상태를 저장할 것은 없다 — 재생은 Music.app 이 하므로
+		// 자는 동안에도 계속 흐르고, 돌아오면 폴링이 따라잡는다.
+		return true, m, tea.Suspend
+
+	case key.Matches(msg, keys.Redraw):
+		// 화면을 지우고 처음부터 다시 그린다. 다음 View 가 곧 다시 그리므로
+		// 우리 쪽 상태는 건드리지 않는다.
+		return true, m, tea.ClearScreen
+
 	case key.Matches(msg, keys.Help):
 		if m.input.Value() == "" {
 			m.showHelp, m.pick = true, 0

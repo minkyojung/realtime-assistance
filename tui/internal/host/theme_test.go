@@ -66,3 +66,31 @@ func TestTheAnswerRepaintsThePalette(t *testing.T) {
 		t.Error("흰 배경인데 본문이 여전히 밝은 회색이다")
 	}
 }
+
+// ctrl+z 는 셸로 잠깐 나가는 키다.
+//
+// 우리가 안 받으면 아무 일도 안 일어난다 — 터미널을 raw 모드로 잡고 있어서
+// 신호가 아니라 글자로 들어온다. 그래서 딴 일을 하려면 앱을 통째로 끄는
+// 수밖에 없었다.
+func TestCtrlZStepsOutToTheShell(t *testing.T) {
+	m, _ := twoAppHost()
+	handled, _, cmd := state(t, m).handleKey(tea.KeyPressMsg{Code: 'z', Mod: tea.ModCtrl})
+	if !handled || cmd == nil {
+		t.Fatal("ctrl+z 를 안 받는다")
+	}
+	if _, ok := cmd().(tea.SuspendMsg); !ok {
+		t.Errorf("셸로 안 나간다: %T", cmd())
+	}
+}
+
+// ctrl+l 은 깨진 화면을 다시 그린다. 지금까지는 껐다 켜는 것이 유일한 복구였다.
+func TestCtrlLRedrawsTheScreen(t *testing.T) {
+	m, _ := twoAppHost()
+	handled, _, cmd := state(t, m).handleKey(tea.KeyPressMsg{Code: 'l', Mod: tea.ModCtrl})
+	if !handled || cmd == nil {
+		t.Fatal("ctrl+l 을 안 받는다")
+	}
+	if cmd() != tea.ClearScreen() {
+		t.Errorf("화면을 안 지운다: %T", cmd())
+	}
+}

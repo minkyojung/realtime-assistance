@@ -25,6 +25,8 @@ type keyMap struct {
 	Fold   key.Binding
 	Mode   key.Binding
 	Back   key.Binding
+	Pause  key.Binding
+	Redraw key.Binding
 	Up     key.Binding
 	Down   key.Binding
 	Accept key.Binding
@@ -54,6 +56,26 @@ var keys = keyMap{
 	Mode: key.NewBinding(
 		key.WithKeys("shift+tab"),
 		key.WithHelp("shift+tab", "switch between ask and search"),
+	),
+	// 셸로 잠깐 나갔다 돌아온다. 터미널 프로그램의 기본 계약이다.
+	//
+	// 우리가 안 받으면 아무 일도 안 일어난다. 터미널을 raw 모드로 잡고
+	// 있어서 ctrl+z 가 신호가 아니라 글자로 들어오기 때문이다 — 딴 일을
+	// 하려면 앱을 통째로 끄는 수밖에 없었다.
+	//
+	// **재생은 안 멈춘다.** 우리가 자는 동안에도 Music.app 이 계속 튼다.
+	Pause: key.NewBinding(
+		key.WithKeys("ctrl+z"),
+		key.WithHelp("ctrl+z", "step out to the shell — fg to come back"),
+	),
+	// 화면이 깨졌을 때 다시 그린다.
+	//
+	// 깨지는 것은 우리 잘못이 아니어도 생긴다 — 배경 프로세스가 터미널에
+	// 무언가를 뱉거나, 연결이 끊겼다 붙거나. 지금까지는 껐다 켜는 것이
+	// 유일한 복구였다.
+	Redraw: key.NewBinding(
+		key.WithKeys("ctrl+l"),
+		key.WithHelp("ctrl+l", "redraw the screen"),
 	),
 	Back: key.NewBinding(
 		key.WithKeys("esc"),
@@ -91,5 +113,5 @@ var notKeys = []struct{ key, what string }{
 // 값의 목록이므로 여기 없는 것은 안 나오고, 여기 있는 것은 반드시 묶여
 // 있다. 문자열을 적을 자리가 없다는 것이 이 구조의 값이다.
 func (m keyMap) helpOrder() []key.Binding {
-	return []key.Binding{m.Accept, m.Mode, m.Fold, m.Help, m.Back, m.Quit}
+	return []key.Binding{m.Accept, m.Mode, m.Fold, m.Help, m.Redraw, m.Back, m.Pause, m.Quit}
 }

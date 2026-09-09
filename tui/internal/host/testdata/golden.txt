@@ -133,7 +133,9 @@
    [38;2;255;143;163mshift+tab[m                                                          [38;2;85;85;94mswitch between ask and search[m 
    [38;2;255;143;163mctrl+j[m                                                               [38;2;85;85;94mfold the conversation strip[m 
    [38;2;255;143;163m?[m                                                                                      [38;2;85;85;94mthis list[m 
+   [38;2;255;143;163mctrl+l[m                                                                         [38;2;85;85;94mredraw the screen[m 
    [38;2;255;143;163mesc[m                                                                            [38;2;85;85;94mback out one step[m 
+   [38;2;255;143;163mctrl+z[m                                                   [38;2;85;85;94mstep out to the shell — fg to come back[m 
    [38;2;255;143;163mctrl+c[m                                                                                      [38;2;85;85;94mquit[m 
    [38;2;255;143;163m↑ · ctrl+p[m                                                                      [38;2;85;85;94mmove up the list[m 
    [38;2;255;143;163m↓ · ctrl+n[m                                                                    [38;2;85;85;94mmove down the list[m 

@@ -13,6 +13,12 @@ import (
 )
 
 func main() {
+	// 명령줄을 먼저 본다. `--help` 를 쳤는데 앱이 켜지면 그것은 이 도구가
+	// 명령줄 도구가 아니라는 뜻이다.
+	if start, code := handleArgs(clean(os.Args[1:]), os.Stdout); !start {
+		os.Exit(code)
+	}
+
 	// 앱은 컴파일 타임에 등록한다. 플러그인 시스템을 두지 않는 이유는
 	// 확장성을 여는 순간 Zellij 의 무게가 따라오기 때문이다 — docs/07 6절.
 	m := host.New(musicapp.New())
