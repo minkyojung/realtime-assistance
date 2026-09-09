@@ -790,3 +790,61 @@ func TestRoomViewFits(t *testing.T) {
 		}
 	}
 }
+
+// 못 읽을 때는 **어느 권한인지 이름을 대야** 한다.
+// "권한이 모자랍니다"만으로는 사용자가 할 수 있는 일이 없다.
+func TestScopeNoteNamesTheScope(t *testing.T) {
+	cases := []struct{ kind, want string }{
+		{"public_channel", "channels:history"},
+		{"private_channel", "groups:history"},
+		{"mpim", "mpim:history"},
+		{"im", "im:history"},
+	}
+	for _, c := range cases {
+		m := loaded(t)
+		m.convs = []Conversation{{ID: "X", Name: "#방", Kind: c.kind}}
+		m.openID = "X"
+		m.msgsErr = apiError{Method: "conversations.history", Code: "missing_scope"}
+
+		note := m.scopeNote()
+		if !strings.Contains(note, c.want) {
+			t.Errorf("%s: %q 에 %s 가 없다", c.kind, note, c.want)
+		}
+		if !strings.Contains(m.View(80, 12), c.want) {
+			t.Errorf("%s: 화면에 권한 이름이 안 보인다", c.kind)
+		}
+	}
+}
+
+// 권한 문제가 아닌 실패는 그대로 보여준다. 엉뚱한 안내가 더 나쁘다.
+func TestScopeNotePassesOtherErrorsThrough(t *testing.T) {
+	m := loaded(t)
+	m.convs = []Conversation{{ID: "X", Name: "#방", Kind: "public_channel"}}
+	m.openID = "X"
+	m.msgsErr = apiError{Method: "conversations.history", Code: "channel_not_found"}
+
+	if note := m.scopeNote(); !strings.Contains(note, "channel_not_found") {
+		t.Errorf("%q", note)
+	}
+}
+
+// 대화 종류를 잘못 읽으면 엉뚱한 권한을 안내하게 된다.
+func TestConversationKind(t *testing.T) {
+	cases := []struct {
+		raw  rawConversation
+		want string
+	}{
+		{rawConversation{IsIM: true}, "im"},
+		{rawConversation{IsMPIM: true}, "mpim"},
+		{rawConversation{IsPrivate: true}, "private_channel"},
+		{rawConversation{}, "public_channel"},
+	}
+	for _, c := range cases {
+		if got := c.raw.kind(); got != c.want {
+			t.Errorf("kind = %q, want %q", got, c.want)
+		}
+		if historyScopes[c.want] == "" {
+			t.Errorf("%s 에 읽기 권한이 안 적혀 있다", c.want)
+		}
+	}
+}

@@ -191,11 +191,12 @@ func (c webClient) authTest(ctx context.Context) (authInfo, error) {
 
 // rawConversation 은 users.conversations 가 돌려주는 모양 그대로다.
 type rawConversation struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	IsIM   bool   `json:"is_im"`
-	IsMPIM bool   `json:"is_mpim"`
-	User   string `json:"user"` // IM 일 때 상대방
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	IsIM      bool   `json:"is_im"`
+	IsMPIM    bool   `json:"is_mpim"`
+	IsPrivate bool   `json:"is_private"`
+	User      string `json:"user"` // IM 일 때 상대방
 }
 
 // 어떤 종류의 대화를 가져올지, 그리고 그 종류마다 필요한 권한.
@@ -212,6 +213,30 @@ var conversationScopes = map[string]string{
 
 // 요청 순서를 고정한다. map 순회는 순서가 없다.
 var conversationTypes = []string{"public_channel", "private_channel", "im", "mpim"}
+
+// **내용을 읽는 권한은 목록을 보는 권한과 또 다르다.**
+// im:history 만 받아뒀으므로 DM 은 열리고 채널은 안 열린다. 그 상태는
+// 정상이고, 화면이 어느 권한이 모자란지 이름을 대야 한다.
+var historyScopes = map[string]string{
+	"public_channel":  "channels:history",
+	"private_channel": "groups:history",
+	"im":              "im:history",
+	"mpim":            "mpim:history",
+}
+
+// kind 는 이 대화가 어느 종류인지다. 필요한 권한이 종류마다 다르다.
+func (r rawConversation) kind() string {
+	switch {
+	case r.IsIM:
+		return "im"
+	case r.IsMPIM:
+		return "mpim"
+	case r.IsPrivate:
+		return "private_channel"
+	default:
+		return "public_channel"
+	}
+}
 
 // myConversations 는 사용자가 속한 대화를 가져온다.
 //

@@ -33,6 +33,7 @@ const loadTimeout = 60 * time.Second
 type Conversation struct {
 	ID     string
 	Name   string // "#general" · "@minkyo"
+	Kind   string // im · mpim · private_channel · public_channel
 	IsIM   bool
 	Unread int
 	Last   string // 마지막 메시지 한 줄
@@ -79,7 +80,10 @@ func cmdLoad(token string) tea.Cmd {
 		probed := 0
 
 		for _, r := range raw {
-			cv := Conversation{ID: r.ID, IsIM: r.IsIM || r.IsMPIM, Name: channelLabel(r)}
+			cv := Conversation{
+				ID: r.ID, Kind: r.kind(),
+				IsIM: r.IsIM || r.IsMPIM, Name: channelLabel(r),
+			}
 
 			// DM 만 안 읽음을 알 수 있고, 그것도 앞쪽 몇 개만 본다.
 			if r.IsIM && probed < imProbeLimit {

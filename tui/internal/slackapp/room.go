@@ -180,7 +180,7 @@ func (m Model) viewMessages(w, h int) string {
 func (m Model) roomNote() string {
 	switch {
 	case m.msgsErr != nil:
-		return m.msgsErr.Error()
+		return m.scopeNote()
 	case m.loadingMsgs:
 		return "읽는 중…"
 	case len(m.msgs) == 0:
@@ -302,10 +302,26 @@ func wrap(s string, width int) []string {
 	return out
 }
 
+// scopeNote 는 왜 못 읽는지를 말한다.
+//
+// **"권한이 모자랍니다"만으로는 아무것도 못 한다.** 어느 권한인지 이름을
+// 대야 사용자가 앱 설정에서 그것을 찾을 수 있다.
+func (m Model) scopeNote() string {
+	if !missingScope(m.msgsErr) {
+		return m.msgsErr.Error()
+	}
+	conv, ok := m.openConv()
+	scope := historyScopes[conv.Kind]
+	if !ok || scope == "" {
+		return m.msgsErr.Error()
+	}
+	return scope + " 권한이 없어 못 읽습니다. 앱 설정에 넣고 /logout → /login 하세요"
+}
+
 // 방을 보고 있을 때의 안내 한 줄.
 func (m Model) roomHint() string {
-	if m.msgsErr != nil && missingScope(m.msgsErr) {
-		return "이 대화를 읽을 권한이 없습니다. 채널은 channels:history 가 필요합니다"
+	if m.msgsErr != nil {
+		return "DM 은 지금도 열립니다 — ← 로 목록에서 @ 로 시작하는 것을 고르세요"
 	}
 	return "친 그대로 보냅니다  ·  ← 목록으로"
 }
