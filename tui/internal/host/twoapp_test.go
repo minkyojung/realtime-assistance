@@ -365,3 +365,61 @@ func TestNoSuchCommandGoesToTheLog(t *testing.T) {
 		t.Errorf("알림이 상태줄을 덮었다: %q", got)
 	}
 }
+
+// 긴 답은 잘리지 않고 접힌다. 답이 잘리면 무슨 말인지 모른다.
+func TestLongAnswerWraps(t *testing.T) {
+	m, _ := twoAppHost()
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	long := "최근에 거의 안 들은 조용한 트랙을 중심으로 25분에 맞췄어요. " +
+		"담아두고 한 번도 재생하지 않은 곡을 앞에 두고, 같은 아티스트가 " +
+		"연달아 나오지 않게 사이를 벌렸습니다."
+	m, _ = m.Update(app.SayMsg{App: "alpha", Text: long})
+
+	out := plain(m.View().Content)
+	if strings.Contains(out, "…") {
+		t.Error("답이 잘렸다 — 접혀야 한다")
+	}
+	// 끝 문장이 화면에 있어야 한다.
+	if !strings.Contains(out, "사이를 벌렸습니다") {
+		t.Error("답의 끝이 화면에 없다")
+	}
+	// 두 줄 이상으로 접혔는가.
+	var rows int
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, "않은 곡을 앞에") || strings.Contains(l, "최근에 거의") {
+			rows++
+		}
+	}
+	if rows < 2 {
+		t.Errorf("한 줄에 다 넣으려 했다 (%d줄)", rows)
+	}
+}
+
+// 내가 한 말과 앱의 답은 바탕색이 다르다. 여러 줄이 되면 기호만으로는
+// 어디까지가 한 마디인지 흐려진다.
+func TestSaidByMeAndAppDiffer(t *testing.T) {
+	m, _ := twoAppHost()
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	m = typeText(m, "조용한 거")
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요"})
+
+	var mine, theirs bool
+	for _, l := range strings.Split(m.View().Content, "\n") {
+		if !strings.Contains(l, "48;2;") {
+			continue
+		}
+		if strings.Contains(plain(l), "조용한 거") {
+			mine = true
+		}
+		if strings.Contains(plain(l), "골랐어요") {
+			theirs = true
+		}
+	}
+	if !mine {
+		t.Error("내가 한 말에 바탕색이 없다")
+	}
+	if !theirs {
+		t.Error("앱의 답에 바탕색이 없다")
+	}
+}

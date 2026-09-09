@@ -6,6 +6,8 @@ import (
 
 	"amcli/tui/internal/app"
 	"amcli/tui/internal/style"
+	"charm.land/lipgloss/v2"
+	"image/color"
 )
 
 // 로그 — 호스트의 세 번째 자산이다. 입력의 짝.
@@ -57,22 +59,28 @@ func (m Model) logRows(w int) []string {
 		if len(m.log) == 0 {
 			return m.spinnerRows(waiting, w)
 		}
-		return append([]string{m.renderLogEntry(m.log[len(m.log)-1], w)},
-			m.spinnerRows(waiting, w)...)
+		last := m.renderLogEntry(m.log[len(m.log)-1], w)
+		return append(last[:style.Min(len(last), 1)], m.spinnerRows(waiting, w)...)
 	}
 
-	out := make([]string, 0, maxLogRows)
+	// 말과 답이 먼저다. 근거는 남는 자리만큼만 붙인다 — 잘려도 뜻이
+	// 안 상하는 것은 그쪽뿐이다.
+	var said, why []string
 	for _, e := range m.lastExchange() {
-		out = append(out, m.renderLogEntry(e, w))
+		said = append(said, m.renderLogEntry(e, w)...)
 		if len(e.detail) > 0 {
-			out = append(out, m.renderDetail(e.detail, w)...)
+			why = append(why, m.renderDetail(e.detail, w)...)
 		}
 	}
-	// 넘치면 앞을 자른다. 방금 온 답이 잘리면 안 된다.
-	if len(out) > maxLogRows {
-		out = out[len(out)-maxLogRows:]
+	if len(said) > maxLogRows {
+		said = said[len(said)-maxLogRows:]
 	}
-	return append(out, m.spinnerRows(waiting, w)...)
+	if room := maxLogRows - len(said); room > 0 && len(why) > room {
+		why = why[:room]
+	} else if room <= 0 {
+		why = nil
+	}
+	return append(append(said, why...), m.spinnerRows(waiting, w)...)
 }
 
 // lastExchange — 마지막으로 내가 한 말과, 그 뒤에 온 답들.
@@ -100,27 +108,59 @@ func (m Model) spinnerRows(waiting []string, w int) []string {
 	return []string{m.spinner.View() + " " + style.Dim.Render(style.Truncate(label, w-2))}
 }
 
-func (m Model) renderLogEntry(e logEntry, w int) string {
-	if e.who == "" {
-		return style.Faint.Render("› ") + style.Dim.Render(style.Truncate(e.text, w-2))
+// renderLogEntry — 한 마디를 여러 줄로 접어 바탕색 덩어리로 만든다.
+//
+// **자르지 않고 접는다.** 표의 칸은 자리가 정해져 있으니 잘라도 되지만,
+// 사람이 쓴 문장과 그 답은 끝까지 읽어야 한다. 답이 잘리면 무슨 말인지
+// 모르는 채로 남는다.
+//
+// 내가 한 말과 앱의 답은 **바탕색으로 가른다.** 기호(› ▸)만으로는 여러
+// 줄이 되는 순간 어디까지가 한 마디인지 흐려진다. 색이 덩어리를 만든다.
+func (m Model) renderLogEntry(e logEntry, w int) []string {
+	mark, bg := style.Faint.Render("› "), style.ColSaidByMe
+	name := ""
+	if e.who != "" {
+		mark, bg = style.Brand.Render("▸ "), style.ColSaidByApp
+		if e.err {
+			mark = style.Warn.Render("▸ ")
+		}
+		// 앱이 하나뿐이면 이름은 군더더기다.
+		if len(m.apps) > 1 {
+			name = padRight(e.who, 6) + " "
+		}
 	}
 
-	mark := style.Brand.Render("▸ ")
-	if e.err {
-		mark = style.Warn.Render("▸ ")
+	const indent = 2
+	lines := style.Wrap(e.text, style.Max(w-indent-lipgloss.Width(name), 8))
+	out := make([]string, 0, len(lines))
+	for i, l := range lines {
+		// 이어지는 줄은 기호도 이름도 반복하지 않는다. 자리만 비워 맞춘다.
+		head, who := mark, style.Faint.Render(name)
+		if i > 0 {
+			head, who = "  ", strings.Repeat(" ", lipgloss.Width(name))
+		}
+		out = append(out, fill(head+who+style.Dim.Render(l), w, bg))
 	}
-	// 앱이 하나뿐이면 이름은 군더더기다.
-	name := ""
-	if len(m.apps) > 1 {
-		name = padRight(e.who, 6) + " "
+	return out
+}
+
+// fill — 줄 오른쪽 끝까지 바탕색을 채운다.
+//
+// 색이 글자 뒤에서 끊기면 덩어리가 아니라 얼룩으로 보인다.
+func fill(s string, w int, bg color.Color) string {
+	if pad := w - lipgloss.Width(s); pad > 0 {
+		s += strings.Repeat(" ", pad)
 	}
-	return mark + style.Faint.Render(name) +
-		style.Dim.Render(style.Truncate(e.text, w-2-len(name)))
+	return lipgloss.NewStyle().Background(bg).Render(s)
 }
 
 // 상세는 들여쓰고 흐리게. 본문이 아니라 주석이라는 뜻이다.
 //
 // "제목|근거" 로 온 줄은 두 칸으로 나눠 앉힌다 — 좁아지면 근거부터 접힌다.
+// 여기는 접지 않고 자른다. 표라서 자리가 정해져 있고, 근거 한 줄이
+// 두 줄로 늘어나면 곡 목록이 아니라 문단으로 읽힌다.
+//
+// 바탕색은 답과 같다. 근거는 답의 일부이지 따로 온 말이 아니다.
 func (m Model) renderDetail(lines []string, w int) []string {
 	const indent = "    "
 	inner := style.Max(w-len(indent), 20)
@@ -133,18 +173,18 @@ func (m Model) renderDetail(lines []string, w int) []string {
 	for _, l := range lines {
 		left, right, split := strings.Cut(l, "|")
 		if !split {
-			out = append(out, indent+style.Faint.Render(style.Truncate(l, inner)))
+			out = append(out, fill(indent+style.Faint.Render(style.Truncate(l, inner)), w, style.ColSaidByApp))
 			continue
 		}
 		cell := style.Truncate(left, cols[0])
-		if d := cols[0] - len(cell); d > 0 {
+		if d := cols[0] - lipgloss.Width(cell); d > 0 {
 			cell += strings.Repeat(" ", d)
 		}
 		row := style.Faint.Render(cell)
 		if cols[1] > 0 {
 			row += "  " + style.Faint.Render(style.Truncate(right, cols[1]))
 		}
-		out = append(out, indent+row)
+		out = append(out, fill(indent+row, w, style.ColSaidByApp))
 	}
 	return out
 }

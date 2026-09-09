@@ -23,6 +23,14 @@ var (
 	ColFaint = lipgloss.Color("#55555E")
 	ColRule  = lipgloss.Color("#2E2E36")
 	ColWarn  = lipgloss.Color("#E8A33D")
+
+	// 대화 띠의 바탕. 내가 한 말과 앱이 한 말을 색으로 가른다.
+	//
+	// 둘 다 거의 검정이다. 터미널 배경 위에서 **덩어리가 나뉘는 것만**
+	// 보이면 되고, 그 이상 밝아지면 글자보다 바탕이 먼저 눈에 든다.
+	// 채워진 브랜드 색은 오류에만 쓴다는 규칙도 여기 걸린다.
+	ColSaidByMe  = lipgloss.Color("#23232E") // 내가 친 문장
+	ColSaidByApp = lipgloss.Color("#17171E") // 앱의 답과 근거
 )
 
 var (

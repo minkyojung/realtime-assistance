@@ -46,6 +46,53 @@ func Truncate(sTxt string, width int) string {
 	return b.String() + "…"
 }
 
+// Wrap 은 긴 글을 폭에 맞춰 여러 줄로 접는다.
+//
+// Truncate 와 짝이다. 표의 칸처럼 **자리가 정해진 것**은 자르고, 사람이
+// 쓴 문장처럼 **끝까지 읽어야 하는 것**은 접는다. 대화가 뒤쪽이다 —
+// 답이 잘리면 무슨 말인지 모른다.
+//
+// 낱말 단위로 끊되, 한 낱말이 폭보다 길면 그 안에서 끊는다. 한글은
+// 낱말이 길어지는 일이 드물지만 URL 이 그렇다.
+func Wrap(s string, width int) []string {
+	if width < 2 {
+		return []string{""}
+	}
+	var out []string
+	line := ""
+	flush := func() {
+		out = append(out, line)
+		line = ""
+	}
+	for _, word := range strings.Fields(s) {
+		switch {
+		case line == "":
+			line = word
+		case lipgloss.Width(line)+1+lipgloss.Width(word) <= width:
+			line += " " + word
+		default:
+			flush()
+			line = word
+		}
+		// 한 낱말이 폭을 넘으면 그 안에서 끊는다.
+		for lipgloss.Width(line) > width {
+			cut := ""
+			for _, r := range line {
+				if lipgloss.Width(cut+string(r)) > width {
+					break
+				}
+				cut += string(r)
+			}
+			out = append(out, cut)
+			line = line[len(cut):]
+		}
+	}
+	if line != "" || len(out) == 0 {
+		flush()
+	}
+	return out
+}
+
 func Rule(width int) string {
 	return RuleStyle.Render(strings.Repeat("─", width))
 }
