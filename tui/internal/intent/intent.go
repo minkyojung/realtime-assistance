@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"amcli/tui/internal/api"
+	"amcli/tui/internal/data"
 	"amcli/tui/internal/secrets"
 
 	"github.com/openai/openai-go/v3"
@@ -134,14 +135,16 @@ type Current struct {
 // cur 이 비어 있지 않으면 그것을 함께 넘긴다. "좀 더 조용한 걸로" 같은
 // 요청은 새 큐가 아니라 지금 큐를 고치라는 뜻이기 때문이다.
 // 무엇이 요청인지는 모델이 문장을 보고 판단한다.
-func Build(ctx context.Context, prompt string, library []api.Track, cur Current, now time.Time) (Result, error) {
+// react 는 우리가 본 반응이다(data.Reactions). 비어 있어도 된다 — 아직
+// 아무것도 안 들었거나 기록이 없으면 그 칸이 안 나올 뿐이다.
+func Build(ctx context.Context, prompt string, library []api.Track, react map[int64]data.Reaction, cur Current, now time.Time) (Result, error) {
 	if strings.TrimSpace(prompt) == "" {
 		return Result{}, fmt.Errorf("nothing to ask for")
 	}
 
 	start := time.Now()
 	client := openai.NewClient(option.WithAPIKey(secrets.OpenAIKey()))
-	lst := renderLibrary(library, now)
+	lst := renderLibrary(library, react, now)
 
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model: model,
@@ -255,13 +258,18 @@ type listing struct {
 	ids  []int64 // 줄번호-1 → 진짜 Track.Id
 }
 
-func renderLibrary(tracks []api.Track, now time.Time) listing {
+func renderLibrary(tracks []api.Track, react map[int64]data.Reaction, now time.Time) listing {
 	var b strings.Builder
 	ids := make([]int64, 0, len(tracks))
 	b.WriteString("The person's library. Columns: n | title | artist | album | genre | year | length | plays | signals | last played | added\n")
 	b.WriteString("Use the n column as trackId when you pick a track.\n")
 	b.WriteString("\"added: not in library\" means the track sits in a playlist but was never added to the library, so no add date exists. Never claim a date for those.\n")
-	b.WriteString("signals is what their player recorded: skip count, and whether they marked it a favorite. \"-\" means neither.\n\n")
+	b.WriteString("signals is what we have observed. Their player's own counters: skip count, and whether they marked it a favorite. " +
+		"Then what happened when this app played it: \"dropped early\" means they left before half the track, \"finished\" means it ran to the end, " +
+		"\"removed\" means they picked it out of the queue. \"-\" means we have seen nothing.\n")
+	b.WriteString("Those observations are evidence, not a verdict. One early exit is noise; a track dropped early several times and never finished is a real dislike. " +
+		"Nothing here means never play it again — people skip tracks they love because they do not fit the moment. " +
+		"Weigh it against what they asked for, and say so in your reason when it changed your mind.\n\n")
 	for _, t := range tracks {
 		if t.Excluded {
 			continue
@@ -290,7 +298,7 @@ func renderLibrary(tracks []api.Track, now time.Time) listing {
 		ids = append(ids, t.Id)
 		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s | %s | %d plays | %s | %s | %s\n",
 			len(ids), t.Title, t.Artist.Name, album, genre, year,
-			mmss(t.DurationMs), t.PlayCount, signals(t), last, added)
+			mmss(t.DurationMs), t.PlayCount, signals(t, react[t.Id]), last, added)
 	}
 	return listing{text: b.String(), ids: ids}
 }
@@ -298,13 +306,25 @@ func renderLibrary(tracks []api.Track, now time.Time) listing {
 // signals 는 플레이어가 기록해 둔 것을 한 칸에 적는다.
 //
 // 값이 없으면 "-" 다. 빈 칸으로 두면 칸이 밀려 다음 값이 이 자리로 읽힌다.
-func signals(t api.Track) string {
+func signals(t api.Track, r data.Reaction) string {
 	var out []string
 	if t.SkipCount > 0 {
 		out = append(out, fmt.Sprintf("%d skips", t.SkipCount))
 	}
 	if t.Favorited {
 		out = append(out, "favorite")
+	}
+	// 우리가 본 것. Music.app 의 카운터는 **왜** 끝났는지를 모른다 —
+	// 끝까지 들은 것과 3초 만에 나간 것이 같은 한 번으로 들어간다.
+	// 그 차이가 취향이고, 그것만 여기 적는다(docs 없음, data/plays.go).
+	if r.Early > 0 {
+		out = append(out, fmt.Sprintf("%d dropped early", r.Early))
+	}
+	if r.Done > 0 {
+		out = append(out, fmt.Sprintf("%d finished", r.Done))
+	}
+	if r.Removed > 0 {
+		out = append(out, fmt.Sprintf("%d removed", r.Removed))
 	}
 	if len(out) == 0 {
 		return "-"

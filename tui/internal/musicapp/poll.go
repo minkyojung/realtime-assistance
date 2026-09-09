@@ -43,7 +43,7 @@ const askTimeout = 90 * time.Second
 // 사라져서, 도는 동안 끊을 방법이 없다.
 func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Track, cur intent.Current) tea.Cmd {
 	return func() tea.Msg {
-		res, err := intent.Build(ctx, prompt, library, cur, time.Now())
+		res, err := intent.Build(ctx, prompt, library, reactions(), cur, time.Now())
 		return queueMsg{seq: seq, res: res, err: err}
 	}
 }
@@ -54,9 +54,25 @@ func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Tr
 // 하나를 고칠 때마다 다른 하나가 뒤처진다.
 func cmdAddTracks(ctx context.Context, seq int, prompt string, library []api.Track, cur intent.Current, atEnd bool) tea.Cmd {
 	return func() tea.Msg {
-		res, err := intent.Build(ctx, prompt, library, cur, time.Now())
+		res, err := intent.Build(ctx, prompt, library, reactions(), cur, time.Now())
 		return queueMsg{seq: seq, res: res, err: err, add: true, atEnd: atEnd}
 	}
+}
+
+// reactions 는 쌓아 둔 재생 기록을 곡별로 접어 온다.
+//
+// 부를 때마다 파일을 읽는다. 한 줄이 200바이트라 1년치가 11MB 남짓이고,
+// 선곡은 실측 7초짜리 일이라 이 읽기는 티가 안 난다. 캐시를 두면 방금
+// 넘긴 곡이 이번 선곡에 안 잡히는데, 그것이 제일 알고 싶은 정보다.
+//
+// 못 읽어도 선곡은 돈다. 반응은 있으면 더 좋은 것이지 없으면 못 하는
+// 것이 아니다 — 첫날에는 아무 기록도 없다.
+func reactions() map[int64]data.Reaction {
+	ps, err := data.LoadPlays()
+	if err != nil {
+		return nil
+	}
+	return data.Reactions(ps)
 }
 
 type statusMsg struct {

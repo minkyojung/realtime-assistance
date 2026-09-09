@@ -19,7 +19,7 @@ func TestListingNumbersAreContiguous(t *testing.T) {
 		track(999, "excluded", true), // 건너뛴다
 		track(8673039688227705491, "second", false),
 	}
-	lst := renderLibrary(tracks, time.Now())
+	lst := renderLibrary(tracks, nil, time.Now())
 
 	if len(lst.ids) != 2 {
 		t.Fatalf("목록 길이: got %d, want 2", len(lst.ids))

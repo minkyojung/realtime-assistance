@@ -158,3 +158,50 @@ func splitLines(b []byte) [][]byte {
 	}
 	return out
 }
+
+// 쌓아 둔 사건을 곡별로 접는다.
+//
+// **해석은 여기서 한다.** 파일에는 날것만 적는다(위) — 무엇이 "일찍"인지는
+// 아직 확신이 없고, 기준을 바꿀 때 지난 기록을 다시 셀 수 있어야 하기
+// 때문이다. 그 기준이 사는 곳이 여기다.
+
+// 절반을 못 채우고 나갔으면 일찍 나간 것으로 본다.
+//
+// 업계의 두 관습 사이에서 고른 값이다 — Last.fm 은 절반이나 4분을 들으면
+// 들은 것으로 치고, Spotify 는 30초 미만을 스킵으로 센다. 절반을 쓰면
+// 3분짜리에서 90초, 8분짜리에서 4분이라 곡 길이에 따라 같이 움직인다.
+//
+// **틀려도 되는 값이다.** 날것이 남아 있으므로 나중에 다시 셀 수 있다.
+const earlyRatio = 0.5
+
+// Reaction 은 한 곡에 대해 우리가 본 것의 요약이다.
+type Reaction struct {
+	Early   int // 절반도 안 듣고 나갔다
+	Done    int // 끝까지 흘렀다
+	Removed int // 큐에서 지목해 뺐다
+}
+
+// Reactions 는 사건을 곡별로 접는다.
+//
+// **우리가 만든 사건은 안 센다**(Signal). 큐를 갈아끼우느라 끊긴 곡을
+// 취향으로 읽으면, 우리 행동을 사용자의 마음으로 착각한 채 쌓일수록 더
+// 확신하면서 틀린다.
+func Reactions(ps []Play) map[int64]Reaction {
+	out := make(map[int64]Reaction)
+	for _, p := range ps {
+		if !p.EndedBy.Signal() {
+			continue
+		}
+		r := out[p.TrackID]
+		switch {
+		case p.EndedBy == EndedRemoved:
+			r.Removed++
+		case p.EndedBy == EndedDone:
+			r.Done++
+		case p.DurMs > 0 && float64(p.PlayedMs) < float64(p.DurMs)*earlyRatio:
+			r.Early++
+		}
+		out[p.TrackID] = r
+	}
+	return out
+}
