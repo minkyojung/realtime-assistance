@@ -1,0 +1,39 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	"amcli/tui/internal/ui"
+	tea "charm.land/bubbletea/v2"
+)
+
+// 리팩터링 전후를 비교할 골든 파일을 만든다.
+// 실제 Music.app 상태에 의존하지 않도록 폴링 결과는 넣지 않는다.
+func main() {
+	var b strings.Builder
+	for _, c := range []struct {
+		name string
+		keys string
+	}{
+		{"default", ""},
+		{"search", "\x06oasis"}, // ctrl+f + oasis
+		{"commands", "/"},
+		{"help", "?"},
+		{"prompt", "something quiet"},
+	} {
+		var m tea.Model = ui.New()
+		m, _ = m.Update(tea.WindowSizeMsg{Width: 100, Height: 28})
+		for _, r := range c.keys {
+			if r == '\x06' {
+				m, _ = m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
+				continue
+			}
+			m, _ = m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+		}
+		fmt.Fprintf(&b, "=== %s ===\n%s\n", c.name, m.View().Content)
+	}
+	os.WriteFile("internal/ui/testdata/golden.txt", []byte(b.String()), 0o644)
+	fmt.Println("wrote", len(b.String()), "bytes")
+}

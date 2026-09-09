@@ -1,0 +1,72 @@
+// Package app 은 호스트와 앱 사이의 계약이다.
+//
+// 호스트는 두 줄만 갖는다 — 입력창과 상태줄. 그 위는 전부 앱의 것이다.
+// 그래서 앱마다 화면이 달라도 된다. 음악은 사이드바와 목록을 그리고,
+// 채팅 앱은 대화를 그리면 된다.
+package app
+
+import tea "charm.land/bubbletea/v2"
+
+// App 은 호스트가 담을 수 있는 하나의 앱이다.
+//
+// 설계 근거는 전부 실측이나 조사에서 나왔다.
+//
+//   - Update 가 tea.Model 이 아니라 App 을 돌려준다.
+//     tea.Model 을 돌려주면 호스트가 메시지마다 타입 단언을 해야 한다.
+//     Bubble Tea 쪽에서 반복적으로 지적되는 함정이다.
+//
+//   - View 가 크기를 인자로 받는다.
+//     WindowSizeMsg 를 자식들에게 전달하고 각자 기억하게 하면 상태가 늘고
+//     어긋나기 쉽다. 레이아웃은 호스트가 아니까 그릴 때 알려주면 된다.
+//
+//   - Init 이 send 를 받는다.
+//     Music.app 은 우리가 물어보지만(폴링), 채팅은 저쪽에서 밀어 넣는다.
+//     이벤트 루프 바깥에서 메시지를 넣을 통로가 없으면 그런 앱을 담을 수 없다.
+type App interface {
+	// Name 은 사이드바·상태줄·라우터가 쓰는 짧은 이름이다. "music" 처럼.
+	Name() string
+
+	// Description 은 라우터가 읽는 한 줄이다.
+	// 어떤 문장이 이 앱의 것인지 판단하는 유일한 근거이므로 구체적으로 쓴다.
+	Description() string
+
+	// Init 은 앱을 시작한다. send 는 이벤트 루프 바깥에서 메시지를 넣는 통로다.
+	Init(send func(tea.Msg)) tea.Cmd
+
+	// Update 는 호스트가 자기 몫을 처리한 뒤 남은 메시지를 넘긴다.
+	Update(tea.Msg) (App, tea.Cmd)
+
+	// View 는 본문을 그린다. 주어진 크기를 넘지 않아야 한다.
+	View(width, height int) string
+
+	// Status 는 상태줄에 들어갈 한 줄이다.
+	// 배경에 있어도 호출되므로, 다른 앱을 보는 중에도 이 앱이 뭘 하는지 보인다.
+	Status() string
+
+	// Badge 는 사용자가 아직 보지 않은 것의 개수다. 없으면 0.
+	Badge() int
+
+	// Ready 는 앱이 쓸 수 있는 상태인지 본다.
+	// 앱마다 관문이 다르다 — 음악은 macOS 자동화 권한, 채팅은 로그인.
+	// nil 이 아니면 호스트가 그 사유를 대신 띄운다.
+	Ready() error
+
+	// Ask 는 자연어 요청을 받는다. 라우터가 이 앱을 지목했을 때 불린다.
+	Ask(prompt string) tea.Cmd
+
+	// Filter 는 검색어를 받는다. 즉시 반영되어야 하므로 Cmd 를 돌려주지 않는다.
+	// 빈 문자열이면 필터를 푼다.
+	Filter(query string) App
+
+	// Commands 는 이 앱이 등록하는 슬래시 명령이다.
+	// 호스트가 전부 모아 하나의 팔레트로 보여준다.
+	Commands() []Command
+}
+
+// Command 는 슬래시 명령 하나다.
+type Command struct {
+	Name string // "/queue" — 앱 이름을 접두어로 붙이지 않는다
+	Arg  string // "<name>" 처럼 인자 모양. 없으면 빈 문자열
+	Help string // 팔레트에 보이는 한 줄
+	Run  func(arg string) tea.Cmd
+}
