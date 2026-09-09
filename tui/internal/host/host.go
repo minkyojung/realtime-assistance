@@ -305,9 +305,7 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 			m.showHelp = false
 			// 한 말은 곧바로 로그에 남는다. 답을 기다리는 동안에도 보인다.
 			m.log = append(m.log, logEntry{text: prompt})
-			m.pending[m.app().Name()] = true
-			mm, cmd := m.forward(app.AskMsg{Prompt: prompt})
-			return mm, tea.Batch(cmd, m.spinner.Tick)
+			return m.dispatch(prompt)
 		}
 	}
 	return m.forward(tea.KeyPressMsg{Code: tea.KeyEnter})
