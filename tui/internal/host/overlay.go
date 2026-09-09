@@ -200,6 +200,7 @@ var helpRows = []struct{ key, what string }{
 	{"/", "commands"},
 	{"ctrl+f", "search"},
 	{"ctrl+j", "expand the log"},
+	{"ctrl+o", "show what the last request did"},
 	{"↑ ↓", "move through the list"},
 	{"tab", "next section"},
 	{"shift+← →", "previous / next track"},

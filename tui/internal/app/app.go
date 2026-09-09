@@ -85,11 +85,23 @@ type SayMsg struct {
 	App  string // 누가 말했는지
 	Text string
 	Err  bool // 실패를 알리는 말인지
+
+	// Detail 은 ctrl+o 로 펼쳤을 때 보일 줄들이다. 없으면 비워 둔다.
+	//
+	// "무슨 일이 있었나"를 담는다 — 후보가 몇 개였고 왜 그것을 골랐고
+	// 얼마나 걸렸는지. "AI 가 무엇을 생각했나"는 담을 수 없다.
+	// 모델은 추론 과정을 돌려주지 않는다.
+	Detail []string
 }
 
 // Say 는 SayMsg 를 만드는 Cmd 를 돌려준다. 앱이 Update 에서 쓴다.
 func Say(name, text string) tea.Cmd {
 	return func() tea.Msg { return SayMsg{App: name, Text: text} }
+}
+
+// SayWith 는 펼쳐 볼 상세까지 함께 남긴다.
+func SayWith(name, text string, detail []string) tea.Cmd {
+	return func() tea.Msg { return SayMsg{App: name, Text: text, Detail: detail} }
 }
 
 // SayErr 는 실패를 로그에 남긴다. 실패도 대화의 일부다.

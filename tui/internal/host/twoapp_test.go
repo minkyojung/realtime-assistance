@@ -147,3 +147,44 @@ func TestSwitchKeepsOtherAppAlive(t *testing.T) {
 		t.Error("전환했더니 배경 앱이 사라졌다")
 	}
 }
+
+// ctrl+o — 가장 최근 응답이 무슨 일을 했는지 펼친다.
+//
+// 곡별 근거가 사는 유일한 자리다. 본문에 두면 여러 개 중 하나만 보이고
+// 나머지는 어차피 안 보인다.
+func TestDetailToggle(t *testing.T) {
+	m, _ := twoAppHost()
+
+	m, _ = m.Update(app.SayMsg{
+		App:  "alpha",
+		Text: "두 곡을 골랐어요",
+		Detail: []string{
+			"candidates 195 → 2 tracks · 8 min",
+			"Perth|40일 전에 담고 한 번도 재생 안 함",
+			"gpt-5.5 · 5.0s · $0.0106",
+		},
+	})
+
+	if out := plain(m.View().Content); strings.Contains(out, "candidates 195") {
+		t.Error("접혀 있어야 하는데 상세가 보인다")
+	}
+
+	m, _ = m.Update(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
+	out := plain(m.View().Content)
+	for _, want := range []string{
+		"candidates 195",
+		"Perth",
+		"40일 전에 담고 한 번도 재생 안 함",
+		"$0.0106",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("펼쳤는데 %q 가 없다", want)
+		}
+	}
+
+	// esc 는 한 단계씩 물러난다.
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	if out := plain(m.View().Content); strings.Contains(out, "candidates 195") {
+		t.Error("esc 를 눌렀는데 상세가 남아 있다")
+	}
+}

@@ -17,9 +17,10 @@ import (
 // 세션 동안만 들고 있는다. 저장하지 않는다.
 
 type logEntry struct {
-	who  string // "" 이면 사용자가 한 말
-	text string
-	err  bool
+	who    string // "" 이면 사용자가 한 말
+	text   string
+	err    bool
+	detail []string // ctrl+o 로 펼쳤을 때 보일 줄들
 }
 
 // waiting 은 답을 기다리는 앱 이름들이다. 스피너에 쓴다.
@@ -60,8 +61,13 @@ func (m Model) logRows(w int) []string {
 		if len(entries) > keep {
 			entries = entries[len(entries)-keep:]
 		}
-		for _, e := range entries {
+		last := len(entries) - 1
+		for i, e := range entries {
 			out = append(out, m.renderLogEntry(e, w))
+			// 상세는 가장 최근 응답 하나만 펼친다. 전부 펼치면 본문이 사라진다.
+			if m.detailOpen && i == last && len(e.detail) > 0 {
+				out = append(out, m.renderDetail(e.detail, w)...)
+			}
 		}
 	}
 	if len(waiting) > 0 {
@@ -93,6 +99,37 @@ func (m Model) renderLogEntry(e logEntry, w int) string {
 		style.Dim.Render(style.Truncate(e.text, w-2-len(name)))
 }
 
+// 상세는 들여쓰고 흐리게. 본문이 아니라 주석이라는 뜻이다.
+//
+// "제목|근거" 로 온 줄은 두 칸으로 나눠 앉힌다 — 좁아지면 근거부터 접힌다.
+func (m Model) renderDetail(lines []string, w int) []string {
+	const indent = "    "
+	inner := style.Max(w-len(indent), 20)
+	cols := style.Columns(inner, 2, []style.Col{
+		{Min: 12, Weight: 2, Max: 40},
+		{Min: 16, Weight: 3, Drop: 1},
+	})
+
+	out := make([]string, 0, len(lines))
+	for _, l := range lines {
+		left, right, split := strings.Cut(l, "|")
+		if !split {
+			out = append(out, indent+style.Faint.Render(style.Truncate(l, inner)))
+			continue
+		}
+		cell := style.Truncate(left, cols[0])
+		if d := cols[0] - len(cell); d > 0 {
+			cell += strings.Repeat(" ", d)
+		}
+		row := style.Faint.Render(cell)
+		if cols[1] > 0 {
+			row += "  " + style.Faint.Render(style.Truncate(right, cols[1]))
+		}
+		out = append(out, indent+row)
+	}
+	return out
+}
+
 func padRight(s string, n int) string {
 	if len(s) >= n {
 		return s
@@ -104,7 +141,9 @@ func padRight(s string, n int) string {
 func (m Model) handleSay(msg app.SayMsg) Model {
 	delete(m.pending, msg.App)
 	if strings.TrimSpace(msg.Text) != "" {
-		m.log = append(m.log, logEntry{who: msg.App, text: msg.Text, err: msg.Err})
+		m.log = append(m.log, logEntry{
+			who: msg.App, text: msg.Text, err: msg.Err, detail: msg.Detail,
+		})
 	}
 	return m
 }

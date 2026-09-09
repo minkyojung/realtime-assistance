@@ -52,5 +52,19 @@ func main() {
 	}
 
 	fmt.Println("\n──────── 큐 도착 ────────")
-	fmt.Println(m.View().Content)
+	tailOf(m, 4)
+
+	m, _ = m.Update(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
+	fmt.Println("\n──────── ctrl+o 상세 ────────")
+	tailOf(m, 18)
+}
+
+func tailOf(m tea.Model, n int) {
+	lines := strings.Split(strings.TrimRight(m.View().Content, "\n"), "\n")
+	if n > len(lines) {
+		n = len(lines)
+	}
+	for _, l := range lines[len(lines)-n:] {
+		fmt.Println(strings.TrimRight(l, " "))
+	}
 }

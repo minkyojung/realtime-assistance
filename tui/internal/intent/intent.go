@@ -26,6 +26,9 @@ import (
 // 라이브러리가 수천 곡으로 커지면 사전 태깅(L1)으로 후보를 먼저 좁혀야 한다.
 const model = openai.ChatModelGPT5_5
 
+// Model 은 로그 상세에 무엇으로 골랐는지 적을 때 쓴다.
+func Model() string { return model }
+
 // 지연 예산이 UX 의 전부다. docs/03 8절.
 var effort = shared.ReasoningEffortLow
 
@@ -42,6 +45,12 @@ type Result struct {
 	Picks []Pick `json:"picks"`
 
 	Usage api.Usage
+
+	// Elapsed 는 이 요청에 걸린 시간이다. 로그 상세에 쓴다.
+	Elapsed time.Duration
+
+	// Candidates 는 고르기 전 후보가 몇 곡이었는지다.
+	Candidates int
 }
 
 // 응답 스키마. strict 모드에서 모델이 이 모양을 벗어날 수 없다.
@@ -122,6 +131,7 @@ func Build(ctx context.Context, prompt string, library []api.Track, cur Current,
 		return Result{}, fmt.Errorf("빈 요청")
 	}
 
+	start := time.Now()
 	client := openai.NewClient()
 
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
@@ -154,6 +164,8 @@ func Build(ctx context.Context, prompt string, library []api.Track, cur Current,
 		CompletionTokens: int(resp.Usage.CompletionTokens),
 		CostUsd:          cost(resp.Usage),
 	}
+	out.Elapsed = time.Since(start)
+	out.Candidates = len(library)
 	return out, nil
 }
 

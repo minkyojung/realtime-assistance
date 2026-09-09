@@ -40,11 +40,12 @@ type Model struct {
 	pick int
 
 	// 로그 — 호스트의 세 번째 자산. 입력의 짝이다.
-	log     []logEntry
-	logOpen bool
-	routing bool            // 라우터의 답을 기다리는 중
-	pending map[string]bool // 답을 기다리는 앱
-	spinner spinner.Model
+	log        []logEntry
+	logOpen    bool
+	detailOpen bool
+	routing    bool            // 라우터의 답을 기다리는 중
+	pending    map[string]bool // 답을 기다리는 앱
+	spinner    spinner.Model
 
 	w, h int
 	send func(tea.Msg)
@@ -245,6 +246,11 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 			return true, m, nil
 		}
 
+	case "ctrl+o":
+		// 가장 최근 응답이 무슨 일을 했는지 펼친다.
+		m.detailOpen = !m.detailOpen
+		return true, m, nil
+
 	case "ctrl+j":
 		// 로그를 펼쳤다 접는다. 명령 팔레트와 같은 자리, 같은 방식이다.
 		m.logOpen = !m.logOpen
@@ -262,6 +268,10 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		// 한 단계씩 물러난다 — 도움말 → 검색 → 입력 비우기 → 종료.
 		if m.showHelp {
 			m.showHelp = false
+			return true, m, nil
+		}
+		if m.detailOpen {
+			m.detailOpen = false
 			return true, m, nil
 		}
 		if m.logOpen {
