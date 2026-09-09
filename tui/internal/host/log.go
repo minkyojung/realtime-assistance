@@ -86,9 +86,9 @@ func (m Model) logRows(w int) []string {
 	} else if room <= 0 {
 		why = nil
 	}
-	// 위아래만 갈라준다. 목록 마지막 줄에 내 말이 바로 붙으면 그것도 목록으로
-	// 읽히고, 근거가 입력창 테두리에 붙으면 테두리가 근거의 밑줄로 보인다.
-	said = append([]string{""}, said...)
+	// 위는 비우지 않는다. 내 말을 두른 안여백이 목록과 갈라주는 일을 대신하고,
+	// 목록이 빽빽한 화면에서 빈 줄 하나는 그것만으로 크게 벌어져 보인다.
+	// 아래만 남긴다 — 근거가 입력창 테두리에 붙으면 테두리가 밑줄로 보인다.
 	out := append(append(said, why...), m.spinnerRows(waiting, w)...)
 	return append(out, "")
 }
@@ -171,6 +171,17 @@ func (m Model) renderLogEntry(e logEntry, w int) []string {
 			row += fill(w - lipgloss.Width(row))
 		}
 		out = append(out, row)
+	}
+
+	// 내 말은 위아래로 칠해진 빈 줄을 하나씩 두른다.
+	//
+	// 터미널에는 반 줄이 없으므로 "아주 약간의 여백"을 만들 방법이 이것뿐이다.
+	// **칠해진 빈 줄은 빈 공간이 아니라 말풍선의 일부로 읽힌다** — 같은 한 줄을
+	// 비워 두면 여백이 되고 칠하면 안여백이 된다. 그래서 답과 갈라지면서도
+	// 화면이 성겨 보이지 않는다.
+	if e.who == "" {
+		pad := fill(w)
+		out = append([]string{pad}, append(out, pad)...)
 	}
 	return out
 }

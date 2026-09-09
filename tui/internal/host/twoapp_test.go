@@ -468,11 +468,10 @@ func paintedWidth(l string) (painted, total int) {
 	return painted, total
 }
 
-// 대화 띠는 위아래만 갈라져 있다.
+// 내 말은 칠해진 안여백을 위아래로 두르고, 답이 그 바로 아래에 온다.
 //
-// 목록 마지막 줄에 내 말이 바로 붙으면 그것도 목록으로 읽히고, 근거가
-// 입력창 테두리에 붙으면 테두리가 근거의 밑줄로 보인다. 안쪽은 띄우지
-// 않는다 — 내 말에 깔린 바탕색이 이미 덩어리를 가른다.
+// 터미널에는 반 줄이 없다. 같은 한 줄을 비워 두면 여백이 되고 칠하면
+// 안여백이 되는데, 목록이 빽빽한 화면에서는 후자만 "아주 약간"으로 읽힌다.
 func TestLogBandBreathes(t *testing.T) {
 	m, _ := twoAppHost()
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
@@ -489,17 +488,32 @@ func TestLogBandBreathes(t *testing.T) {
 		}
 		return -1
 	}
-	blank := func(i int) bool { return i >= 0 && i < len(lines) && strings.TrimSpace(plain(lines[i])) == "" }
+	// 글자는 없고 바탕색만 있는 줄 = 말풍선의 안여백.
+	padded := func(i int) bool {
+		return i >= 0 && i < len(lines) &&
+			strings.TrimSpace(plain(lines[i])) == "" && strings.Contains(lines[i], "48;2;")
+	}
+	blank := func(i int) bool {
+		return i >= 0 && i < len(lines) &&
+			strings.TrimSpace(plain(lines[i])) == "" && !strings.Contains(lines[i], "48;2;")
+	}
 
 	mine, theirs := at("› hi"), at("골랐어요")
 	if mine < 0 || theirs < 0 {
 		t.Fatal("대화가 화면에 없다")
 	}
-	if !blank(mine - 1) {
-		t.Error("내 말 위가 안 비었다 — 목록에 붙는다")
+	if !padded(mine - 1) {
+		t.Error("내 말 위에 칠해진 안여백이 없다")
 	}
-	if theirs != mine+1 {
-		t.Errorf("내 말과 답 사이가 벌어졌다 (%d줄) — 바탕색이 이미 가른다", theirs-mine-1)
+	if !padded(mine + 1) {
+		t.Error("내 말 아래에 칠해진 안여백이 없다")
+	}
+	if theirs != mine+2 {
+		t.Errorf("답이 안여백 바로 아래가 아니다 (내 말에서 %d줄)", theirs-mine)
+	}
+	// 바깥 여백은 아래 하나뿐이다. 위는 안여백이 대신한다.
+	if blank(mine - 2) {
+		t.Error("말풍선 위에 빈 줄이 또 있다 — 여백이 두 겹이다")
 	}
 	if box := at("╭"); box < 0 || !blank(box-1) {
 		t.Error("대화와 입력창 사이가 안 비었다")
@@ -524,17 +538,17 @@ func TestSpinnerSitsWhereAnswerWill(t *testing.T) {
 		}
 		return -1
 	}
-	mineBefore, spin := rowOf(m, "› hi"), rowOf(m, "묻는 중")
+	spin := rowOf(m, "묻는 중")
 	if spin < 0 {
 		spin = rowOf(m, "정하는 중")
 	}
-	if spin != mineBefore+1 {
-		t.Fatalf("스피너가 내 말 바로 아래가 아니다 (%d, %d)", mineBefore, spin)
+	if d := spin - rowOf(m, "› hi"); d != 2 {
+		t.Fatalf("스피너가 내 말에서 %d줄 아래다 — 안여백 다음이어야 한다", d)
 	}
 
 	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요"})
 	m, _ = m.Update(app.SayMsg{App: "beta", Text: "베타도 했어요"})
-	if got := rowOf(m, "골랐어요") - rowOf(m, "› hi"); got != 1 {
+	if got := rowOf(m, "골랐어요") - rowOf(m, "› hi"); got != 2 {
 		t.Errorf("답이 스피너 자리에 안 앉았다 (내 말에서 %d줄 아래)", got)
 	}
 }
