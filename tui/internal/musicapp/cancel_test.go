@@ -50,6 +50,8 @@ func TestAnswerLandsWhenNotCancelled(t *testing.T) {
 // Cmd 를 실행하지 않으므로 실제 API 는 부르지 않는다.
 func askedSomething(t *testing.T) Model {
 	t.Helper()
+	// 키가 없으면 요청이 아예 안 나간다(startAsk).
+	t.Setenv("OPENAI_API_KEY", "sk-test")
 	m := New()
 	m.bodyH = 20
 

@@ -377,8 +377,15 @@ func TestLongAnswerWraps(t *testing.T) {
 	m, _ = m.Update(app.SayMsg{App: "alpha", Text: long})
 
 	out := plain(m.View().Content)
-	if strings.Contains(out, "…") {
-		t.Error("답이 잘렸다 — 접혀야 한다")
+	// 답이 실린 줄만 본다. 화면 전체를 보면 다른 자리의 말줄임(placeholder 등)에
+	// 걸려 오탐이 난다.
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, "최근에") || strings.Contains(l, "담아두고") ||
+			strings.Contains(l, "사이를 벌렸") {
+			if strings.Contains(l, "…") {
+				t.Errorf("답이 잘렸다 — 접혀야 한다: %q", strings.TrimSpace(l))
+			}
+		}
 	}
 	// 끝 문장이 화면에 있어야 한다.
 	if !strings.Contains(out, "사이를 벌렸습니다") {

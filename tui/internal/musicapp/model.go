@@ -19,6 +19,7 @@ import (
 	"amcli/tui/internal/intent"
 	"amcli/tui/internal/lyrics"
 	"amcli/tui/internal/music"
+	"amcli/tui/internal/secrets"
 	"amcli/tui/internal/style"
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
@@ -195,6 +196,11 @@ func (m Model) Ask(prompt string) tea.Cmd {
 // 필요한 도구가 있으면 그때 부른다(agent.go). 라이브러리를 읽는 값은
 // build_queue 안에서만 치른다.
 func (m Model) startAsk(prompt string) (Model, tea.Cmd) {
+	// 키가 없으면 요청을 아예 안 낸다. 빈 키로 나가면 OpenAI 가 401 을
+	// 돌려주는데, 그 문장은 사람이 할 일을 말해 주지 않는다.
+	if !secrets.HasOpenAIKey() {
+		return m, app.SayErr(m.Name(), errAIOff)
+	}
 	var ctx context.Context
 	m.ask, ctx = m.ask.start(askTimeout)
 	m.chat = intent.NewChat(prompt, m.current(), m.memory)
@@ -817,3 +823,6 @@ func (m Model) applyLibrary(msg libraryMsg) (app.App, tea.Cmd) {
 	}
 	return m, nil
 }
+
+// AI 가 꺼져 있을 때의 한 마디. 왜 안 되는지가 아니라 무엇을 하면 되는지다.
+var errAIOff = errors.New("AI is off  ·  /openai <sk-…> to turn it on")

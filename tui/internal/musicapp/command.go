@@ -11,6 +11,7 @@ import (
 	"amcli/tui/internal/app"
 	"amcli/tui/internal/applemusic"
 	"amcli/tui/internal/data"
+	"amcli/tui/internal/secrets"
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -59,6 +60,8 @@ func (m Model) Commands() []app.Command {
 			Run: func(string) tea.Cmd { return send(clearQueueMsg{}) }},
 		{Name: "/reload", Help: "read your library from Music.app again",
 			Run: m.reloadCmd},
+		{Name: "/openai", Arg: "<sk-…>", Help: "turn on AI · your OpenAI API key",
+			Run: openaiCmd},
 		{Name: "/setup", Arg: "<team ID>", Help: "connect Apple Music · your Apple Developer team ID",
 			Run: m.setupCmd},
 		{Name: "/login", Help: "connect your Apple Music account (opens a browser)",
@@ -81,7 +84,7 @@ func (m Model) Commands() []app.Command {
 }
 
 // 액션 명령의 이름. 섹션 이름이 여기에 겹치지 않게 하는 데 쓴다.
-var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam", "/setup"}
+var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam", "/setup", "/openai"}
 
 // jumpCommands — 섹션마다 곧장 가는 명령을 하나씩 낸다.
 //
@@ -290,3 +293,25 @@ func (m Model) setupCmd(arg string) tea.Cmd {
 
 var errNoTeamID = errors.New(
 	"which team? · /setup <team ID> — developer.apple.com › Membership")
+
+// openaiCmd — OpenAI 키를 키체인에 넣고 AI 를 켠다.
+//
+// 환경변수로 받지 않는 이유는 그것이 셸에만 살기 때문이다. 터미널을 새로
+// 열거나 셸을 안 거치고 띄우면 사라진다 — 애플 뮤직 설정에서 이미 겪었다.
+//
+// 키체인인 이유는 **비밀이기 때문이다.** Key ID·Team ID 는 식별자라 설정
+// 파일에 두지만, 이 키는 뽑히면 남의 돈이 나간다(internal/secrets).
+func openaiCmd(arg string) tea.Cmd {
+	arg = strings.TrimSpace(arg)
+	if arg == "" {
+		return send(errMsg{errNoAPIKey})
+	}
+	if err := secrets.SaveOpenAIKey(arg); err != nil {
+		return send(errMsg{err})
+	}
+	// 저장 즉시 켜진다. 다음 요청부터 이 키로 나간다 — 앱을 껐다 켜지 않는다.
+	return app.Say("music", "AI is on.")
+}
+
+var errNoAPIKey = errors.New(
+	"which key? · /openai <sk-…> — platform.openai.com › API keys")

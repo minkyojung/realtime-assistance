@@ -38,6 +38,9 @@ func withQueue(t *testing.T) Model {
 // 도착한 답은 언제나 늦은 답으로 버려지기 때문이다(turn.go).
 func asked(t *testing.T, m Model, prompt string) Model {
 	t.Helper()
+	// 키가 없으면 요청이 아예 안 나간다(startAsk). 여기서 보려는 것은
+	// 그 뒤의 걸음이므로 켜 두고 시작한다.
+	t.Setenv("OPENAI_API_KEY", "sk-test")
 	next, cmd := m.Update(app.AskMsg{Prompt: prompt})
 	if cmd == nil {
 		t.Fatal("물었는데 아무 일도 안 일어났다")

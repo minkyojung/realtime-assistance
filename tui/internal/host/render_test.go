@@ -173,6 +173,9 @@ func TestFirstRunGates(t *testing.T) {
 // 프롬프트를 보내면 Thinking 이 뜨고, 결과가 오면 큐로 바뀌는지.
 // 실제 API 는 부르지 않는다 — queueMsg 를 직접 흘려보낸다.
 func TestPromptToQueue(t *testing.T) {
+	// 키가 없으면 요청이 아예 안 나간다(musicapp/startAsk). 여기서 보려는
+	// 것은 그 뒤에 답이 화면에 앉는 경로다.
+	t.Setenv("OPENAI_API_KEY", "sk-test")
 	hm := New(musicapp.New())
 	hm.LeaveHome()
 	var m tea.Model = &hm

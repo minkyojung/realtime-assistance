@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"amcli/tui/internal/api"
+	"amcli/tui/internal/secrets"
+
 	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/shared"
 )
 
@@ -154,7 +157,7 @@ func (c Chat) Step(ctx context.Context, tools []Tool) (Chat, Step, error) {
 		defs = append(defs, openai.ChatCompletionFunctionTool(fn))
 	}
 
-	client := openai.NewClient()
+	client := openai.NewClient(option.WithAPIKey(secrets.OpenAIKey()))
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model:           agentModel,
 		ReasoningEffort: agentEffort,

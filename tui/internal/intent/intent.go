@@ -15,7 +15,10 @@ import (
 	"time"
 
 	"amcli/tui/internal/api"
+	"amcli/tui/internal/secrets"
+
 	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/shared"
 )
 
@@ -137,7 +140,7 @@ func Build(ctx context.Context, prompt string, library []api.Track, cur Current,
 	}
 
 	start := time.Now()
-	client := openai.NewClient()
+	client := openai.NewClient(option.WithAPIKey(secrets.OpenAIKey()))
 	lst := renderLibrary(library, now)
 
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{

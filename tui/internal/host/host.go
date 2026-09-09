@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"amcli/tui/internal/app"
+	"amcli/tui/internal/secrets"
 	"amcli/tui/internal/style"
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
@@ -161,6 +162,14 @@ func (m *Model) applyMode() {
 	} else {
 		m.input.Prompt = promptAsk
 		m.input.Placeholder = "Ask for anything    /  commands     ?  help"
+		if !secrets.HasOpenAIKey() {
+			// 모드를 없애지도, 기본값을 바꾸지도 않는다.
+			//
+			// 키가 없다고 Search 로 시작하면 AI 가 있다는 것 자체를 모르고
+			// 지나간다. 자리는 그대로 두고 **왜 못 쓰는지와 무엇을 하면
+			// 되는지**를 그 자리가 말한다 — 카탈로그가 꺼졌을 때와 같다.
+			m.input.Placeholder = "AI is off    /openai <sk-…>  to turn it on"
+		}
 	}
 	styles.Focused.Prompt = lipgloss.NewStyle().Foreground(color)
 	styles.Blurred.Prompt = styles.Focused.Prompt

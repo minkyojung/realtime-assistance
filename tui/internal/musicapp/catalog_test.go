@@ -1,6 +1,8 @@
 package musicapp
 
 import (
+	"amcli/tui/internal/app"
+	"amcli/tui/internal/secrets"
 	"fmt"
 	"regexp"
 	"strings"
@@ -470,5 +472,45 @@ func TestSetupNeedsTeamID(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("/setup 명령이 없다")
+	}
+}
+
+// ── AI 스위치 ────────────────────────────────────────────────────────
+
+// 키가 없으면 요청을 아예 안 낸다. 빈 키로 나가면 OpenAI 가 401 을 주는데,
+// 그 문장은 사람이 할 일을 말해 주지 않는다.
+func TestAskWithoutKeyDoesNotFire(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "")
+	if secrets.HasOpenAIKey() {
+		t.Skip("이 기계 키체인에 실제 키가 들어 있다")
+	}
+	m := New()
+	next, cmd := m.Update(app.AskMsg{Prompt: "조용한 거"})
+	if cmd == nil {
+		t.Fatal("아무 말도 안 했다 — 왜 안 되는지는 말해야 한다")
+	}
+	if next.(Model).ask.live {
+		t.Error("키가 없는데 요청이 나갔다")
+	}
+	// 무엇을 하면 되는지를 말한다.
+	if !strings.Contains(errAIOff.Error(), "/openai") {
+		t.Errorf("안내가 다음 행동을 안 말한다: %v", errAIOff)
+	}
+}
+
+// /openai 는 인자가 없으면 무엇을 달라는지 말한다.
+func TestOpenAICommandNeedsKey(t *testing.T) {
+	var found bool
+	for _, c := range New().Commands() {
+		if c.Name != "/openai" {
+			continue
+		}
+		found = true
+		if c.Arg == "" {
+			t.Error("/openai 가 인자를 요구하지 않는다")
+		}
+	}
+	if !found {
+		t.Fatal("/openai 명령이 없다")
 	}
 }

@@ -7,8 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"amcli/tui/internal/secrets"
 	tea "charm.land/bubbletea/v2"
+
 	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/shared"
 )
 
@@ -80,7 +83,7 @@ func Route(ctx context.Context, prompt string, apps []Spec, current string) ([]s
 	}
 	fmt.Fprintf(&b, "\nrequest: %q", prompt)
 
-	client := openai.NewClient()
+	client := openai.NewClient(option.WithAPIKey(secrets.OpenAIKey()))
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model:           routerModel,
 		ReasoningEffort: shared.ReasoningEffortLow,
