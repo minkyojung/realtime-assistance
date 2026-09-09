@@ -206,17 +206,19 @@ func (m Model) renderRow(r listRow, selected bool, w int, widths []int, prevArti
 	if r.gap {
 		return ""
 	}
-	// 구역 머리글 — 글자 뒤에 선을 끌어 구역이 여기서 시작한다고 말한다.
+	// 구역 머리글 — 딥톤 글자.
 	//
-	// 회색 한 줄로는 목록에 묻혔다. 글자를 한 단계 밝히고, 남는 폭을 딥톤
-	// 선으로 채운다 — docs/03 이 딥톤에 준 자리가 "헤더 구분선"이다.
+	// 회색 한 줄로는 곡 제목들 사이에 묻혔다. 글자 뒤로 선을 끌어 봤더니
+	// 이번에는 선이 폭을 다 먹어 소란스러웠다. 색 하나면 충분하다.
+	//
+	// 밝은 브랜드 색이 아니라 딥톤인 이유는, 밝은 쪽이 "지금 소리가 나고
+	// 있다"는 뜻으로 묶여 있기 때문이다(docs/03 11절). 검색할 때마다 상시로
+	// 뜨는 머리글에 그 색을 쓰면 ▶ 가 갖던 뜻이 옅어진다.
+	//
+	// 딥톤에는 문서가 이미 자리를 줬다 — "헤더 구분선 · 큐 번호,
+	// 반복되는 작은 요소로 리듬을 만든다". 머리글이 그 요소다.
 	if r.header != "" {
-		label := style.Meta.Render(style.Truncate(r.header, w-6))
-		line := ""
-		if d := w - 3 - lipgloss.Width(label); d > 0 {
-			line = " " + style.RuleBrandStyle.Render(strings.Repeat("─", d))
-		}
-		return "  " + label + line
+		return "  " + style.TrackHead.Render(style.Truncate(r.header, w-2))
 	}
 
 	if ct := r.catalog; ct != nil {

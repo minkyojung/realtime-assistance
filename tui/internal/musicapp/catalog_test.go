@@ -398,16 +398,26 @@ func TestSectionHeadersStandOut(t *testing.T) {
 		t.Errorf("구역 사이 빈 줄이 %d개 — 하나여야 한다", gaps)
 	}
 
-	// 머리글 줄에는 선이 붙는다.
-	out := ansiOff(m.viewList(78, 20))
+	// 머리글은 딥톤이라 곡 제목(밝은 회색)과 색이 다르다.
+	//
+	// 밝은 브랜드 색이 아닌 것도 함께 지킨다 — 그쪽은 "지금 소리가 나고
+	// 있다"는 뜻이라(docs/03 11절), 상시로 뜨는 머리글이 쓰면 ▶ 가 옅어진다.
+	const (
+		deep   = "\x1b[38;2;168;37;63m"  // ColBrandDeep
+		bright = "\x1b[38;2;255;90;117m" // ColBrand
+	)
 	for _, want := range []string{"Your Library · ", "Apple Music · "} {
 		var found bool
-		for _, l := range strings.Split(out, "\n") {
-			if strings.Contains(l, want) {
-				found = true
-				if !strings.Contains(l, "───") {
-					t.Errorf("%q 머리글에 선이 없다: %q", want, strings.TrimSpace(l))
-				}
+		for _, l := range strings.Split(m.viewList(78, 20), "\n") {
+			if !strings.Contains(ansiOff(l), want) {
+				continue
+			}
+			found = true
+			if !strings.Contains(l, deep) {
+				t.Errorf("%q 머리글이 딥톤이 아니다", want)
+			}
+			if strings.Contains(l, bright) {
+				t.Errorf("%q 머리글에 밝은 브랜드 색을 썼다", want)
 			}
 		}
 		if !found {
