@@ -468,16 +468,17 @@ func paintedWidth(l string) (painted, total int) {
 	return painted, total
 }
 
-// 내 말은 칠해진 안여백을 위아래로 두르고, 답이 그 바로 아래에 온다.
+// 대화 띠는 세 군데가 비어 있다 — 위, 내 말과 답 사이, 아래.
 //
-// 터미널에는 반 줄이 없다. 같은 한 줄을 비워 두면 여백이 되고 칠하면
-// 안여백이 되는데, 목록이 빽빽한 화면에서는 후자만 "아주 약간"으로 읽힌다.
+// 목록에 붙으면 내 말도 목록으로 읽히고, 답에 붙으면 색이 다르다는 것만으로는
+// 한 마디가 끝난 자리를 못 찾고, 입력창 테두리에 붙으면 테두리가 근거의
+// 밑줄로 보인다. 근거는 답의 일부이므로 답에 붙인다.
 func TestLogBandBreathes(t *testing.T) {
 	m, _ := twoAppHost()
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	m = typeText(m, "hi")
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요"})
+	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요", Detail: []string{"195 → 6"}})
 
 	lines := strings.Split(m.View().Content, "\n")
 	at := func(want string) int {
@@ -488,32 +489,22 @@ func TestLogBandBreathes(t *testing.T) {
 		}
 		return -1
 	}
-	// 글자는 없고 바탕색만 있는 줄 = 말풍선의 안여백.
-	padded := func(i int) bool {
-		return i >= 0 && i < len(lines) &&
-			strings.TrimSpace(plain(lines[i])) == "" && strings.Contains(lines[i], "48;2;")
-	}
 	blank := func(i int) bool {
-		return i >= 0 && i < len(lines) &&
-			strings.TrimSpace(plain(lines[i])) == "" && !strings.Contains(lines[i], "48;2;")
+		return i >= 0 && i < len(lines) && strings.TrimSpace(plain(lines[i])) == ""
 	}
 
 	mine, theirs := at("› hi"), at("골랐어요")
 	if mine < 0 || theirs < 0 {
 		t.Fatal("대화가 화면에 없다")
 	}
-	if !padded(mine - 1) {
-		t.Error("내 말 위에 칠해진 안여백이 없다")
+	if !blank(mine - 1) {
+		t.Error("내 말 위가 안 비었다 — 목록에 붙는다")
 	}
-	if !padded(mine + 1) {
-		t.Error("내 말 아래에 칠해진 안여백이 없다")
+	if theirs != mine+2 || !blank(mine+1) {
+		t.Errorf("내 말과 답 사이가 안 비었다 (%d줄 차이)", theirs-mine)
 	}
-	if theirs != mine+2 {
-		t.Errorf("답이 안여백 바로 아래가 아니다 (내 말에서 %d줄)", theirs-mine)
-	}
-	// 바깥 여백은 아래 하나뿐이다. 위는 안여백이 대신한다.
-	if blank(mine - 2) {
-		t.Error("말풍선 위에 빈 줄이 또 있다 — 여백이 두 겹이다")
+	if why := at("195 → 6"); why != theirs+1 {
+		t.Error("근거가 답에서 떨어졌다 — 근거는 답의 일부다")
 	}
 	if box := at("╭"); box < 0 || !blank(box-1) {
 		t.Error("대화와 입력창 사이가 안 비었다")

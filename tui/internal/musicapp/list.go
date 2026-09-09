@@ -58,6 +58,8 @@ func (m Model) rows() []listRow {
 		return unplayedTracks(l)
 	case secCatalog:
 		return catalogRows(m.catHits)
+	case secShazam:
+		return catalogRows(m.shzHits)
 	}
 	return nil
 }

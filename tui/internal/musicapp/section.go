@@ -19,6 +19,7 @@ const (
 	secQueue
 	secUnplayed
 	secCatalog
+	secShazam
 )
 
 type section struct {
@@ -30,10 +31,11 @@ type section struct {
 // 섹션 이동은 tab 과 슬래시 명령으로 한다. 사이드바를 두지 않는 이유는
 // "갈 수 있는 곳"을 상시로 보여줄 필요가 없기 때문이다. 필요한 것은
 // "지금 어디인지"뿐이고, 그것은 상태줄이 말한다.
-// catalog 가 false 면 섹션 자체가 없다. 쓸 수 없는 곳으로 tab 이 가면 안 된다.
-func buildSections(l *data.Library) []section { return buildSectionsWith(l, false) }
+// catalog·shazam 이 false 면 섹션 자체가 없다. 쓸 수 없는 곳으로 tab 이
+// 가면 안 된다. 카탈로그는 설정이 있어야 생기고, 인식은 한 번 알아맞혀야 생긴다.
+func buildSections(l *data.Library) []section { return buildSectionsWith(l, false, false) }
 
-func buildSectionsWith(l *data.Library, catalog bool) []section {
+func buildSectionsWith(l *data.Library, catalog, shazam bool) []section {
 	s := []section{
 		{kind: secRecent, label: "Recently Added"},
 		{kind: secArtists, label: "Artists"},
@@ -54,6 +56,9 @@ func buildSectionsWith(l *data.Library, catalog bool) []section {
 	if catalog {
 		s = append(s, section{kind: secCatalog, label: "Apple Music"})
 	}
+	if shazam {
+		s = append(s, section{kind: secShazam, label: "Shazam"})
+	}
 	return s
 }
 
@@ -67,7 +72,7 @@ func (m *Model) resync(l *data.Library) {
 		kind, label = m.sections[m.sectionIdx].kind, m.sections[m.sectionIdx].label
 	}
 
-	m.sections = buildSectionsWith(l, m.cat != nil)
+	m.sections = buildSectionsWith(l, m.cat != nil, len(m.shzHits) > 0)
 	m.sectionIdx = 0
 	for i, s := range m.sections {
 		if s.kind == kind && (kind != secPlaylist || s.label == label) {

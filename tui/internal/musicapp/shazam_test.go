@@ -1,0 +1,138 @@
+package musicapp
+
+import (
+	"strings"
+	"testing"
+
+	"amcli/tui/internal/app"
+	"amcli/tui/internal/shazam"
+	tea "charm.land/bubbletea/v2"
+)
+
+func heard(title, artist string) shazam.Result {
+	return shazam.Result{OK: true, Title: title, Artist: artist, AppleMusicID: "a1"}
+}
+
+// 인식 결과가 대조까지 마치고 앉아야 한다.
+// 대조를 빠뜨리면 화면에 "안 가진 곡"으로 그려진다.
+func TestRecognizedMarksLibrary(t *testing.T) {
+	if !inLibrary(recognized(heard("Holocene", "Bon Iver"))) {
+		t.Error("가진 곡을 못 알아봤다")
+	}
+	if inLibrary(recognized(heard("존재하지 않는 곡", "Nobody"))) {
+		t.Error("없는 곡을 가졌다고 한다")
+	}
+}
+
+// S5 가 적는 값을 잃어버리면 안 된다 — docs/06.
+func TestRecognizedCarriesFields(t *testing.T) {
+	res := heard("Holocene", "Bon Iver")
+	res.ISRC, res.Genre, res.Year = "US123", "Alternative", 2011
+	ct := recognized(res)
+	if ct.Isrc == nil || *ct.Isrc != "US123" {
+		t.Error("ISRC 가 사라졌다")
+	}
+	if ct.Year == nil || *ct.Year != 2011 {
+		t.Error("연도가 사라졌다")
+	}
+	if ct.Genre == nil || *ct.Genre != "Alternative" {
+		t.Error("장르가 사라졌다")
+	}
+}
+
+// 이 서비스가 더 말할 수 있는 것은 곡 이름이 아니라 그 곡과 나의 관계다.
+func TestRecognizedLine(t *testing.T) {
+	never := recognizedLine(recognized(heard("Jirisan Breeze", "Akimbo")))
+	if !strings.Contains(never, "never played") {
+		t.Errorf("담아두고 안 들은 곡인데 그 말이 없다: %q", never)
+	}
+	played := recognizedLine(recognized(heard("Blood Bank", "Bon Iver")))
+	if !strings.Contains(played, "played 3 times") {
+		t.Errorf("들은 횟수가 없다: %q", played)
+	}
+	outside := recognizedLine(recognized(heard("존재하지 않는 곡", "Nobody")))
+	if !strings.Contains(outside, "not in Your Library") {
+		t.Errorf("미보유라고 말하지 않는다: %q", outside)
+	}
+}
+
+// 한 번 알아맞히면 섹션이 생기고, 화면이 그리로 옮겨간다.
+func TestRecognitionOpensSection(t *testing.T) {
+	m := New()
+	if hasSection(m, secShazam) {
+		t.Fatal("아직 아무것도 안 들었는데 섹션이 있다")
+	}
+
+	next, _ := m.Update(shazamMsg{res: heard("Holocene", "Bon Iver")})
+	m = next.(Model)
+
+	if !hasSection(m, secShazam) {
+		t.Fatal("알아맞혔는데 섹션이 없다")
+	}
+	if m.sections[m.sectionIdx].kind != secShazam {
+		t.Error("결과를 보여주지 않는다 — 다른 섹션에 서 있다")
+	}
+	rows := m.rows()
+	if len(rows) != 1 || rows[0].catalog == nil || rows[0].catalog.Title != "Holocene" {
+		t.Fatalf("목록에 인식 결과가 없다: %+v", rows)
+	}
+
+	// 새것이 위다. 방금 무엇이 흐르는가를 묻는 일이므로.
+	next, _ = m.Update(shazamMsg{res: heard("Blood Bank", "Bon Iver")})
+	m = next.(Model)
+	if got := m.rows()[0].catalog.Title; got != "Blood Bank" {
+		t.Errorf("마지막 답이 맨 위가 아니다: %q", got)
+	}
+}
+
+// 못 알아들은 것은 고장이 아니다. 빨간 줄로 말하면 사용자가 고장난 줄 안다.
+func TestNoMatchIsNotAnError(t *testing.T) {
+	_, cmd := New().Update(shazamMsg{err: shazam.ErrNoMatch})
+	said, ok := runCmd(cmd).(app.SayMsg)
+	if !ok {
+		t.Fatalf("아무 말도 안 했다: %T", runCmd(cmd))
+	}
+	if said.Err {
+		t.Error("못 알아들은 것을 실패로 말한다")
+	}
+}
+
+// 마이크 권한이 없는 것은 사용자가 고칠 수 있는 실패다. 그렇게 말해야 한다.
+func TestMicrophoneDeniedIsAnError(t *testing.T) {
+	_, cmd := New().Update(shazamMsg{err: shazam.ErrMicDenied})
+	said, ok := runCmd(cmd).(app.SayMsg)
+	if !ok || !said.Err {
+		t.Errorf("권한 실패를 실패로 말하지 않는다: %+v", said)
+	}
+}
+
+// 듣는 동안 또 부르면 마이크를 두 번 쥔다.
+func TestSecondListenIsRefused(t *testing.T) {
+	m := New()
+	next, _ := m.Update(shazamStartedMsg{})
+	m = next.(Model)
+	if _, ok := runCmd(m.shazamCmd("")).(errMsg); !ok {
+		t.Error("듣는 중에 또 듣기 시작한다")
+	}
+}
+
+func hasSection(m Model, k sectionKind) bool {
+	for _, s := range m.sections {
+		if s.kind == k {
+			return true
+		}
+	}
+	return false
+}
+
+// runCmd — Cmd 하나를 실행해 메시지를 꺼낸다. Batch 면 첫 것을 본다.
+func runCmd(cmd tea.Cmd) tea.Msg {
+	if cmd == nil {
+		return nil
+	}
+	msg := cmd()
+	if batch, ok := msg.(tea.BatchMsg); ok && len(batch) > 0 {
+		return batch[0]()
+	}
+	return msg
+}

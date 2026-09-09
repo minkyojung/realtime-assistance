@@ -37,11 +37,13 @@ func (m Model) Commands() []app.Command {
 			Run: m.reloadCmd},
 		{Name: "/login", Help: "connect your Apple Music account (opens a browser)",
 			Run: m.loginCmd},
+		{Name: "/shazam", Help: "listen for a few seconds and name what is playing",
+			Run: m.shazamCmd},
 	}...), playlists...)
 }
 
 // 액션 명령의 이름. 섹션 이름이 여기에 겹치지 않게 하는 데 쓴다.
-var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login"}
+var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam"}
 
 // jumpCommands — 섹션마다 곧장 가는 명령을 하나씩 낸다.
 //
@@ -58,6 +60,11 @@ func (m Model) jumpCommands() (fixed, playlists []app.Command) {
 	}
 
 	for _, s := range m.sections {
+		// 인식 섹션에는 따로 가는 명령을 내지 않는다. `/shazam` 이 이미
+		// 액션이고, 그 액션이 끝나면 알아서 그 섹션으로 데려간다.
+		if s.kind == secShazam {
+			continue
+		}
 		name := sectionCommand(s.kind)
 		if name == "" {
 			// 플레이리스트. 이름을 만들 수 없으면(기호뿐인 이름 등)

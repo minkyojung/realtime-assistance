@@ -104,6 +104,11 @@ type Model struct {
 	catBusy  bool
 	catLogin bool
 
+	// 인식 — 방 안에서 들린 곡. 한 번도 안 알아맞혔으면 섹션 자체가 없다.
+	// shazam.go
+	shzHits []api.CatalogTrack
+	shzBusy bool
+
 	// 앨범 커버. 곡이 바뀔 때만 다시 읽는다 — artwork.go
 	art    image.Image
 	artPID string
@@ -244,6 +249,9 @@ func (m Model) searching() bool { return strings.TrimSpace(m.filter) != "" }
 
 func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 	if mm, cmd, handled := m.applyCatalog(msg); handled {
+		return mm, cmd
+	}
+	if mm, cmd, handled := m.applyShazam(msg); handled {
 		return mm, cmd
 	}
 
