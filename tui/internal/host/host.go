@@ -121,14 +121,11 @@ func (m Model) overlaying() bool { return m.showHelp || m.commanding() }
 
 // pickCount — ↑↓ 로 고를 것이 지금 화면에 몇 개 있는가.
 //
-// 홈의 앱 목록과 팔레트는 같은 조작을 쓴다(↑↓ 로 고르고 enter). 홈에서
-// `/` 를 치면 팔레트가 앞에 서므로 오버레이를 먼저 본다.
+// 팔레트와 도움말뿐이다. 홈에는 고를 목록이 없다(home.go) — 앱이 하나여서
+// 목록을 걷어냈고, 그래서 홈의 ↑↓ 는 아무 데도 가지 않는다.
 func (m Model) pickCount() int {
 	if m.overlaying() {
 		return m.overlayCount()
-	}
-	if m.home {
-		return len(m.apps)
 	}
 	return 0
 }
@@ -381,10 +378,10 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		}
 		if !m.home {
 			// 앱에서 물러나면 홈이다. 앱은 계속 살아 있고 화면만 떠난다.
-			// 나온 앱에 커서를 둔다 — 다시 enter 면 방금 있던 곳이다.
+			// current 는 그대로 두므로 다시 enter 면 방금 있던 곳이다.
 			blur, blurCmd := m.app().Update(app.BlurMsg{})
 			m.apps[m.current] = blur
-			m.home, m.pick = true, m.current
+			m.home = true
 			return true, m, blurCmd
 		}
 		return true, m, tea.Quit
@@ -415,13 +412,13 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 	if m.commanding() {
 		return m.runCommand()
 	}
-	// 홈에서 빈 입력에 enter 면 고른 앱으로 들어간다. 친 것이 있으면
-	// 그것이 먼저다 — 홈에서도 문장을 던질 수 있어야 한다.
+	// 홈에서 빈 입력에 enter 면 앱으로 들어간다. 친 것이 있으면 그것이
+	// 먼저다 — 홈에서도 문장을 던질 수 있어야 한다.
+	//
+	// 갈 곳은 마지막으로 본 앱이다. 앱이 하나면 언제나 그 앱이고,
+	// 여럿이던 시절에도 esc 로 나온 그 자리로 돌아가는 것이 맞았다.
 	if m.home && strings.TrimSpace(m.input.Value()) == "" {
-		if m.pick < len(m.apps) {
-			return m, switchTo(m.pick)("")
-		}
-		return m, nil
+		return m, switchTo(m.current)("")
 	}
 	// 검색 중에는 고른 것을 앱이 처리한다. 프롬프트일 때만 요청으로 보낸다.
 	if m.mode == modePrompt {
@@ -484,12 +481,9 @@ func (m Model) View() tea.View {
 
 // 상태줄 — 지금 앱이 말하는 것과, 배경 앱들이 말하는 것을 모은다.
 func (m Model) viewStatus(w int) string {
-	// 왼쪽은 언제나 "앞에 나온 것"이다. 홈에서는 고른 줄이 그것이므로,
-	// ↑↓ 로 훑기만 해도 그 앱이 지금 뭘 하는지 미리 보인다.
+	// 왼쪽은 언제나 "앞에 나온 것"이다. 홈에서도 마찬가지다 — 화면은
+	// 떠나 있어도 그 앱은 살아서 재생 중이고, 상태줄이 그것을 계속 말한다.
 	front := m.current
-	if m.home && m.pick < len(m.apps) {
-		front = m.pick
-	}
 	left := m.apps[front].Status()
 	if m.notice != "" {
 		left = style.BrandSoft.Render("· ") + style.Dim.Render(style.Truncate(m.notice, w-2))

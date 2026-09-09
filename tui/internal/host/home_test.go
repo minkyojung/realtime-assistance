@@ -53,21 +53,26 @@ func deliverBatch(t *testing.T, m tea.Model, cmd tea.Cmd) tea.Model {
 	return m
 }
 
-// 홈은 여기 뭐가 있는지와, 그중 무엇이 막혔는지를 말한다.
-func TestHomeListsAppsAndGates(t *testing.T) {
-	out := homeHost().View().Content
+// 홈은 셋을 말한다 — 이것이 무엇인가, 어떻게 쓰는가, 지금 무엇이 막혔는가.
+func TestHomeShowsNameTipsAndGate(t *testing.T) {
+	hm := New(stubApp{name: "alpha", ready: errors.New("sign in required")})
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 28})
+	out := m.View().Content
 
 	for _, want := range []string{
-		"/alpha", "alpha does things", // 되는 앱은 소개를 보여주고
-		"/beta", "sign in required", // 막힌 앱은 사유를 보여준다
+		wordmark[0],         // 이름
+		"alpha does things", // 못 하는 것
+		"ctrl+o",            // 조작법
+		"sign in required",  // 막힌 사유
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("홈에 %q 가 없다", want)
 		}
 	}
-	// 막힌 앱은 소개 대신 사유를 쓴다. 둘을 같이 보여주지 않는다.
-	if strings.Contains(out, "beta does things") {
-		t.Error("막힌 앱인데 소개를 그대로 보여준다")
+	// 앱 목록은 걷어냈다. 고를 것이 하나뿐인 목록은 목록이 아니다.
+	if strings.Contains(out, "/alpha") {
+		t.Error("앱 목록이 아직 홈에 남아 있다")
 	}
 }
 
@@ -82,27 +87,34 @@ func TestTypingDoesNotLeaveHome(t *testing.T) {
 	if got := hm.input.Value(); got != "a" {
 		t.Errorf("친 글자가 입력창에 없다: %q", got)
 	}
-	if !strings.Contains(m.View().Content, "/alpha") {
-		t.Error("글자를 쳤다고 홈 목록이 사라졌다")
+	if !strings.Contains(m.View().Content, wordmark[0]) {
+		t.Error("글자를 쳤다고 홈이 걷혔다")
 	}
 }
 
-// ↑↓ 로 고르고 enter 로 들어간다. 팔레트와 같은 조작이다.
-func TestEnterEntersThePickedApp(t *testing.T) {
-	m, _ := homeHost().Update(tea.KeyPressMsg{Code: tea.KeyDown})
-	if got := state(t, m).pick; got != 1 {
-		t.Fatalf("↓ 를 눌렀는데 고른 줄이 %d 다", got)
+// 홈에서 enter 면 앱으로 들어간다. 고를 목록이 없으므로 갈 곳은 하나다.
+func TestEnterOpensTheApp(t *testing.T) {
+	m, cmd := homeHost().Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = deliverBatch(t, m, cmd)
+
+	if hm := state(t, m); hm.home {
+		t.Fatal("enter 를 눌렀는데 홈에 남아 있다")
+	}
+}
+
+// 그 하나는 "마지막으로 본 앱"이다. esc 로 나온 자리로 돌아가야 한다.
+func TestEnterReturnsToWhereYouLeft(t *testing.T) {
+	m, _ := homeHost().Update(switchAppMsg{index: 1})
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	if !state(t, m).home {
+		t.Fatal("esc 를 눌렀는데 홈이 아니다")
 	}
 
 	m, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = deliverBatch(t, m, cmd)
 
-	hm := state(t, m)
-	if hm.home {
-		t.Fatal("enter 를 눌렀는데 홈에 남아 있다")
-	}
-	if hm.current != 1 {
-		t.Errorf("고른 앱이 아니라 %d번 앱에 들어갔다", hm.current)
+	if got := state(t, m).current; got != 1 {
+		t.Errorf("나온 자리가 아니라 %d번 앱으로 들어갔다", got)
 	}
 }
 
@@ -224,18 +236,22 @@ func TestHomeKeepsBodyHeight(t *testing.T) {
 	}
 }
 
-// 세로가 모자라면 안경부터 접는다. 앱 목록이 안경보다 먼저다.
-func TestHomeFoldsGlassesWhenShort(t *testing.T) {
-	hm := New(stubApp{name: "alpha"}, stubApp{name: "beta"})
+// 세로가 모자라면 이름부터 접는다. 조작법이 이름보다 먼저다 —
+// 무엇인지는 몰라도 되지만 어떻게 쓰는지는 알아야 한다.
+func TestHomeFoldsWordmarkWhenShort(t *testing.T) {
+	hm := New(stubApp{name: "alpha"})
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 12})
 
 	out := m.View().Content
-	if strings.Contains(out, sunglasses[1]) {
-		t.Error("자리가 없는데 안경을 그렸다")
+	if strings.Contains(out, wordmark[0]) {
+		t.Error("자리가 없는데 이름을 크게 그렸다")
 	}
-	if !strings.Contains(out, "/alpha") || !strings.Contains(out, "/beta") {
-		t.Error("안경을 접었으면 앱 목록은 남아야 한다")
+	if !strings.Contains(out, "APPLE MUSIC") {
+		t.Error("접었으면 이름은 글자로라도 남아야 한다")
+	}
+	if !strings.Contains(out, "ctrl+o") {
+		t.Error("접었으면 조작법은 남아야 한다")
 	}
 }
 

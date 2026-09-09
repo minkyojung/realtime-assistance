@@ -3,22 +3,22 @@ package host
 import (
 	"strings"
 
-	"amcli/tui/internal/app"
 	"amcli/tui/internal/style"
-	"charm.land/lipgloss/v2"
 )
 
 // 홈 — 켜면 여기서 시작하고, esc 로 여기로 돌아온다.
 //
 // 커튼이 아니라 화면이다. 글자를 쳐도 걷히지 않는다. 걷히는 것은 목적지를
-// 골랐을 때뿐이고, 고르는 길은 셋이다 — 목록에서 enter, `/앱이름`,
-// 그리고 문장을 쳐서 라우터가 앱을 지목했을 때.
+// 골랐을 때뿐이고, 길은 셋이다 — enter, `/music`, 그리고 문장을 쳐서
+// 라우터가 앱을 지목했을 때.
 //
-// 그래서 이 목록은 진짜 목록이다. ↑↓ 로 고르고 enter 로 들어간다.
-// 팔레트와 같은 조작이므로 새로 배울 것이 없다.
+// 여기서 말하는 것은 셋이다. **이것이 무엇인가**, **어떻게 조작하는가**,
+// 그리고 **지금 무엇이 막혀 있는가**. 환영 인사도 버전도 없다.
 //
-// 여기서 말하는 것은 둘뿐이다. **여기 뭐가 들어 있는가**와
-// **그중 무엇이 지금 안 되는가**. 환영 인사도 버전도 팁도 없다.
+// 한때 여기에 앱 목록이 있었다. 앱이 하나가 되면서 한 줄짜리 목록이
+// 남았는데, 고를 것이 하나뿐인 목록은 목록이 아니라 그냥 버튼이다.
+// 그래서 목록을 걷어내고 그 자리에 이름과 조작법을 뒀다. 앱이 다시
+// 늘어나면 목록도 돌아와야 한다 — `git show 4d3828c:tui/internal/host/home.go`.
 //
 // 본문 자리를 통째로 쓴다. 팔레트는 보고 있던 목록을 가리면 맥락을
 // 잃지만(overlay.go), 홈에는 가릴 맥락이 없다 — 홈이 맥락이다.
@@ -26,65 +26,104 @@ import (
 // 호스트의 두 줄은 그대로 산다. 계약이 "그 위만 앱의 것"이므로
 // 홈도 그 위에만 있어야 한다.
 
-// 선글라스. 검은 안경을 검은 배경에 그릴 수 없어 실루엣을 반전시킨다.
+// 이름표. 로고가 아니라 이름을 쓰는 이유는, 어깨너머로 보는 사람에게
+// 이것이 무엇인지 한 번에 읽혀야 하기 때문이다.
+//
+// 두 줄로 쌓는다. 한 줄로 늘이면 68칸이 필요해서 80칸 터미널에서 아슬아슬한데,
+// 쌓으면 38칸이라 어디서든 들어간다. 두 단어짜리 이름에는 그편이 자연스럽기도 하다.
 //
 // 브랜드 색은 쓰지 않는다 — 빨강은 "소리가 나고 있다"는 뜻으로만 쓴다(theme.go).
-// 로고에 쓰면 그 규칙이 첫 화면부터 깨진다.
-var sunglasses = []string{
-	"▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄",
-	"██████████▄▄██████████",
-	"▝▀██████▀▘  ▝▀██████▀▘",
+// 이름에 쓰면 그 규칙이 첫 화면부터 깨진다. 대신 뒷 단어를 한 톤 낮춰
+// 무게중심을 앞에 둔다.
+var wordmark = []string{
+	" ████   █████   █████   ██      ██████",
+	"██  ██  ██  ██  ██  ██  ██      ██",
+	"██████  █████   █████   ██      █████",
+	"██  ██  ██      ██      ██      ██",
+	"██  ██  ██      ██      ██████  ██████",
+	"",
+	"██   ██  ██  ██   █████  ██   █████",
+	"███ ███  ██  ██  ██      ██  ██",
+	"██ █ ██  ██  ██   ████   ██  ██",
+	"██   ██  ██  ██      ██  ██  ██",
+	"██   ██   ████   █████   ██   █████",
 }
 
-// 이름을 적을 칸. 앱 이름이 길면 그만큼 밀린다.
-const homeNameCol = 12
+// 앞 단어가 끝나는 줄. 여기까지는 밝게, 그 아래는 한 톤 낮춰 그린다.
+const wordmarkSplit = 5
+
+// 가장 긴 줄. 이만큼도 못 그리는 폭이면 이름을 글자로 적는다.
+const wordmarkWidth = 38
+
+// 조작법 — 화면에 아직 안 적혀 있는 것만 적는다.
+//
+// `/` 와 `?` 는 입력창 플레이스홀더가 이미 말하고 있으므로 넣지 않는다.
+// 같은 것을 두 번 말하면 둘 다 안 읽힌다.
+var homeTips = []struct{ key, what string }{
+	{"type", `a sentence — "something quiet, nothing i've skipped"`},
+	{"enter", "open the library"},
+	{"ctrl+o", "what the last request actually did"},
+}
+
+// 조작키를 적는 칸. 설명이 세로로 맞으면 눈이 한 번만 움직인다.
+const homeKeyCol = 10
 
 // viewHome 은 본문 자리를 정확히 h 줄로 채운다.
 // 앱으로 들어갈 때 화면이 튀지 않아야 한다.
 func (m Model) viewHome(w, h int) string {
-	rows := make([]string, 0, h)
+	// 아래쪽을 먼저 정한다. 조작법과 관문은 자리가 아무리 없어도 남는다 —
+	// 이것이 무엇인지는 몰라도 되지만, 어떻게 쓰고 무엇이 막혔는지는 알아야 한다.
+	var tail []string
+	for _, t := range homeTips {
+		tail = append(tail, "  "+style.BrandSoft.Render(t.key)+
+			strings.Repeat(" ", style.Max(homeKeyCol-len(t.key), 1))+
+			style.Faint.Render(style.Truncate(t.what, style.Max(w-2-homeKeyCol, 0))))
+	}
+	// 관문이 막혀 있으면 사유를 붙인다. 조작법보다 뒤인 이유는 막혀 있어도
+	// 조작법은 그대로이기 때문이다.
+	//
+	// 사유는 그릴 때마다 Ready() 를 읽는다. 확정 시점이 앱마다 달라서다 —
+	// 음악은 첫 폴링이 와야 안다. 그래서 멀쩡해 보이다가 잠시 뒤 경고가
+	// 붙을 수 있다. 확인 중임을 알리는 스피너를 도는 것보다 그편이 조용하다.
+	if err := m.app().Ready(); err != nil {
+		// 경고는 "! " 다. 앱 본문이 이미 그렇게 그리므로(musicapp/player.go)
+		// 여기서 새 기호를 들이면 화면에 경고가 두 종류가 된다.
+		tail = append(tail, "", "  "+style.Warn.Render("! ")+
+			style.Dim.Render(style.Truncate(err.Error(), style.Max(w-4, 0))))
+	}
 
-	// 세로가 모자라면 안경부터 접는다. 앱 목록이 안경보다 먼저다.
-	if h >= len(m.apps)+len(sunglasses)+3 {
-		rows = append(rows, "")
-		for _, g := range sunglasses {
-			rows = append(rows, "  "+style.Body.Render(g))
+	// 남은 자리에 이름을 넣는다. 큰 것 → 글자 → 없음 순으로 물러선다.
+	title := "  " + style.Title.Render("APPLE MUSIC")
+	tagline := "  " + style.Faint.Render(style.Truncate(m.app().Tagline(), style.Max(w-2, 0)))
+
+	big := []string{""}
+	for i, line := range wordmark {
+		if line == "" {
+			big = append(big, "") // 두 단어 사이. 빈 줄에 색을 입히지 않는다
+			continue
 		}
-		rows = append(rows, "")
+		st := style.Body
+		if i > wordmarkSplit {
+			st = style.Dim
+		}
+		big = append(big, "  "+st.Render(line))
 	}
-	for i, a := range m.apps {
-		rows = append(rows, homeRow(a, i == m.pick, w))
+	big = append(big, "", tagline, "")
+	small := []string{"", title, "", tagline, ""}
+
+	var head []string
+	switch room := h - len(tail); {
+	case w >= wordmarkWidth+2 && room >= len(big):
+		head = big
+	case room >= len(small):
+		head = small
+	case room >= 2:
+		head = []string{title, ""}
 	}
+
+	rows := append(head, tail...)
 	for len(rows) < h {
 		rows = append(rows, "")
 	}
 	return strings.Join(rows[:h], "\n")
-}
-
-// homeRow — 앱 하나를 한 줄로. 고른 줄에는 팔레트와 같은 레일이 선다.
-//
-// 관문이 막혀 있으면 소개 대신 막힌 사유를 쓴다. 못 하는 것이 먼저다.
-//
-// 사유는 그릴 때마다 Ready() 를 읽는다. 확정되는 시점이 앱마다 다르기
-// 때문이다 — 슬랙은 토큰이 없으면 즉시 알지만, 음악은 첫 폴링이 와야 안다.
-// 그래서 멀쩡해 보이다가 잠시 뒤 경고가 붙을 수 있다. 확인 중임을 알리는
-// 스피너를 앱마다 돌리는 것보다, 그 깜빡임을 받아들이는 쪽이 조용하다.
-func homeRow(a app.App, picked bool, w int) string {
-	rail := "  "
-	if picked {
-		rail = style.Brand.Render("▌ ")
-	}
-	name := "/" + a.Name()
-	col := style.Max(homeNameCol, lipgloss.Width(name)+1)
-	left := rail + style.Body.Render(name) +
-		strings.Repeat(" ", col-lipgloss.Width(name))
-	rest := style.Max(w-2-col, 0)
-
-	if err := a.Ready(); err != nil {
-		// 경고는 "! " 다. 앱 본문이 이미 그렇게 그리므로(musicapp/player.go)
-		// 여기서 새 기호를 들이면 화면에 경고가 두 종류가 된다.
-		return left + style.Warn.Render("! ") +
-			style.Dim.Render(style.Truncate(err.Error(), style.Max(rest-2, 0)))
-	}
-	return left + style.Faint.Render(style.Truncate(a.Tagline(), rest))
 }
