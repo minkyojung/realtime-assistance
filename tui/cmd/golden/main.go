@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"amcli/tui/internal/ui"
+	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -23,7 +23,7 @@ func main() {
 		{"help", "?"},
 		{"prompt", "something quiet"},
 	} {
-		var m tea.Model = ui.New()
+		var m tea.Model = musicapp.New()
 		m, _ = m.Update(tea.WindowSizeMsg{Width: 100, Height: 28})
 		for _, r := range c.keys {
 			if r == '\x06' {
@@ -34,6 +34,6 @@ func main() {
 		}
 		fmt.Fprintf(&b, "=== %s ===\n%s\n", c.name, m.View().Content)
 	}
-	os.WriteFile("internal/ui/testdata/golden.txt", []byte(b.String()), 0o644)
+	os.WriteFile("internal/musicapp/testdata/golden.txt", []byte(b.String()), 0o644)
 	fmt.Println("wrote", len(b.String()), "bytes")
 }

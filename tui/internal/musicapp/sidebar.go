@@ -1,4 +1,4 @@
-package ui
+package musicapp
 
 import (
 	"amcli/tui/internal/style"

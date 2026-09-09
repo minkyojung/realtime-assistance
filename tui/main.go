@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"os"
 
-	"amcli/tui/internal/ui"
+	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
 
 func main() {
-	if _, err := tea.NewProgram(ui.New()).Run(); err != nil {
+	if _, err := tea.NewProgram(musicapp.New()).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "실행 실패:", err)
 		os.Exit(1)
 	}

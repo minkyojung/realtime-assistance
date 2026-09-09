@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"amcli/tui/internal/ui"
+	"amcli/tui/internal/musicapp"
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -16,9 +16,9 @@ func main() {
 		prompt = strings.Join(os.Args[1:], " ")
 	}
 
-	var m tea.Model = ui.New()
+	var m tea.Model = musicapp.New()
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 100, Height: 28})
-	m, _ = m.Update(ui.ProbeStatus())
+	m, _ = m.Update(musicapp.ProbeStatus())
 
 	for _, r := range prompt {
 		m, _ = m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
@@ -29,7 +29,7 @@ func main() {
 	fmt.Println(m.View().Content)
 
 	// Batch 안의 큐 생성 Cmd 를 찾아 실행한다.
-	msg := ui.DrainForQueue(cmd)
+	msg := musicapp.DrainForQueue(cmd)
 	if msg == nil {
 		fmt.Println("큐 생성 Cmd 를 찾지 못했습니다")
 		return
