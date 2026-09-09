@@ -15,12 +15,10 @@ import (
 func TestCursorSitsAtInput(t *testing.T) {
 	for _, c := range []struct {
 		name string
-		home bool
 		h    int
 		text string
 	}{
 		{name: "app", h: 32, text: "something quiet"},
-		{name: "home", home: true, h: 32, text: "something quiet"},
 		// 본문이 받은 높이를 다 쓰지 않는 경우 (musicapp 의 maxListRows).
 		{name: "tall", h: 60, text: "something quiet"},
 		{name: "short", h: 20, text: "something quiet"},
@@ -30,9 +28,7 @@ func TestCursorSitsAtInput(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			hm := New(musicapp.New())
-			if !c.home {
-				hm.LeaveHome()
-			}
+			hm.LeaveHome()
 			var m tea.Model = &hm
 			m, _ = m.Update(tea.WindowSizeMsg{Width: 100, Height: c.h})
 			for _, r := range c.text {

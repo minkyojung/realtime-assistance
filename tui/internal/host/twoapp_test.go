@@ -102,7 +102,6 @@ func TestDeliverAsksEveryNamedApp(t *testing.T) {
 	// 두 앱의 답을 모두 흘려보낸다. 순서는 보장하지 않으므로 임의로 준다.
 	m, _ = m.Update(app.SayMsg{App: "beta", Text: "베타가 했습니다"})
 	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "알파가 했습니다"})
-	m, _ = m.Update(tea.KeyPressMsg{Code: 'j', Mod: tea.ModCtrl})
 
 	out := plain(m.View().Content)
 	for _, want := range []string{"알파가 했습니다", "베타가 했습니다", "alpha", "beta"} {
@@ -370,7 +369,6 @@ func TestNoSuchCommandGoesToTheLog(t *testing.T) {
 // 긴 답은 잘리지 않고 접힌다. 답이 잘리면 무슨 말인지 모른다.
 func TestLongAnswerWraps(t *testing.T) {
 	m, _ := twoAppHost()
-	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	long := "최근에 거의 안 들은 조용한 트랙을 중심으로 25분에 맞췄어요. " +
 		"담아두고 한 번도 재생하지 않은 곡을 앞에 두고, 같은 아티스트가 " +
 		"연달아 나오지 않게 사이를 벌렸습니다."
@@ -409,7 +407,6 @@ func TestLongAnswerWraps(t *testing.T) {
 // 바탕색까지 꺼서 두세 칸 만에 색이 사라진다. 실제로 그렇게 났었다.
 func TestOnlyMyWordsAreFilled(t *testing.T) {
 	m, _ := twoAppHost()
-	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	long := "조용한 거 25분치로 골라줘, 담아두고 한 번도 안 들은 곡 위주로 " +
 		"부탁하고 같은 아티스트가 연달아 나오지 않게 사이도 좀 벌려줘"
 	m = typeText(m, long)
@@ -482,7 +479,6 @@ func paintedWidth(l string) (painted, total int) {
 // 밑줄로 보인다. 근거는 답의 일부이므로 답에 붙인다.
 func TestLogBandBreathes(t *testing.T) {
 	m, _ := twoAppHost()
-	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	m = typeText(m, "hi")
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m, _ = m.Update(app.SayMsg{App: "alpha", Text: "골랐어요", Detail: []string{"195 → 6"}})
@@ -524,7 +520,6 @@ func TestLogBandBreathes(t *testing.T) {
 // 한 번 튄다. 7초를 기다린 끝에 튀는 것은 그 자체로 실패로 보인다.
 func TestSpinnerSitsWhereAnswerWill(t *testing.T) {
 	m, _ := twoAppHost()
-	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	m = typeText(m, "hi")
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 
@@ -554,7 +549,6 @@ func TestSpinnerSitsWhereAnswerWill(t *testing.T) {
 // 내 말은 화면 왼쪽 끝에 딱 붙지 않는다. 바탕색 덩어리가 벽에 눌려 보인다.
 func TestMyWordsHaveLeftPadding(t *testing.T) {
 	m, _ := twoAppHost()
-	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	m = typeText(m, "hi")
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 

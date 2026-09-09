@@ -26,6 +26,15 @@ import (
 // 테두리를 lipgloss 에 맡기지 않고 직접 긋는다. 위 테두리에 글자를 얹는
 // 방법이 없어서다.
 
+// 테두리 색. 이름·묶음 제목과 같은 브랜드 색이다 — 이 상자를 이루는 것이
+// 전부 한 색이면 상자가 하나의 물건으로 읽힌다.
+//
+// 팔레트의 규칙("빨강은 소리가 나고 있다는 뜻으로만")에서 이 상자만 예외다.
+// 여기는 첫 화면이고, 아직 아무 소리도 안 나는 자리라 빨강이 무엇을
+// 뜻하는지 배우기 전이다. 너무 세면 style.ColBrandDeep 으로 한 단계
+// 낮춘다 — 입력창 테두리가 쓰는 톤이다(host.go inputBox).
+var homeBoxLine = style.Brand
+
 // 왼쪽 칸 — 마크와 그 아래 여백. 마크(14칸)보다 넉넉해야 오른쪽 칸이
 // 마크에 붙지 않는다.
 const homeBoxLeftCol = 22
@@ -100,11 +109,11 @@ func (m Model) homeBoxRows(w, h int) []string {
 	out := make([]string, 0, h)
 	out = append(out, homeBoxTop(inner+2*homeBoxSidePad))
 	for _, l := range lines {
-		out = append(out, style.RuleStyle.Render("│")+side+
+		out = append(out, homeBoxLine.Render("│")+side+
 			l+strings.Repeat(" ", style.Max(inner-lipgloss.Width(l), 0))+
-			side+style.RuleStyle.Render("│"))
+			side+homeBoxLine.Render("│"))
 	}
-	return append(out, style.RuleStyle.Render(
+	return append(out, homeBoxLine.Render(
 		"╰"+strings.Repeat("─", inner+2*homeBoxSidePad)+"╯"))
 }
 
@@ -115,11 +124,11 @@ func homeBoxTop(width int) string {
 	// ╭ 과 ╮, 제목 양옆의 "─ " 와 " ─" 로 여섯 칸이 이미 나간다.
 	rule := width - lipgloss.Width(title) - 4
 	if rule < 1 {
-		return style.RuleStyle.Render("╭" + strings.Repeat("─", width) + "╮")
+		return homeBoxLine.Render("╭" + strings.Repeat("─", width) + "╮")
 	}
-	return style.RuleStyle.Render("╭"+strings.Repeat("─", rule)+"─ ") +
-		style.Dim.Render(title) +
-		style.RuleStyle.Render(" ─╮")
+	return homeBoxLine.Render("╭"+strings.Repeat("─", rule)+"─ ") +
+		style.Brand.Render(title) +
+		homeBoxLine.Render(" ─╮")
 }
 
 // homeBoxBody 는 안쪽을 정확히 rows 줄로 채운다.
@@ -140,7 +149,7 @@ func homeBoxBody(facts []app.Fact, inner, rows int) []string {
 				out = append(out, "")
 			}
 			group = f.Group
-			out = append(out, homeBoxIndentTo(homeBoxLeftCol)+style.Body.Render(f.Group))
+			out = append(out, homeBoxIndentTo(homeBoxLeftCol)+style.Brand.Render(f.Group))
 		}
 		out = append(out, homeBoxFactLine(f, inner))
 	}
@@ -152,7 +161,7 @@ func homeBoxBody(facts []app.Fact, inner, rows int) []string {
 	}
 	for i, r := range markRows {
 		row := i + homeBoxPad // 위 여백만큼 내려서 선다
-		out[row] = style.Brand.Render(r) +
+		out[row] = r +
 			strings.Repeat(" ", style.Max(homeBoxLeftCol-markWidth, 1)) +
 			strings.TrimPrefix(out[row], homeBoxIndentTo(homeBoxLeftCol))
 	}

@@ -80,13 +80,18 @@ func borderLine(view string) string {
 	return ""
 }
 
-// 홈에는 거를 목록이 없다. 조용히 무시하면 고장으로 보인다.
-func TestShiftTabOnHomeSaysWhy(t *testing.T) {
+// 모드는 앱 안에서만 뜻이 있다. 홈은 그 키를 삼킨다.
+func TestShiftTabOnHomeDoesNothing(t *testing.T) {
 	hm := New(musicapp.New())
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
+	before := m.View().Content
+
 	m, _ = m.Update(shiftTab)
-	if !strings.Contains(m.View().Content, "Modes work inside the app") {
-		t.Error("홈에서 shift+tab 이 아무 말도 하지 않는다")
+	if state(t, m).mode == modeSearch {
+		t.Error("홈인데 검색 모드로 들어갔다")
+	}
+	if m.View().Content != before {
+		t.Error("홈에서 shift+tab 에 화면이 달라졌다")
 	}
 }

@@ -84,7 +84,7 @@ func (m Model) Commands() []app.Command {
 }
 
 // 액션 명령의 이름. 섹션 이름이 여기에 겹치지 않게 하는 데 쓴다.
-var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam", "/setup", "/openai"}
+var actionNames = []string{"/save", "/pause", "/clear", "/reload", "/login", "/shazam", "/setup", "/ai"}
 
 // jumpCommands — 섹션마다 곧장 가는 명령을 하나씩 낸다.
 //

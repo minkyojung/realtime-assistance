@@ -1,6 +1,8 @@
 package host
 
 import (
+	"fmt"
+	"image/color"
 	"strings"
 
 	"amcli/tui/internal/style"
@@ -15,7 +17,7 @@ import (
 // 마크는 박스 안에 작게 둔다.
 //
 // **점자로 찍는다.** 한 칸이 2×4 픽셀이라 이름표가 쓰는 반블록(1×2)보다
-// 네 배 곱다. 36×31 픽셀 그림이 18칸 × 8줄에 들어가는데, 같은 그림을
+// 네 배 곱다. 36×39 픽셀 그림이 18칸 × 10줄에 들어가는데, 같은 그림을
 // 반블록으로 찍으면 36칸 × 16줄이라 박스 안에서 마크가 아니라 두 번째
 // 이름표가 된다.
 //
@@ -39,6 +41,14 @@ var markPixels = []string{
 	".............#####################..",
 	".............#############.....###..",
 	".............########..........###..",
+	".............###...............###..",
+	".............###...............###..",
+	".............###...............###..",
+	".............###...............###..",
+	".............###...............###..",
+	".............###...............###..",
+	".............###...............###..",
+	".............###...............###..",
 	".............###...............###..",
 	".............###...............###..",
 	".............###...............###..",
@@ -100,8 +110,54 @@ func renderMark(px []string) []string {
 	return out
 }
 
+// 그라데이션 — 왼쪽 위가 밝고 오른쪽 아래로 갈수록 짙다.
+//
+// 줄마다 한 색이 아니라 칸마다 색을 갈아 끼운다. 세로로만 나누면 열 줄에
+// 열 단계라 층이 가로로 그어지는데, 대각선으로 가면 같은 단계 수로도
+// 경계가 어디에도 서지 않는다.
+//
+// 양 끝은 팔레트에서 가져온다(style/theme.go). 여기서 색을 새로 만들면
+// 화면에 팔레트 밖의 빨강이 하나 더 생긴다.
+func markInk(t float64) color.Color {
+	ar, ag, ab, _ := style.ColBrandSoft.RGBA()
+	br, bg, bb, _ := style.ColBrandDeep.RGBA()
+	// RGBA 는 16비트로 준다. 257 로 나누면 8비트다.
+	mix := func(a, b uint32) uint8 {
+		return uint8((float64(a) + (float64(b)-float64(a))*t) / 257)
+	}
+	return lipgloss.Color(fmt.Sprintf("#%02X%02X%02X",
+		mix(ar, br), mix(ag, bg), mix(ab, bb)))
+}
+
+// paintMark 는 점자 그림에 그라데이션을 입힌다.
+//
+// 빈 칸은 칠하지 않는다. 점자의 빈 칸(U+2800)은 어차피 아무것도 그리지
+// 않으므로, 색을 입히면 화면에는 안 보이면서 escape 만 두 배가 된다.
+func paintMark(rows []string) []string {
+	out := make([]string, len(rows))
+	for y, row := range rows {
+		cells := []rune(row)
+		var b strings.Builder
+		for x, r := range cells {
+			if r == 0x2800 {
+				b.WriteRune(r)
+				continue
+			}
+			// 가로와 세로를 반씩 섞으면 대각선이다.
+			t := 0.0
+			if len(cells) > 1 && len(rows) > 1 {
+				t = (float64(x)/float64(len(cells)-1) +
+					float64(y)/float64(len(rows)-1)) / 2
+			}
+			b.WriteString(lipgloss.NewStyle().Foreground(markInk(t)).Render(string(r)))
+		}
+		out[y] = b.String()
+	}
+	return out
+}
+
 // 마크는 한 번만 찍는다. 그릴 때마다 만들 이유가 없다.
-var markRows = renderMark(markPixels)
+var markRows = paintMark(renderMark(markPixels))
 
 // 마크가 먹는 폭. 점자 한 글자는 세 바이트라 len() 으로는 못 센다.
 var markWidth = lipgloss.Width(markRows[0])

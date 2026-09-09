@@ -395,6 +395,19 @@ func (m Model) forward(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
+	// 홈은 문이 하나뿐인 화면이다. 그 문은 enter 이고, esc 로 나간다.
+	//
+	// 나머지는 전부 삼킨다. 입력창이 안 보이는데(View) 글자를 받아 두면,
+	// 앱에 들어간 순간 친 적 없는 문장이 거기 들어 있다. 모드도 검색도
+	// 홈에서는 가리킬 것이 없다.
+	if m.home {
+		switch msg.String() {
+		case "enter", "esc", "ctrl+c", "?":
+		default:
+			return true, m, nil
+		}
+	}
+
 	switch msg.String() {
 	case "ctrl+c":
 		return true, m, tea.Quit
@@ -551,15 +564,30 @@ func (m Model) View() tea.View {
 		return tea.NewView("")
 	}
 	w := style.ContentWidth(m.w)
+
+	// 홈은 스플래시다. 호스트의 두 줄을 여기서만 접는다.
+	//
+	// 계약은 "칠 곳은 언제나 같은 자리"인데, **홈에는 칠 것이 없다** —
+	// 받는 키는 enter 와 esc 뿐이다(handleKey). 칠 곳을 그려 두면 칠 수
+	// 있다는 뜻이 되고, 쳐 봐야 아무 일도 안 일어나는 입력창은 고장으로
+	// 보인다. 상태줄도 같이 접는다 — 홈에서 말할 것은 관문뿐이고 그것은
+	// 본문이 가운데에 이미 말한다(home.go).
+	//
+	// 커서도 보고하지 않는다. 그릴 입력창이 없는데 좌표를 넘기면 터미널이
+	// 엉뚱한 자리에서 깜빡인다.
+	if m.home {
+		v := tea.NewView(lipgloss.NewStyle().Padding(framePad, framePad).
+			Width(m.w).Render(m.viewHome(w, m.h-2*framePad)))
+		v.AltScreen = true
+		v.WindowTitle = windowTitle
+		return v
+	}
+
 	bodyH := m.bodyHeight()
 
 	var b strings.Builder
 	// 본문은 무엇을 하든 그대로다. 팔레트는 입력창 아래에 붙는다.
-	body := m.viewHome(w, bodyH)
-	if !m.home {
-		body = m.app().View(w, bodyH)
-	}
-	b.WriteString(padTo(body, bodyH))
+	b.WriteString(padTo(m.app().View(w, bodyH), bodyH))
 	// 로그는 입력창 바로 위, 팔레트는 바로 아래. 둘 다 본문을 밀어내지 않는다.
 	for _, r := range m.logRows(w) {
 		b.WriteString("\n")
