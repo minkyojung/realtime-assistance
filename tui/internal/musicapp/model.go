@@ -123,6 +123,7 @@ type Model struct {
 
 	// 스크롤 계산에만 쓴다. 그리는 것은 언제나 View 의 인자를 따른다.
 	bodyH int
+	bodyW int
 }
 
 // 컴파일 타임에 계약을 지키는지 확인한다.
@@ -382,7 +383,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		return m, app.SayErr(m.Name(), msg.err)
 
 	case app.ResizeMsg:
-		m.bodyH = msg.Height
+		m.bodyH, m.bodyW = msg.Height, msg.Width
 		m.clampList()
 		return m, nil
 
@@ -666,7 +667,7 @@ func (m *Model) move(d int) {
 }
 
 func (m *Model) clampList() {
-	h := m.listHeight(m.bodyH)
+	h := m.listWindow()
 	n := m.rowCount()
 	m.listIdx = style.Clamp(m.listIdx, 0, style.Max(n-1, 0))
 	// 첫 줄이 머리글이면 그 다음 곡으로 내린다.
@@ -693,6 +694,28 @@ func (m *Model) clampList() {
 // 머리가 몇 줄을 먹었나. 한 줄짜리 재생 바면 1 이다.
 func headHeight(head string) int { return strings.Count(head, "\n") + 1 }
 
+// headView 는 본문 맨 위, 지금 듣고 있는 것을 그린다.
+//
+// 커버를 못 그리는 사정이면(좁거나·낮거나·커버가 없거나·관문) 한 줄짜리
+// 재생 바로 물러난다. artwork.go
+func (m Model) headView(w, h int) string {
+	if head, big := m.viewNowPlaying(w, h); big {
+		return head
+	}
+	return m.viewPlayer(w)
+}
+
+// listWindow 는 목록이 지금 실제로 쓰는 줄 수다.
+//
+// **그리는 쪽과 커서를 옮기는 쪽이 반드시 같은 수를 봐야 한다.** 달랐을 때
+// 커서가 창 밖으로 나가도 목록이 따라오지 않았다 — 커버가 뜨면 창이 절반으로
+// 줄어드는데, 스크롤 계산은 커버가 없던 시절의 큰 창을 그대로 썼기 때문이다.
+//
+// 그래서 View 도 clampList 도 이 한 곳을 통한다.
+func (m Model) listWindow() int {
+	return m.listHeight(m.bodyH - headHeight(m.headView(m.bodyW, m.bodyH)) + 1)
+}
+
 // listHeight — 목록은 남는 자리를 전부 먹는다.
 //
 // 한때 열네 줄 상한이 있었다. 명령 팔레트가 뜰 때 목록이 밀리지 않게 하려던
@@ -714,12 +737,7 @@ func (m Model) listHeight(h int) int {
 
 // View 는 본문을 그린다. 크기는 호스트가 알려주므로 기억하지 않는다.
 func (m Model) View(w, h int) string {
-	head, big := m.viewNowPlaying(w, h)
-	if !big {
-		// 커버를 못 그리는 사정이면(좁거나·낮거나·커버가 없거나·관문)
-		// 한 줄짜리 재생 바로 물러난다. artwork.go
-		head = m.viewPlayer(w)
-	}
+	head := m.headView(w, h)
 	listH := m.listHeight(h - headHeight(head) + 1)
 
 	var b strings.Builder
