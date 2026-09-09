@@ -62,10 +62,6 @@ func cmdPlayPause() tea.Cmd {
 	return func() tea.Msg { music.PlayPause(); return fetchStatus() }
 }
 
-func cmdPlayTrack(persistentID string) tea.Cmd {
-	return func() tea.Msg { music.PlayPersistentID(persistentID); return fetchStatus() }
-}
-
 func cmdNext() tea.Cmd {
 	return func() tea.Msg { music.Next(); return fetchStatus() }
 }
@@ -197,14 +193,6 @@ func cmdWriteQueue(persistentIDs []string, start, positionSec int) tea.Cmd {
 			return queueWrittenMsg{err: err}
 		}
 		return queueWrittenMsg{pid: pid}
-	}
-}
-
-// cmdPlayQueueAt 는 이미 만들어 둔 큐의 n번째 곡부터 튼다.
-func cmdPlayQueueAt(pid string, n int) tea.Cmd {
-	return func() tea.Msg {
-		music.PlayQueueAt(pid, n, 0)
-		return fetchStatus()
 	}
 }
 

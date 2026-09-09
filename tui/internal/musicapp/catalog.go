@@ -206,13 +206,31 @@ func catalogRows(items []api.CatalogTrack) []listRow {
 // Music.app 은 제 라이브러리에 있는 곡만 안다. 그래서 담아야 틀 수 있다.
 func (m Model) playCatalog(ct api.CatalogTrack) (app.App, tea.Cmd) {
 	// 이미 내 것이면 여기가 제일 튼튼하다. 담을 것도 기다릴 것도 없다.
+	//
+	// 그 곡 하나로 큐를 만든다. 곡 객체를 그냥 틀면 한 곡만 나오고 멈춘다 —
+	// 이어서 나올 것을 Music.app 에게 줘야 한다(play.go).
 	if t, ok := localMatch(ct); ok && t.PersistentId != nil {
-		m.nowPlayingID = t.Id
-		m.ensureQueued(t)
-		return m, cmdPlayTrack(*t.PersistentId)
+		return m.playOne(t)
 	}
 	if m.cat == nil || m.cat.UserToken == "" {
 		return m, app.SayErr(m.Name(), errLoginRequired)
+	}
+	// **이미 담은 곡을 또 담지 않는다.**
+	//
+	// 담기는 성공했는데 Music.app 에 아직 안 나타난 상태가 있다(iCloud
+	// 동기화). 그때 우리 라이브러리 스냅샷에도 없으므로 위의 localMatch 가
+	// 실패하고, 누를 때마다 같은 곡을 다시 담게 된다. 화면에는 ✓ 가 떠
+	// 있는데 "담는 중" 이 또 뜨는 것이 그 모습이다.
+	//
+	// 담을 것이 없으니 나타나기를 기다리기만 한다.
+	if inLibrary(ct) {
+		m.adding = &addJob{track: ct}
+		return m, tea.Batch(
+			tea.Tick(addPlayInterval, func(time.Time) tea.Msg {
+				return catalogTryPlayMsg{track: ct, attempt: 1}
+			}),
+			app.Say(m.Name(), fmt.Sprintf("Waiting for %q to show up in Music…", ct.Title)),
+		)
 	}
 	m.adding = &addJob{track: ct}
 	return m, tea.Batch(
@@ -317,8 +335,11 @@ func (m Model) tryPlayAdded(msg catalogTryPlayMsg) (app.App, tea.Cmd, bool) {
 	err := music.PlayByTitleArtist(msg.track.Title, msg.track.ArtistName)
 	if err == nil {
 		m.adding = nil
+		// 라이브러리를 다시 읽는다. 담긴 곡이 우리 스냅샷에는 아직 없어서,
+		// 갱신하지 않으면 다음에 같은 곡을 골랐을 때 또 담으려 든다.
+		//
 		// persistent ID·길이는 다음 폴링이 알려준다. 우리가 찾을 필요가 없다.
-		return m, tea.Batch(fetchStatus,
+		return m, tea.Batch(fetchStatus, cmdDumpLibrary(false),
 			app.Say(m.Name(), fmt.Sprintf("Added %q and started playing", msg.track.Title))), true
 	}
 	// 관문은 재시도 대상이 아니다. 기다린다고 권한이 생기지 않는다.

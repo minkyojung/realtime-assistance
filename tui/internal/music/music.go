@@ -107,6 +107,13 @@ func parseStatus(out string) PlayerState {
 }
 
 // PlayPersistentID 는 곡을 찾아 튼다.
+//
+// **이어 재생되지 않는다.** Music.app 에 곡 객체 하나를 주면 그것만 틀고
+// 멈춘다 — 뒤에 나올 것이 없기 때문이다. 이어 들으려면 담을 것을 줘야 한다
+// (ReplaceQueue + PlayQueueAt).
+//
+// 그래서 재생 경로에서는 쓰지 않는다. 이름만 보면 "곡을 튼다"라서 손이 가는
+// 자리인데, 그 길로 가면 한 곡 뒤에 정적이 생긴다.
 // persistent ID 는 Music.app 재시작에도 유지되는 유일한 식별자다.
 //
 // 라이브러리를 먼저 보고, 없으면 플레이리스트를 뒤진다.

@@ -542,30 +542,9 @@ func (m Model) playSelected() (app.App, tea.Cmd) {
 	if rows[m.listIdx].track == nil {
 		return m, nil
 	}
-	t := *rows[m.listIdx].track
-	// 듣던 곡은 사용자가 다른 것을 골라서 끝난다. 넘긴 것과 뜻이 다르다.
-	m = m.hintEnd(data.EndedPicked)
-
-	// 큐 안의 곡이면 플레이리스트의 그 자리에서 튼다. 곡 하나만 틀면
-	// 끝나는 순간 Music.app 이 큐 밖으로 나가 버린다.
-	if m.queuePID != "" {
-		for i, it := range m.queue {
-			if it.Track.Id == t.Id {
-				m.nowPlayingID, m.positionMs, m.playing = t.Id, 0, true
-				return m, cmdPlayQueueAt(m.queuePID, i+1)
-			}
-		}
-	}
-
-	m.nowPlayingID = t.Id
-	m.positionMs = 0
-	m.playing = true
-	m.ensureQueued(t)
-
-	if t.PersistentId != nil {
-		return m, cmdPlayTrack(*t.PersistentId)
-	}
-	return m, nil
+	// 고른 곡부터 이 목록을 이어서 튼다. 자리에 따라 뜻이 달라지지 않는다 —
+	// 큐를 보고 있든 라이브러리를 보고 있든 같은 일이다(play.go).
+	return m.playFrom(rows, m.listIdx, m.pickLabel())
 }
 
 // removeFromQueue 는 큐에서 곡 하나를 뺀다.
