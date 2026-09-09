@@ -860,8 +860,8 @@ func TestScopeNoteWhenScopeIsActuallyPresent(t *testing.T) {
 	m.msgsErr = apiError{Method: "conversations.history", Code: "missing_scope"}
 
 	m.scopes = []string{"channels:read", "im:history"}
-	if note := m.scopeNote(); !strings.Contains(note, "앱 설정에 넣고") {
-		t.Errorf("없는데 넣으라고 안 한다: %q", note)
+	if note := m.scopeNote(); !strings.Contains(note, "/login") {
+		t.Errorf("없는데 다시 받으라고 안 한다: %q", note)
 	}
 
 	m.scopes = []string{"channels:read", "channels:history"}
@@ -913,5 +913,38 @@ func TestScopesCommandSays(t *testing.T) {
 	}
 	if !strings.Contains(say.Text, "im:history") {
 		t.Errorf("%q", say.Text)
+	}
+}
+
+// 열 수 있는 대화라면 그 안을 읽을 권한도 요청해야 한다.
+//
+// **한 번 여기서 틀렸다.** 앱 설정에만 권한을 넣고 코드는 그대로 두어서,
+// 로그인은 되는데 방이 안 열렸다. 사용자 토큰이 받는 권한은 앱 설정이
+// 아니라 /login 이 보내는 user_scope 로 정해진다.
+func TestRequestedScopesCoverReadingRooms(t *testing.T) {
+	granted := map[string]bool{}
+	for _, s := range userScopes {
+		granted[s] = true
+	}
+	for _, typ := range conversationTypes {
+		scope := historyScopes[typ]
+		if scope == "" {
+			t.Errorf("%s 를 읽을 권한이 안 적혀 있다", typ)
+			continue
+		}
+		if !granted[scope] {
+			t.Errorf("%s 를 열 수 있는데 %s 를 요청하지 않는다", typ, scope)
+		}
+	}
+}
+
+// 같은 권한을 두 번 요청하지 않는다. Slack 이 막지는 않지만 승인 화면이 지저분해진다.
+func TestNoDuplicateScopes(t *testing.T) {
+	seen := map[string]bool{}
+	for _, s := range userScopes {
+		if seen[s] {
+			t.Errorf("%s 가 두 번 있다", s)
+		}
+		seen[s] = true
 	}
 }

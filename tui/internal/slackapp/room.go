@@ -320,13 +320,15 @@ func (m Model) scopeNote() string {
 	if has, known := m.hasScope(scope); known && has {
 		return scope + " 는 있는데도 거절당했습니다 — /scopes 로 가진 권한을 확인하세요"
 	}
-	return scope + " 권한이 없어 못 읽습니다. 앱 설정에 넣고 /logout → /login 하세요"
+	// 이제 로그인할 때 전부 요청한다. 그런데도 없다면 그 권한이 생기기
+	// 전에 받은 토큰이라는 뜻이다. 다시 받으면 된다.
+	return scope + " 권한이 없습니다. /logout 뒤 /login 으로 다시 받으세요"
 }
 
 // 방을 보고 있을 때의 안내 한 줄.
 func (m Model) roomHint() string {
 	if m.msgsErr != nil {
-		return "DM 은 지금도 열립니다 — ← 로 목록에서 @ 로 시작하는 것을 고르세요"
+		return "← 목록으로  ·  /scopes 로 지금 가진 권한을 볼 수 있습니다"
 	}
 	return "친 그대로 보냅니다  ·  ← 목록으로"
 }

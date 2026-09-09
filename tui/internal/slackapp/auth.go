@@ -71,18 +71,21 @@ func redirectURI(port int) string {
 
 // 요청하는 권한.
 //
-// **대화 종류마다 읽기 권한이 따로다**(client.go 의 conversationScopes).
-// 하나라도 빠지면 목록 호출 전체가 missing_scope 로 막힌다. 테스트가
-// 그 둘이 어긋나지 않는지 본다.
+// **여기가 유일한 진실이다.** 사용자 토큰이 받는 권한은 앱 설정 화면의
+// 목록이 아니라 /login 이 보내는 user_scope 로 정해진다. 앱 설정만
+// 고치면 아무 일도 일어나지 않는다 — 한 번 그렇게 헤맸다.
+//
+// 종류마다 권한이 둘씩이다. 목록에 보이는 것(:read)과 안을 읽는
+// 것(:history)이 다르고, 하나라도 빠지면 그 호출 전체가 막힌다.
+// 테스트가 client.go 의 표 둘과 어긋나지 않는지 본다.
 var userScopes = []string{
-	"channels:read", // public_channel
-	"groups:read",   // private_channel
-	"im:read",       // im
-	"mpim:read",     // mpim — 그룹 DM
-	"im:history",    // DM 의 마지막 메시지
-	"chat:write",    // 보내기
-	"dnd:write",     // 방해금지
-	"users:read",    // 보낸 사람 이름
+	"channels:read", "channels:history", // 공개 채널
+	"groups:read", "groups:history", // 비공개 채널
+	"im:read", "im:history", // DM
+	"mpim:read", "mpim:history", // 그룹 DM
+	"chat:write", // 보내기
+	"dnd:write",  // 방해금지
+	"users:read", // 보낸 사람 이름
 }
 
 // 사람이 브라우저에서 앱을 고르고 승인하는 데 걸리는 시간.
