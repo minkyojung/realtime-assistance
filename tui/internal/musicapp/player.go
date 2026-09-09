@@ -127,12 +127,17 @@ func (m Model) Status() string {
 		left += style.Faint.Render("   " + style.Truncate(m.queueTitle, 40))
 	}
 
-	u := m.usage
-	if u.PromptTokens > 0 || u.CompletionTokens > 0 {
-		left += style.Faint.Render(fmt.Sprintf("   ↑%s ↓%s  $%.4f",
-			style.Tokens(u.PromptTokens), style.Tokens(u.CompletionTokens), u.CostUsd))
-	}
 	return left
+}
+
+// Spend 는 이 세션이 쓴 토큰과 돈이다. 상태줄 오른쪽 끝에 붙박이로 앉는다.
+func (m Model) Spend() string {
+	u := m.usage
+	if u.PromptTokens == 0 && u.CompletionTokens == 0 {
+		return ""
+	}
+	return fmt.Sprintf("↑%s ↓%s  $%.4f",
+		style.Tokens(u.PromptTokens), style.Tokens(u.CompletionTokens), u.CostUsd)
 }
 
 func (m Model) nowPlaying() (api.Track, bool) {

@@ -259,9 +259,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case showCostMsg:
-		// 비용은 앱이 쓴 것이므로 앱의 상태줄에 이미 있다.
-		// 여기서는 그것을 잠시 앞으로 끌어낸다.
-		m.notice = m.app().Status()
+		// 비용은 이제 상태줄 오른쪽에 늘 있다. 여기서는 로그로 한 번 더
+		// 끌어낸다 — 물어봤으면 대답이 대화에 남아야 한다. 상태줄을 덮지
+		// 않는 이유는 그 자리가 "지금 어디인가"를 말하는 자리이기 때문이다.
+		spend := m.app().Spend()
+		if strings.TrimSpace(spend) == "" {
+			spend = "nothing spent yet"
+		}
+		m.log = append(m.log, logEntry{who: "host", text: spend})
 		return m, nil
 
 	case tea.KeyPressMsg:
@@ -608,8 +613,16 @@ func (m Model) viewStatus(w int) string {
 		left = style.BrandSoft.Render("· ") + style.Dim.Render(style.Truncate(m.notice, w-2))
 	}
 
+	// 오른쪽은 좁아져도 살아남는 자리다.
+	//
+	// 잘리는 것은 언제나 왼쪽의 끝이므로, 한 줄로 이어 붙이면 제일 뒤에
+	// 있던 비용이 제일 먼저 조용히 사라진다. 쓴 돈이 안 보이는 것은
+	// 안 쓴 것처럼 보이는 것과 같다.
+	var right []string
+	if s := m.apps[front].Spend(); strings.TrimSpace(s) != "" {
+		right = append(right, s)
+	}
 	// 배경 앱은 이름과 배지만 내놓는다. 맥 메뉴바와 같다.
-	var bg []string
 	for i, a := range m.apps {
 		if i == front {
 			continue
@@ -618,12 +631,12 @@ func (m Model) viewStatus(w int) string {
 		if n := a.Badge(); n > 0 {
 			s += " " + style.Tokens(n)
 		}
-		bg = append(bg, s)
+		right = append(right, s)
 	}
-	if len(bg) == 0 {
+	if len(right) == 0 {
 		return style.Truncate(left, w)
 	}
-	return style.Row(left, style.Faint.Render(strings.Join(bg, " · ")), w)
+	return style.Row(left, style.Faint.Render(strings.Join(right, "   ")), w)
 }
 
 // textarea 기본 스타일은 배경이 검게 깔린다. 나머지 화면과 어긋나므로

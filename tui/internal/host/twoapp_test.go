@@ -26,6 +26,9 @@ type stubApp struct {
 	// 그만두라는 말을 몇 번 들었는지 센다.
 	cancelled *int
 
+	// 이 앱이 쓴 것. 상태줄 오른쪽 끝에 앉는다.
+	spend string
+
 	// 포커스 신호를 센다. 화면 앞에 있는 앱만 장치를 잡게 하는 통로라
 	// 새거나 빠지면 안 보는 동안에도 카메라 불이 켜져 있게 된다.
 	focus, blur *int
@@ -36,6 +39,7 @@ func (s stubApp) Description() string        { return s.name + " does things" }
 func (s stubApp) Tagline() string            { return s.name + " does things" }
 func (s stubApp) Init(func(tea.Msg)) tea.Cmd { return nil }
 func (s stubApp) Ready() error               { return s.ready }
+func (s stubApp) Spend() string              { return s.spend }
 func (s stubApp) Badge() int                 { return s.badge }
 func (s stubApp) Status() string             { return s.name }
 func (s stubApp) Filter(string) app.App      { return s }
@@ -307,5 +311,49 @@ func TestCancelledRoutingIsIgnored(t *testing.T) {
 	mm, _ = mm.Update(routedMsg{seq: 7, prompt: "조용한 걸로", apps: []string{"alpha"}})
 	if n := len(state(t, mm).pending); n != 0 {
 		t.Errorf("그만둔 요청의 라우팅 결과가 앱으로 갔다: %d", n)
+	}
+}
+
+// 비용은 좁아져도 살아남는다.
+//
+// 상태줄이 한 줄이라 좁아지면 왼쪽의 끝부터 잘리는데, 비용이 그 끝에 있었다.
+// 쓴 돈이 안 보이는 것은 안 쓴 것처럼 보이는 것과 같다.
+func TestSpendSurvivesANarrowStatusLine(t *testing.T) {
+	hm := New(stubApp{name: "alpha", spend: "$0.0031"})
+	hm.LeaveHome()
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 28})
+
+	hs := state(t, m)
+	for _, w := range []int{40, 60, 90} {
+		if got := plain(hs.viewStatus(w)); !strings.Contains(got, "$0.0031") {
+			t.Errorf("폭 %d 에서 비용이 사라졌다: %q", w, got)
+		}
+	}
+}
+
+// 없는 명령은 지나가는 사건이다. 상태줄이 아니라 로그로 간다 —
+// 상태줄은 "지금 어디인가"를 말하는 자리이고, 알림이 그것을 덮으면
+// 어디를 보고 있는지가 사라진다.
+func TestNoSuchCommandGoesToTheLog(t *testing.T) {
+	hm := New(stubApp{name: "alpha"})
+	hm.LeaveHome()
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 28})
+
+	for _, r := range "/nope" {
+		m, _ = m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+
+	hs := state(t, m)
+	if len(hs.log) == 0 {
+		t.Fatal("없는 명령을 쳤는데 로그에 아무것도 없다")
+	}
+	if last := hs.log[len(hs.log)-1]; last.who != "host" || !strings.Contains(last.text, "No such command") {
+		t.Errorf("로그에 안 남았다: %+v", last)
+	}
+	if got := plain(hs.viewStatus(90)); !strings.Contains(got, "alpha") {
+		t.Errorf("알림이 상태줄을 덮었다: %q", got)
 	}
 }

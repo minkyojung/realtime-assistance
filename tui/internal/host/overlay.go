@@ -156,7 +156,7 @@ func (m Model) runCommand() (tea.Model, tea.Cmd) {
 	}
 
 	m.input.Reset()
-	m.notice = "No such command: " + name
+	m.log = append(m.log, logEntry{who: "host", text: "No such command: " + name, err: true})
 	return m, nil
 }
 
