@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // 첫 실행에 라이브러리를 읽는 데 몇 초가 든다. 그 값을 두 번 치르지 않는다.
@@ -74,4 +75,46 @@ func SaveCache(l *Library) error {
 		return err
 	}
 	return os.Rename(tmp.Name(), p)
+}
+
+// 큐 플레이리스트의 persistent ID.
+//
+// 이것을 기억하는 이유는 **이름으로 지우지 않기 위해서**다. 사용자가 우연히
+// 같은 이름의 플레이리스트를 갖고 있을 때 그것을 지워 버리면 되돌릴 수 없다.
+// 우리가 만든 것의 ID 를 적어 두고 그것만 지운다(music/queue.go).
+//
+// 이 파일이 사라지면 지난번 플레이리스트가 사이드바에 남고 새 것이 하나 더
+// 생긴다. 지저분하지만 남의 것을 지우는 것보다는 낫다.
+func queuePIDPath() (string, error) {
+	p, err := cachePath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(p), "queue-playlist"), nil
+}
+
+// LoadQueuePID 는 지난번에 우리가 만든 큐 플레이리스트의 ID 를 읽는다.
+// 없으면 빈 문자열이다 — 첫 실행의 정상 상태이므로 오류로 만들지 않는다.
+func LoadQueuePID() string {
+	p, err := queuePIDPath()
+	if err != nil {
+		return ""
+	}
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+// SaveQueuePID 는 방금 만든 큐 플레이리스트의 ID 를 적어 둔다.
+func SaveQueuePID(pid string) error {
+	p, err := queuePIDPath()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(p, []byte(pid), 0o644)
 }

@@ -170,3 +170,40 @@ func cmdDumpLibrary(announce bool) tea.Cmd {
 		return libraryMsg{lib: l, live: true, announce: announce}
 	}
 }
+
+// queueWrittenMsg — 큐 플레이리스트를 Music.app 에 만들고 재생까지 시켰다.
+type queueWrittenMsg struct {
+	pid string
+	err error
+}
+
+// cmdWriteQueue 는 큐를 Music.app 안에 실제로 만든다.
+//
+// AppleScript 로 곡마다 duplicate 를 돌리므로 몇 초가 걸린다. 그래서 Cmd 다 —
+// 그동안 입력창은 계속 살아 있어야 한다.
+//
+// 지난번 플레이리스트의 ID 를 넘기는 이유는 그것만 지우기 위해서다.
+// 이름으로 지우면 사용자가 우연히 같은 이름으로 만든 것을 날린다(music/queue.go).
+func cmdWriteQueue(persistentIDs []string, start, positionSec int) tea.Cmd {
+	return func() tea.Msg {
+		pid, err := music.ReplaceQueue(data.LoadQueuePID(), persistentIDs)
+		if err != nil {
+			return queueWrittenMsg{err: err}
+		}
+		// 적어 두지 못해도 재생은 시킨다. 다음번에 옛 플레이리스트가
+		// 하나 남을 뿐이고, 그것이 남의 것을 지우는 것보다 낫다.
+		_ = data.SaveQueuePID(pid)
+		if err := music.PlayQueueAt(pid, start, positionSec); err != nil {
+			return queueWrittenMsg{err: err}
+		}
+		return queueWrittenMsg{pid: pid}
+	}
+}
+
+// cmdPlayQueueAt 는 이미 만들어 둔 큐의 n번째 곡부터 튼다.
+func cmdPlayQueueAt(pid string, n int) tea.Cmd {
+	return func() tea.Msg {
+		music.PlayQueueAt(pid, n, 0)
+		return fetchStatus()
+	}
+}

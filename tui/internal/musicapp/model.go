@@ -29,6 +29,13 @@ type Model struct {
 	listIdx int
 	listTop int
 
+	// Music.app 안에 실제로 만들어 둔 큐 플레이리스트의 persistent ID.
+	//
+	// 비어 있으면 "화면의 큐와 Music.app 의 큐가 다르다"는 뜻이다. 큐를
+	// 화면에서만 건드렸을 때(ensureQueued·/clear) 비운다 — 그 상태로
+	// 번호를 믿고 재생하면 엉뚱한 곡이 나온다.
+	queuePID string
+
 	// 파고든 묶음. nil 이면 섹션이 정한 목록을 그대로 본다.
 	//
 	// Artists·Albums 는 곡이 아니라 묶음을 보여준다. 그 안으로 들어갈 길이
@@ -276,12 +283,20 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		m.thinking = true
 		return m.startAsk(msg.Prompt)
 
+	case queueWrittenMsg:
+		if msg.err != nil {
+			return m, app.SayErr(m.Name(), msg.err)
+		}
+		m.queuePID = msg.pid
+		return m, nil
+
 	case app.CancelMsg:
 		// esc — 방금 시킨 일에서 물러난다. 화면은 그대로 두고 요청만 끊는다.
 		return m.stopAsk(), nil
 
 	case clearQueueMsg:
 		m.queue = nil
+		m.queuePID = ""
 		m.queueTitle, m.note, m.notice = "", "", ""
 		m.jumpTo(secRecent, "")
 		return m, nil
@@ -361,20 +376,33 @@ func (m Model) applyQueue(res intent.Result) (app.App, tea.Cmd) {
 	m.listIdx, m.listTop = 0, 0
 	m.jumpTo(secQueue, "")
 
-	// 재편성으로 지금 곡이 살아남았으면 다시 틀지 않는다.
-	// 듣던 곡이 처음으로 되감기는 것만큼 짜증나는 것이 없다.
+	// 큐를 Music.app 안에 실제로 만든다.
+	//
+	// 예전에는 첫 곡만 틀었다. 나머지는 Music.app 이 몰라서, 첫 곡이 끝나면
+	// 그 곡이 속한 앨범의 다음 트랙이 흘렀다 — 화면의 큐는 영수증이었다.
+	ids := make([]string, 0, len(items))
+	start, pos := 0, 0
 	for _, it := range items {
+		if it.Track.PersistentId == nil {
+			continue // 담을 수 없는 곡. 화면에는 남고 재생만 건너뛴다
+		}
+		ids = append(ids, *it.Track.PersistentId)
+		// 재편성으로 듣던 곡이 살아남았으면 그 자리에서 잇는다.
+		// 듣던 곡이 처음으로 되감기는 것만큼 짜증나는 것이 없다.
 		if it.Track.Id == m.nowPlayingID {
-			return m, nil
+			start, pos = len(ids), m.positionMs/1000
 		}
 	}
-
-	first := items[0].Track
-	m.nowPlayingID = first.Id
-	if first.PersistentId != nil {
-		return m, cmdPlayTrack(*first.PersistentId)
+	if len(ids) == 0 {
+		return m, app.SayErr(m.Name(), errNoTracks)
 	}
-	return m, nil
+	if start == 0 {
+		start = 1
+		m.nowPlayingID = items[0].Track.Id
+	}
+	// 플레이리스트를 새로 쓸 때까지는 화면과 Music.app 이 어긋난 상태다.
+	m.queuePID = ""
+	return m, cmdWriteQueue(ids, start, pos)
 }
 
 var (
@@ -402,6 +430,18 @@ func (m Model) playSelected() (app.App, tea.Cmd) {
 		return m, nil
 	}
 	t := *rows[m.listIdx].track
+
+	// 큐 안의 곡이면 플레이리스트의 그 자리에서 튼다. 곡 하나만 틀면
+	// 끝나는 순간 Music.app 이 큐 밖으로 나가 버린다.
+	if m.queuePID != "" {
+		for i, it := range m.queue {
+			if it.Track.Id == t.Id {
+				m.nowPlayingID, m.positionMs, m.playing = t.Id, 0, true
+				return m, cmdPlayQueueAt(m.queuePID, i+1)
+			}
+		}
+	}
+
 	m.nowPlayingID = t.Id
 	m.positionMs = 0
 	m.playing = true
@@ -452,6 +492,8 @@ func (m *Model) ensureQueued(t api.Track) {
 		Id: t.Id, SessionId: 1, Position: 0, Track: t,
 		State: api.Playing, Origin: api.QueueItemOriginManual,
 	}}, m.queue...)
+	// 화면에서만 끼워 넣었으므로 Music.app 의 플레이리스트와 번호가 어긋났다.
+	m.queuePID = ""
 }
 
 // clampList — 선택 행이 늘 보이도록 스크롤 위치를 맞춘다.
