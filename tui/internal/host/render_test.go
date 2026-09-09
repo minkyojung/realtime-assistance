@@ -191,7 +191,7 @@ func TestPromptToQueue(t *testing.T) {
 	}
 
 	l := data.Lib()
-	m, _ = m.Update(musicapp.QueueMsgFor(intent.Result{
+	m, _ = m.Update(musicapp.QueueMsgFor(state(t, m).app(), intent.Result{
 		Title: "quiet set",
 		Note:  "picked two you never played",
 		Picks: []intent.Pick{
@@ -227,7 +227,7 @@ func TestQueueFailureShowsBadge(t *testing.T) {
 	hm.LeaveHome()
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
-	m, _ = m.Update(musicapp.QueueMsgFor(intent.Result{}, errors.New("model unavailable")))
+	m, _ = m.Update(musicapp.QueueMsgFor(state(t, m).app(), intent.Result{}, errors.New("model unavailable")))
 	m, _ = m.Update(app.SayMsg{App: "music", Text: "model unavailable", Err: true})
 
 	out := plain(m.View().Content)

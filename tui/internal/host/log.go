@@ -137,6 +137,29 @@ func padRight(s string, n int) string {
 	return s + strings.Repeat(" ", n-len(s))
 }
 
+// cancelPending — 기다리던 것을 그만둔다.
+//
+// 배경에서 계속 돌게 두지 않는다. 취소했는데 잠시 뒤 큐가 통째로 갈리면
+// 그것이 제일 나쁜 상태다. 그래서 앱에게도 알려 실제 요청을 끊게 한다.
+func (m Model) cancelPending() Model {
+	for name := range m.pending {
+		for i, a := range m.apps {
+			if a.Name() == name {
+				next, _ := a.Update(app.CancelMsg{})
+				m.apps[i] = next
+			}
+		}
+		delete(m.pending, name)
+	}
+	// 라우터의 답도 버린다. 번호를 올려두면 늦게 와도 걸러진다(host.go).
+	if m.routing {
+		m.routeSeq++
+		m.routing = false
+	}
+	m.log = append(m.log, logEntry{who: "host", text: "그만뒀습니다"})
+	return m
+}
+
 // handleSay — 앱이 한 말을 받는다.
 func (m Model) handleSay(msg app.SayMsg) Model {
 	delete(m.pending, msg.App)

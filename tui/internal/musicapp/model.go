@@ -4,6 +4,7 @@
 package musicapp
 
 import (
+	"context"
 	"errors"
 	"strconv"
 	"strings"
@@ -51,6 +52,11 @@ type Model struct {
 	live music.PlayerState
 
 	// 의도 층 — 자연어 한 줄이 큐가 되는 경로.
+	//
+	// cancelAsk 는 도는 요청을 끊는 손잡이다. askSeq 는 그렇게 끊긴 요청의
+	// 답이 뒤늦게 와도 화면을 건드리지 못하게 하는 번호다.
+	cancelAsk  context.CancelFunc
+	askSeq     int
 	thinking   bool
 	spinner    spinner.Model
 	queueTitle string
@@ -125,12 +131,40 @@ func (m Model) Ready() error { return m.playerErr }
 func (m Model) Badge() int { return 0 }
 
 // Ask — 자연어 한 줄을 큐로 바꾼다. 라우터가 이 앱을 지목했을 때 불린다.
+//
+// 호스트는 AskMsg 로 보내므로 실제 경로는 Update 이고, 거기서 취소 손잡이를
+// 붙든다. 계약이 요구하는 이 진입점은 손잡이를 둘 곳이 없어 그냥 버린다 —
+// 이 길로 들어온 요청은 esc 로 못 끊는다.
 func (m Model) Ask(prompt string) tea.Cmd {
-	return cmdBuildQueue(prompt, data.Lib().Tracks, intent.Current{
+	_, cmd := m.startAsk(prompt)
+	return cmd
+}
+
+// startAsk 는 요청을 띄우고 취소 손잡이를 들고 있는다.
+func (m Model) startAsk(prompt string) (Model, tea.Cmd) {
+	// 앞의 요청은 버린다. 한 번에 하나만 기다린다.
+	if m.cancelAsk != nil {
+		m.cancelAsk()
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), askTimeout)
+	m.cancelAsk = cancel
+	m.askSeq++
+	return m, cmdBuildQueue(ctx, m.askSeq, prompt, data.Lib().Tracks, intent.Current{
 		Title:   m.queueTitle,
 		Items:   m.queue,
 		Playing: m.nowPlayingID,
 	})
+}
+
+// stopAsk 는 도는 요청을 끊는다. 번호를 올려 늦게 오는 답도 버린다.
+func (m Model) stopAsk() Model {
+	if m.cancelAsk != nil {
+		m.cancelAsk()
+		m.cancelAsk = nil
+	}
+	m.askSeq++
+	m.thinking = false
+	return m
 }
 
 // Thinking 은 호스트가 스피너를 대신 그릴지 판단할 때 쓴다.
@@ -190,8 +224,17 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		return m, app.Say(m.Name(), "Saved \""+msg.name+"\" to Apple Music")
 
 	case queueMsg:
+		// 그만뒀거나 더 새 물음이 떠 있으면 늦게 온 답이다. 버린다.
+		if msg.seq != m.askSeq {
+			return m, nil
+		}
 		m.thinking = false
+		m.cancelAsk = nil
 		if msg.err != nil {
+			// 그만둔 것은 실패가 아니다. 호스트가 이미 로그에 남겼다.
+			if errors.Is(msg.err, context.Canceled) {
+				return m, nil
+			}
 			return m, app.SayErr(m.Name(), msg.err)
 		}
 		mm, cmd := m.applyQueue(msg.res)
@@ -231,7 +274,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 	case app.AskMsg:
 		// 호스트가 넘긴 자연어 요청. 기다린다는 표시는 호스트가 한다.
 		m.thinking = true
-		return m, m.Ask(msg.Prompt)
+		return m.startAsk(msg.Prompt)
+
+	case app.CancelMsg:
+		// esc — 방금 시킨 일에서 물러난다. 화면은 그대로 두고 요청만 끊는다.
+		return m.stopAsk(), nil
 
 	case clearQueueMsg:
 		m.queue = nil

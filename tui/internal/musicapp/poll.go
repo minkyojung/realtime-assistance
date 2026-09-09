@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"amcli/tui/internal/api"
+	"amcli/tui/internal/app"
 	"amcli/tui/internal/data"
 	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
@@ -18,18 +19,27 @@ const pollInterval = time.Second
 type tickMsg struct{}
 
 // queueMsg 는 의도 층이 만들어낸 큐다. 실패도 여기로 온다.
+//
+// seq 는 "몇 번째 물음의 답인가"다. esc 로 그만두면 번호가 올라가므로,
+// 이미 날아간 요청의 답이 뒤늦게 와도 화면을 건드리지 못한다.
 type queueMsg struct {
+	seq int
 	res intent.Result
 	err error
 }
 
+// 선곡은 실측 7초다. 상한을 크게 잡아도 되는 이유는 이제 사용자가
+// esc 로 언제든 그만둘 수 있기 때문이다.
+const askTimeout = 90 * time.Second
+
 // cmdBuildQueue — 자연어 한 줄을 큐로 바꾼다. 입력창을 막지 않도록 Cmd 로 돈다.
-func cmdBuildQueue(prompt string, library []api.Track, cur intent.Current) tea.Cmd {
+//
+// ctx 를 바깥에서 받는다. 안에서 만들면 취소 손잡이가 이 함수와 함께
+// 사라져서, 도는 동안 끊을 방법이 없다.
+func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Track, cur intent.Current) tea.Cmd {
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		defer cancel()
 		res, err := intent.Build(ctx, prompt, library, cur, time.Now())
-		return queueMsg{res: res, err: err}
+		return queueMsg{seq: seq, res: res, err: err}
 	}
 }
 
@@ -118,8 +128,15 @@ func StatusMsgFor(state music.PlayerState, err error) tea.Msg {
 }
 
 // QueueMsgFor 는 의도 층의 결과를 흉내 낸다.
-func QueueMsgFor(res intent.Result, err error) tea.Msg {
-	return queueMsg{res: res, err: err}
+//
+// 앱을 받는 이유는 답에 번호가 붙기 때문이다. 그만둔 요청의 답은 버려지므로
+// (model.go), 지금 기다리는 물음의 번호를 그대로 달아 줘야 화면에 앉는다.
+func QueueMsgFor(a app.App, res intent.Result, err error) tea.Msg {
+	seq := 0
+	if m, ok := a.(Model); ok {
+		seq = m.askSeq
+	}
+	return queueMsg{seq: seq, res: res, err: err}
 }
 
 // libraryMsg — 라이브러리 스냅샷이 도착했다. 캐시와 Music.app 두 경로로 온다.

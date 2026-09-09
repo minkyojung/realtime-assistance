@@ -23,6 +23,9 @@ type stubApp struct {
 	// 앱이 자기 안에 물러날 단계를 갖고 있는 척한다. esc 사슬을 보려면 필요하다.
 	back bool
 
+	// 그만두라는 말을 몇 번 들었는지 센다.
+	cancelled *int
+
 	// 포커스 신호를 센다. 화면 앞에 있는 앱만 장치를 잡게 하는 통로라
 	// 새거나 빠지면 안 보는 동안에도 카메라 불이 켜져 있게 된다.
 	focus, blur *int
@@ -53,6 +56,10 @@ func (s stubApp) Update(msg tea.Msg) (app.App, tea.Cmd) {
 	case app.BlurMsg:
 		if s.blur != nil {
 			*s.blur++
+		}
+	case app.CancelMsg:
+		if s.cancelled != nil {
+			*s.cancelled++
 		}
 	}
 	return s, nil
@@ -234,5 +241,60 @@ func TestEscFallsThroughWhenAppHasNoStep(t *testing.T) {
 	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
 	if hm, _ := m.(Model); !hm.home {
 		t.Error("앱이 물러날 곳이 없다는데 홈으로 안 왔다")
+	}
+}
+
+// esc 사슬의 첫 칸은 "방금 시킨 일"이다.
+//
+// 선곡이 7초라 그 사이에 잘못 물어본 것을 알아채는데, 지금까지는 기다리는
+// 수밖에 없었다. ctrl+c 는 손대지 않는다 — 그것은 터미널의 탈출구다.
+func TestEscCancelsThePendingRequest(t *testing.T) {
+	var cancelled int
+	hm := New(stubApp{name: "alpha", cancelled: &cancelled})
+	hm.LeaveHome()
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 28})
+
+	// 라우터를 거치지 않고 곧장 물어본 상태를 만든다.
+	m, _ = m.Update(routedMsg{seq: state(t, m).routeSeq, prompt: "조용한 걸로", apps: []string{"alpha"}})
+	if len(state(t, m).pending) == 0 {
+		t.Fatal("물었는데 기다리는 앱이 없다")
+	}
+
+	m, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+
+	hs := state(t, m)
+	if len(hs.pending) != 0 {
+		t.Errorf("esc 를 눌렀는데 아직 %d개를 기다린다", len(hs.pending))
+	}
+	if cancelled != 1 {
+		t.Errorf("앱에게 그만두라고 %d번 말했다 — 한 번이어야 한다", cancelled)
+	}
+	if hs.home {
+		t.Error("요청만 그만둬야 하는데 앱 밖으로 나가 버렸다")
+	}
+	if len(hs.log) == 0 || hs.log[len(hs.log)-1].who != "host" {
+		t.Error("그만뒀다는 말을 로그에 안 남겼다")
+	}
+}
+
+// 그만둔 뒤 다시 물어보면, 앞 요청의 라우팅 결과가 뒤늦게 와도 무시해야 한다.
+func TestCancelledRoutingIsIgnored(t *testing.T) {
+	var cancelled int
+	hm := New(stubApp{name: "alpha", cancelled: &cancelled})
+	hm.LeaveHome()
+	var m tea.Model = &hm
+	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 28})
+
+	hs := state(t, m)
+	hs.routing = true
+	hs.routeSeq = 7
+	var mm tea.Model = &hs
+	mm, _ = mm.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+
+	// 그만둔 뒤 도착한 옛 답 — 앱에게 가면 안 된다.
+	mm, _ = mm.Update(routedMsg{seq: 7, prompt: "조용한 걸로", apps: []string{"alpha"}})
+	if n := len(state(t, mm).pending); n != 0 {
+		t.Errorf("그만둔 요청의 라우팅 결과가 앱으로 갔다: %d", n)
 	}
 }

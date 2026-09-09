@@ -55,6 +55,7 @@ type Model struct {
 	logOpen    bool
 	detailOpen bool
 	routing    bool            // 라우터의 답을 기다리는 중
+	routeSeq   int             // 취소된 요청의 늦은 답을 버리는 데 쓴다
 	pending    map[string]bool // 답을 기다리는 앱
 	spinner    spinner.Model
 
@@ -166,6 +167,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleSay(msg), nil
 
 	case routedMsg:
+		// 취소하고 다시 물어본 사이에 옛 답이 올 수 있다. 번호로 거른다.
+		if msg.seq != m.routeSeq {
+			return m, nil
+		}
 		return m.deliver(msg)
 
 	case switchAppMsg:
@@ -253,8 +258,9 @@ func (m Model) dispatch(prompt string) (tea.Model, tea.Cmd) {
 		current = m.app().Name()
 	}
 	m.routing = true
+	m.routeSeq++
 	return m, tea.Batch(
-		cmdRoute(prompt, m.specs(), current),
+		cmdRoute(m.routeSeq, prompt, m.specs(), current),
 		m.spinner.Tick,
 	)
 }
@@ -356,7 +362,14 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		return true, m, nil
 
 	case "esc":
-		// 한 단계씩 물러난다 — 도움말 → 검색 → 입력 비우기 → 홈 → 종료.
+		// 한 단계씩 물러난다 — 요청 → 도움말 → 검색 → 입력 비우기 → 홈 → 종료.
+		//
+		// 방금 시킨 일이 아직 돌고 있으면 그것이 첫 칸이다. 선곡이 7초라
+		// 그 사이에 잘못 물어본 것을 알아채는데, 지금까지는 기다리는 수밖에
+		// 없었다. ctrl+c 는 손대지 않는다 — 그것은 터미널의 탈출구다.
+		if m.routing || len(m.pending) > 0 {
+			return true, m.cancelPending(), nil
+		}
 		if m.showHelp {
 			m.showHelp = false
 			return true, m, nil

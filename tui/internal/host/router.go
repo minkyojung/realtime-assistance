@@ -154,18 +154,22 @@ func (m Model) mention(prompt string) (string, string) {
 }
 
 // routedMsg 는 라우터의 결과다.
+//
+// seq 는 "몇 번째 물음의 답인가"다. 취소하고 다시 물어본 사이에 옛 답이
+// 도착할 수 있어서, 호스트가 이 번호로 거른다.
 type routedMsg struct {
+	seq    int
 	prompt string
 	apps   []string
 	err    error
 }
 
 // cmdRoute — 라우터를 부른다. 입력창을 막지 않도록 Cmd 로 돈다.
-func cmdRoute(prompt string, apps []Spec, current string) tea.Cmd {
+func cmdRoute(seq int, prompt string, apps []Spec, current string) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), routeTimeout)
 		defer cancel()
 		names, err := Route(ctx, prompt, apps, current)
-		return routedMsg{prompt: prompt, apps: names, err: err}
+		return routedMsg{seq: seq, prompt: prompt, apps: names, err: err}
 	}
 }
