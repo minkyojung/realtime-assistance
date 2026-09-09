@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -99,10 +100,55 @@ func searchBest(ctx context.Context, artist, title string) *Lyrics {
 }
 
 type payload struct {
-	Synced       string `json:"syncedLyrics"`
-	Plain        string `json:"plainLyrics"`
-	Instrumental bool   `json:"instrumental"`
+	Synced       string  `json:"syncedLyrics"`
+	Plain        string  `json:"plainLyrics"`
+	Instrumental bool    `json:"instrumental"`
+	Duration     float64 `json:"duration"` // 초. 같은 녹음인지의 유일한 증거다
 }
+
+// 점수 — 이 후보가 **이 녹음의** 가사일 가능성.
+//
+// 검색은 제목이 같은 것을 전부 준다. `Perth` 를 물으면 스무 개가 오는데
+// 그중에는 길이가 2452초인 것도 있다 — 앨범을 통째로 한 항목에 올린
+// 것이다. 시간표가 붙어 있으므로 "시각이 있는 첫 번째"를 집으면 그게
+// 걸리고, 가사가 노래와 40분 어긋난다.
+//
+// **틀린 시간표는 시간표가 없는 것보다 나쁘다.** 없으면 화면이 조용하지만
+// 틀리면 노래와 따로 논다. 그래서 길이가 크게 어긋난 것은 시간표 점수를
+// 통째로 상쇄한다 — 길이가 맞는 줄글이 길이가 틀린 싱크를 이긴다.
+func score(p payload, wantMs int) int {
+	if p.Instrumental {
+		return unusable
+	}
+	synced := strings.TrimSpace(p.Synced) != ""
+	if !synced && strings.TrimSpace(p.Plain) == "" {
+		return unusable
+	}
+
+	s := 0
+	if synced {
+		s += 100 // 하이라이트가 되는 것은 이것뿐이다
+	}
+	// 길이를 모르면 더하지도 빼지도 않는다. 모르는 것을 벌하지 않는다.
+	if wantMs > 0 && p.Duration > 0 {
+		switch d := math.Abs(p.Duration - float64(wantMs)/1000); {
+		case d <= 2:
+			s += 50 // 같은 녹음이다
+		case d <= 5:
+			s += 20 // 같은 곡의 다른 마스터쯤
+		case d > 30:
+			s -= 100 // 딴 것이다. 시간표가 있어도 믿을 수 없다
+		}
+	}
+	return s
+}
+
+const (
+	// 시간표가 있고 길이도 맞는다. 더 물어볼 것이 없으므로 사다리를 멈춘다.
+	scorePerfect = 150
+	// 쓸 수 없는 후보. 연주곡이거나 가사가 비어 있다.
+	unusable = -1
+)
 
 func (p payload) lyrics() *Lyrics {
 	if p.Instrumental {
