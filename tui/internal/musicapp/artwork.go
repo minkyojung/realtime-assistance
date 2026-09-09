@@ -107,29 +107,39 @@ func (m Model) nowPlayingInfo(w, rows int, title, artist, album string, duration
 		bar = icon + "  " + style.Progress(barW, ratio) + " " + style.Faint.Render(timeLabel)
 	}
 
-	out := []string{
-		style.Track.Render(style.Truncate(title, w)),
-		style.Meta.Render(style.Truncate(artist, w)),
+	// 좁으면 덜어낸다. 무대는 마지막까지 지킨다 — 커버 옆에서 유일하게
+	// 내용이 바뀌는 자리이고, 그것이 없으면 ctrl+j 가 아무 일도 안 하는
+	// 키가 된다. 앨범명과 숨 쉬는 빈 줄이 먼저 희생된다.
+	compact := rows < 12
+
+	out := []string{style.Track.Render(style.Truncate(title, w))}
+	if artist != "" {
+		out = append(out, style.Meta.Render(style.Truncate(artist, w)))
 	}
-	if album != "" {
+	if album != "" && !compact {
 		out = append(out, style.Faint.Render(style.Truncate(album, w)))
 	}
-	out = append(out, "", bar)
+	if !compact {
+		out = append(out, "")
+	}
+	out = append(out, bar)
 
 	// 남는 자리는 무대가 쓴다 — 가사·이력·대화 중 하나(stage.go).
 	//
 	// 그 위에 지금 어느 무대인지를 한 줄로 적는다. 무대가 바뀌는데 표시가
 	// 없으면 화면이 왜 달라졌는지 알 방법이 없다. 그 줄이 진행바와 무대를
 	// 갈라 주기도 한다 — 붙여 놓으면 한 덩어리로 읽힌다.
-	const header = 3 // 위 빈 줄 + 무대 이름 + 아래 빈 줄
-	if room := rows - len(out) - header; room >= 2 {
-		out = append(out, "", m.viewStageTabs(w), "")
-		switch m.stage {
-		case stageTalk:
-			out = append(out, m.viewTalk(w, room)...)
-		default:
-			out = append(out, m.viewLyrics(w, room)...)
+	header := 3 // 위 빈 줄 + 무대 이름 + 아래 빈 줄
+	if compact {
+		header = 1 // 무대 이름만
+	}
+	if room := rows - len(out) - header; room >= 1 {
+		if compact {
+			out = append(out, m.viewStageTabs(w))
+		} else {
+			out = append(out, "", m.viewStageTabs(w), "")
 		}
+		out = append(out, m.viewStage(w, room)...)
 	}
 
 	for len(out) < rows {

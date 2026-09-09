@@ -42,6 +42,14 @@ type talk struct {
 	lines  []string // queueDetail 이 만든 것
 }
 
+// viewStage — 지금 선 무대를 rows 줄로 그린다.
+func (m Model) viewStage(w, rows int) []string {
+	if m.stage == stageTalk {
+		return m.viewTalk(w, rows)
+	}
+	return m.viewLyrics(w, rows)
+}
+
 // viewTalk — 대화 무대. rows 줄을 정확히 채워 돌려준다.
 func (m Model) viewTalk(w, rows int) []string {
 	if rows < 1 {
@@ -128,3 +136,24 @@ func (m Model) stageTab(label string, s stage) string {
 	}
 	return style.Faint.Render(label)
 }
+
+// headWithoutArt — 커버 없이 머리를 그린다.
+//
+// 한 줄짜리 재생 바 아래에 무대를 그대로 둔다. 커버는 장식이고 무대는
+// 내용이다 — 장식이 안 뜬다고 내용까지 사라지면 안 된다.
+//
+// 목록에 다섯 줄은 남긴다. 그만큼도 못 남기면 무대를 접는다.
+func (m Model) headWithoutArt(w, h int) string {
+	out := []string{m.viewPlayer(w)}
+	if _, gated := m.viewGate(w); !gated {
+		if room := h - len(out) - 2 - 1 - 5; room >= 1 {
+			out = append(out, m.viewStageTabs(w))
+			out = append(out, m.viewStage(w, style.Min(room, maxBareStage))...)
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
+// 커버가 없을 때 무대가 쓸 수 있는 최대 줄 수.
+// 더 주면 목록이 밀린다 — 커버가 없는 화면에서는 목록이 주인공이다.
+const maxBareStage = 8

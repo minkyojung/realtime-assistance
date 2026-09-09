@@ -745,8 +745,11 @@ func (m Model) View(w, h int) string {
 	head, big := m.viewNowPlaying(w, h)
 	if !big {
 		// 커버를 못 그리는 사정이면(좁거나·낮거나·커버가 없거나·관문)
-		// 예전처럼 한 줄로 물러난다. artwork.go
-		head = m.viewPlayer(w)
+		// 한 줄짜리 재생 바로 물러난다. artwork.go
+		//
+		// **무대는 그래도 남긴다.** 무대는 커버의 부속이 아니라 본문이다.
+		// 커버가 없다고 같이 사라지면 ctrl+j 가 아무 일도 안 하는 키가 된다.
+		head = m.headWithoutArt(w, h)
 	}
 	listH := m.listHeight(h - headHeight(head) + 1)
 

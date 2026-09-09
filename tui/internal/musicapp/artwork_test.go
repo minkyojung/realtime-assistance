@@ -323,3 +323,43 @@ func TestCycleFlipsStage(t *testing.T) {
 		t.Error("한 번 더 눌렀는데 가사로 안 돌아왔다")
 	}
 }
+
+// 무대는 커버의 부속이 아니다. 커버가 없어도, 창이 작아도 남아야 한다 —
+// 사라지면 ctrl+j 가 아무 일도 안 하는 키가 된다.
+func TestStageSurvivesWithoutArtwork(t *testing.T) {
+	base := playingModel()
+	base.lyrics = synced()
+
+	for _, c := range []struct {
+		name string
+		art  bool
+		w, h int
+	}{
+		{"넓고 커버 있음", true, 100, 30},
+		{"낮고 커버 있음", true, 100, 22},
+		{"좁고 커버 있음", true, 60, 20},
+		{"커버를 못 그림", true, 100, 14},
+		{"커버 없는 곡", false, 100, 30},
+		{"커버 없고 좁음", false, 60, 20},
+	} {
+		m := base
+		if !c.art {
+			m.art = nil
+		}
+		if out := plain(m.View(c.w, c.h)); !strings.Contains(out, "Lyrics") {
+			t.Errorf("%s (%dx%d) — 무대 표시가 사라졌다", c.name, c.w, c.h)
+		}
+	}
+}
+
+// 커버가 없어도 ctrl+j 가 화면을 바꿔야 한다.
+func TestCycleShowsWithoutArtwork(t *testing.T) {
+	m := playingModel()
+	m.lyrics = synced()
+	m.art = nil
+	before := m.View(100, 30)
+	next, _ := m.Update(app.CycleMsg{})
+	if after := next.(Model).View(100, 30); before == after {
+		t.Error("커버 없는 곡에서 ctrl+j 가 화면을 안 바꿨다")
+	}
+}
