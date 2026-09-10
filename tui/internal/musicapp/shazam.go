@@ -7,6 +7,7 @@ import (
 
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/app"
+	"amcli/tui/internal/applemusic"
 	"amcli/tui/internal/data"
 	"amcli/tui/internal/shazam"
 	tea "charm.land/bubbletea/v2"
@@ -29,6 +30,10 @@ type (
 		res shazam.Result
 		err error
 	}
+
+	// shazamMarkedMsg — 알아맞힌 곡이 담긴 곡인지 Apple 이 답했다.
+	// 못 물었으면 짐작한 채로 온다.
+	shazamMarkedMsg struct{ track api.CatalogTrack }
 )
 
 // cmdShazamInit — 헬퍼가 옆에 있는지 한 번만 본다.
@@ -91,6 +96,17 @@ func (m Model) applyShazam(msg tea.Msg) (app.App, tea.Cmd, bool) {
 			return m, app.SayErr(m.Name(), msg.err), true
 		}
 		return m.applyRecognition(msg.res)
+
+	case shazamMarkedMsg:
+		if id := msg.track.AppleMusicId; id != "" {
+			for i := range m.shzHits {
+				if m.shzHits[i].AppleMusicId == id {
+					m.shzHits[i] = msg.track
+					break
+				}
+			}
+		}
+		return m, app.Say(m.Name(), recognizedLine(msg.track)), true
 	}
 	return m, nil, false
 }
@@ -104,15 +120,38 @@ func (m Model) applyRecognition(res shazam.Result) (app.App, tea.Cmd, bool) {
 	m.resync(data.Lib())
 	m.listIdx, m.listTop = 0, 0
 	m.jumpTo(secShazam, "")
-	return m, app.Say(m.Name(), recognizedLine(ct)), true
+	// 줄은 지금 앉히고, 말은 답을 듣고 한다.
+	return m, cmdMarkRecognized(m.cat, ct), true
 }
 
-// recognized — SHMediaItem 을 카탈로그 곡으로 옮기고, 그 자리에서 대조한다.
+// cmdMarkRecognized — 담긴 곡인지 Apple 에게 묻고, 그 답이 온 뒤에 말한다.
 //
-// 대조는 markInLibrary 가 한다. 이름으로 맞추는 참고값이라는 한계도 함께
-// 물려받는다 — localMatch 머리말. 스펙은 appleMusicId·isrc 정확 일치를
-// 요구하지만(docs/04), Music.app 덤프에 그 두 키가 없어서 아직 못 쓴다.
-// 인식 결과에는 둘 다 실어 두므로, 라이브러리에 키가 생기는 날 여기만 바꾸면 된다.
+// 짐작한 문장을 먼저 띄우고 나중에 고치지 않는다. 사용자는 이미 "없다"를
+// 읽은 뒤이고, 이 서비스가 하는 말 중 제일 중요한 문장이 그것이다.
+// 인식은 몇 초짜리 일이고 이 물음은 몇백 ms 다 — 기다려도 티가 안 난다.
+//
+// 못 물으면(로그인 전·id 없음·망 실패) 짐작한 채로 간다. 말이 늦는 것보다
+// 덜 정확한 편이 낫고, 그 경우는 지금까지와 똑같이 동작한다.
+func cmdMarkRecognized(c *applemusic.Client, ct api.CatalogTrack) tea.Cmd {
+	return func() tea.Msg {
+		if c == nil || ct.AppleMusicId == "" {
+			return shazamMarkedMsg{track: ct}
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), catalogTimeout)
+		defer cancel()
+		out, err := c.MarkInLibrary(ctx, []api.CatalogTrack{ct})
+		if err != nil || len(out) == 0 {
+			return shazamMarkedMsg{track: ct}
+		}
+		return shazamMarkedMsg{track: out[0]}
+	}
+}
+
+// recognized — SHMediaItem 을 카탈로그 곡으로 옮기고, 그 자리에서 짐작한다.
+//
+// 여기의 짐작은 **줄을 그리기 위한 임시값**이다. 진짜 답은 곧
+// cmdMarkRecognized 가 Apple 에게 받아 와 덮어쓴다. 그래도 여기서 한 번
+// 채우는 이유는, 못 물었을 때(로그인 전) 그대로 쓰이기 때문이다.
 func recognized(res shazam.Result) api.CatalogTrack {
 	ct := api.CatalogTrack{
 		AppleMusicId: res.AppleMusicID,
@@ -140,9 +179,22 @@ func recognized(res shazam.Result) api.CatalogTrack {
 // 것은 **그 곡과 나의 관계**다 — 갖고 있는지, 갖고도 안 들었는지.
 func recognizedLine(ct api.CatalogTrack) string {
 	head := fmt.Sprintf("%s — %s", ct.Title, ct.ArtistName)
-	t, ok := localMatch(ct)
-	if !ok {
+
+	// 담겼는지는 Apple 이 답했으면 그 답이 먼저다. 로컬에서 못 찾는 것은
+	// 이름이 어긋났다는 뜻이지 없다는 뜻이 아니다.
+	t, found := localMatch(ct)
+	held := found
+	if ct.InLibrary != nil {
+		held = *ct.InLibrary
+	}
+
+	if !held {
 		return head + "  ·  not in Your Library"
+	}
+	// 담긴 것은 아는데 어느 줄인지 못 찾았다. 횟수는 말하지 않는다 —
+	// 모르는 수를 지어내면 이 문장 전체가 못 믿을 것이 된다.
+	if !found {
+		return head + "  ·  in Your Library"
 	}
 	if t.PlayCount == 0 && t.LastPlayedAt == nil {
 		return head + "  ·  in Your Library — and you have never played it"

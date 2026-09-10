@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"amcli/tui/internal/api"
 	"amcli/tui/internal/app"
 	"amcli/tui/internal/shazam"
 	tea "charm.land/bubbletea/v2"
@@ -168,5 +169,62 @@ func TestShazamAppearsWithHelper(t *testing.T) {
 	next, _, _ := New().applyShazam(shazamReadyMsg{ok: true})
 	if !hasCommand(next.(Model), "/shazam") {
 		t.Error("헬퍼가 있는데 /shazam 이 안 나왔다")
+	}
+}
+
+// 알아맞힌 곡을 앉히고 나서 **말은 하지 않는다.** 담긴 곡인지 Apple 에게
+// 묻고, 답이 온 뒤에 말한다. 짐작한 문장을 먼저 띄우면 사용자는 틀린 말을
+// 먼저 읽는다.
+func TestRecognitionWaitsForAppleBeforeSpeaking(t *testing.T) {
+	m := New()
+	mm, cmd, handled := m.applyRecognition(heard("Holocene", "Bon Iver"))
+	if !handled {
+		t.Fatal("처리되지 않았다")
+	}
+	if len(mm.(Model).shzHits) != 1 {
+		t.Fatal("줄이 안 앉았다")
+	}
+	if cmd == nil {
+		t.Fatal("아무것도 묻지 않았다")
+	}
+	// 못 물을 때(m.cat == nil)도 말은 나와야 한다 — 짐작한 채로.
+	msg := cmd()
+	marked, ok := msg.(shazamMarkedMsg)
+	if !ok {
+		t.Fatalf("돌아온 것이 %T", msg)
+	}
+	if _, _, handled := m.applyShazam(marked); !handled {
+		t.Error("답을 못 받았다")
+	}
+}
+
+// Apple 이 담겼다고 하는데 로컬에서 그 줄을 못 찾는 경우가 있다 —
+// 이름이 어긋난 것이지 없는 것이 아니다. 그때 "없다"고 말하면 거짓이고,
+// 재생 횟수를 지어내면 더 나쁘다.
+func TestRecognizedLineTrustsAppleOverTheNameGuess(t *testing.T) {
+	yes := true
+	ct := api.CatalogTrack{
+		AppleMusicId: "1",
+		Title:        "어느 라이브러리에도 없는 제목",
+		ArtistName:   "아무개",
+		InLibrary:    &yes,
+	}
+	line := recognizedLine(ct)
+	if strings.Contains(line, "not in Your Library") {
+		t.Errorf("Apple 이 담겼다고 했는데 없다고 말한다: %q", line)
+	}
+	if strings.Contains(line, "played") {
+		t.Errorf("못 찾은 곡의 재생 횟수를 지어냈다: %q", line)
+	}
+}
+
+// 반대도 같다. Apple 이 없다고 하면 이름이 우연히 맞아도 없는 것이다.
+func TestRecognizedLineTrustsAppleWhenItSaysNo(t *testing.T) {
+	no := false
+	ct := api.CatalogTrack{
+		AppleMusicId: "1", Title: "Holocene", ArtistName: "Bon Iver", InLibrary: &no,
+	}
+	if line := recognizedLine(ct); !strings.Contains(line, "not in Your Library") {
+		t.Errorf("Apple 이 없다고 했는데 있다고 말한다: %q", line)
 	}
 }
