@@ -240,6 +240,7 @@ func (m Model) reorder(k reorderKind) (Model, tea.Cmd) {
 // 갈아끼우는 도구밖에 없어서, 붙여 달라는 말이 늘 처음으로 튀는 결과가 됐다.
 // 사람이 /later 로 하던 일을 AI 도 하게 하는 것이 이 함수다.
 func (m Model) appendQueue(res intent.Result, atEnd bool) (app.App, tea.Cmd) {
+	m = m.noteTurn(res)
 	m.usage.PromptTokens += res.Usage.PromptTokens
 	m.usage.CompletionTokens += res.Usage.CompletionTokens
 	m.usage.CostUsd += res.Usage.CostUsd

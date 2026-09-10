@@ -50,6 +50,11 @@ type Pick struct {
 type Result struct {
 	Title string `json:"title"`
 	Note  string `json:"note"`
+
+	// Context 는 모델이 요청을 보고 고른 자리다 — 공부인가 운동인가.
+	// 재생 기록과 이어 붙일 때 집계 키가 된다(data/turns.go).
+	Context data.Context `json:"context"`
+
 	Picks []Pick `json:"picks"`
 
 	Usage api.Usage
@@ -61,6 +66,17 @@ type Result struct {
 	Candidates int
 }
 
+// contextEnum 은 data.Contexts 를 스키마가 읽는 모양으로 바꾼다.
+//
+// 값을 새로 적지 않는다는 것이 요점이다. 목록이 늘면 여기는 저절로 따라온다.
+func contextEnum() []string {
+	out := make([]string, len(data.Contexts))
+	for i, c := range data.Contexts {
+		out[i] = string(c)
+	}
+	return out
+}
+
 // 응답 스키마. strict 모드에서 모델이 이 모양을 벗어날 수 없다.
 //
 // strict 는 모든 객체에 additionalProperties:false 와, properties 전부를
@@ -68,7 +84,7 @@ type Result struct {
 var schema = map[string]any{
 	"type":                 "object",
 	"additionalProperties": false,
-	"required":             []string{"title", "note", "picks"},
+	"required":             []string{"title", "note", "context", "picks"},
 	"properties": map[string]any{
 		"title": map[string]any{
 			"type":        "string",
@@ -89,6 +105,16 @@ var schema = map[string]any{
 			"maxLength": 200,
 			"description": "One short sentence to the user about the queue as a whole. " +
 				"Aim for under 100 characters and finish the sentence.",
+		},
+		// 목록을 여기 적지 않는다. data.Contexts 가 유일한 목록이고 이것은
+		// 그것을 옮겨 담을 뿐이다. 두 곳에 적으면 한쪽만 늘어나는 날이 오고,
+		// 그러면 모델이 우리가 모르는 값을 돌려준다.
+		"context": map[string]any{
+			"type": "string",
+			"enum": contextEnum(),
+			"description": "What the person is doing, judged from their request. " +
+				"Use \"other\" when the request says nothing about the occasion — " +
+				"do not guess from the music itself.",
 		},
 		"picks": map[string]any{
 			"type":     "array",

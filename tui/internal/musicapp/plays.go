@@ -18,7 +18,7 @@ import (
 // 지나가면 가운데를 못 본다. 그래서 이 기록은 **누적 횟수의 출처가 아니다** —
 // 그것은 Music.app 이 구멍 없이 세고 있다(intent 의 signals 칸).
 // 여기 적는 것은 Music.app 이 모르는 것뿐이다. 왜 끝났는지, 어느 요청에서
-// 나온 곡인지.
+// 나온 곡인지(turnID — 0 이면 사람이 직접 고른 것이다).
 
 // 끝난 이유를 우리가 만든 경우, 다음 폴링이 그것을 집어 가도록 남겨 둔다.
 //
@@ -65,7 +65,7 @@ func (m Model) notePlayback(next music.PlayerState) (Model, tea.Cmd) {
 		DurMs:    prev.DurationMs,
 		EndedBy:  why,
 		Shuffle:  prev.Shuffle,
-		Context:  m.queueTitle,
+		TurnID:   m.turnID,
 	})
 }
 

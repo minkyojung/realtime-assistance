@@ -54,6 +54,9 @@ func (m Model) playFrom(rows []listRow, at int, label string) (Model, tea.Cmd) {
 
 	m.queue = items
 	m.queueTitle = label
+	// 사람이 목록에서 직접 골랐다. 청해서 나온 곡이 아니므로 요청을 떼어낸다 —
+	// **0 은 빈 값이 아니라 "부탁받지 않았다"는 뜻이다.**
+	m.turnID = 0
 	m.nowPlayingID = items[0].Track.Id
 	m.positionMs, m.playing = 0, true
 	// 플레이리스트를 새로 쓸 때까지는 화면과 Music.app 이 어긋난 상태다.

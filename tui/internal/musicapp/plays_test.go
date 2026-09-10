@@ -130,6 +130,7 @@ func TestPollingActuallyWritesAFile(t *testing.T) {
 	// 3초쯤 듣고 있는 상태를 만든다.
 	m := atTrack(first, 3_000, 200_000)
 	m.queueTitle = "조용한 거"
+	m.turnID = 777 // 이 큐가 나온 요청
 	// 커버를 넘어갈 곡의 것으로 미리 맞춰 둔다. 안 그러면 곡이 바뀔 때
 	// 커버·가사 Cmd 가 함께 묶여 나오고, 테스트가 그것을 돌리면 진짜
 	// Music.app 과 남의 서버를 두드린다. 여기서 볼 것은 기록뿐이다.
@@ -158,8 +159,8 @@ func TestPollingActuallyWritesAFile(t *testing.T) {
 	if p.EndedBy != data.EndedSkipped {
 		t.Errorf("왜 끝났는지가 %q 다", p.EndedBy)
 	}
-	if p.Context != "조용한 거" {
-		t.Errorf("어느 요청이었는지를 안 적었다: %q", p.Context)
+	if p.TurnID != 777 {
+		t.Errorf("어느 요청이었는지를 안 적었다: %d", p.TurnID)
 	}
 	_ = next
 }

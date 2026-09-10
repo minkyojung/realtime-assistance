@@ -87,6 +87,15 @@ type Model struct {
 	// 넘기므로 상태를 여기 담을 이유가 없다 — intent 의 NewChat.
 	memory []intent.Exchange
 
+	// 지금 큐가 어느 요청에서 나왔나. 0 이면 사람이 목록에서 직접 골랐다.
+	// 곡이 끝날 때 이 번호를 재생 기록에 단다 — plays.go
+	turnID int64
+
+	// 그 번호를 적을 때의 물음 번호. **한 문장에 두 줄을 적지 않기 위해서다.**
+	// 한 번의 물음이 build_queue 와 add_tracks 를 잇달아 부를 수 있는데,
+	// 그것은 여전히 한 번 청한 것이다.
+	turnSeq int
+
 	spinner    spinner.Model
 	queueTitle string
 	note       string
@@ -502,8 +511,34 @@ func (m Model) gotoSection(i int) Model {
 
 // applyQueue 는 의도 층의 결과를 화면에 앉힌다.
 // 큐 섹션으로 옮기고 첫 곡을 튼다 — 요청했으면 소리가 나야 한다.
+// noteTurn 은 이 물음을 파일에 한 번 적고 번호를 쥔다.
+//
+// **한 번만 적는다.** 한 문장이 도구를 두 번 부를 수 있으므로(build_queue
+// 다음에 add_tracks), 물음 번호가 같으면 이미 적은 것이다. 두 줄로 나뉘면
+// 재생 기록이 두 요청에 갈라 붙어 집계가 어긋난다.
+//
+// 실패해도 아무 말 하지 않는다. 못 적은 요청 하나보다 멎은 화면이 나쁘다 —
+// cmdAppendPlay 와 같은 판단이다. 그때는 번호가 0 이 되고, 그 곡들은
+// "요청 없이 튼 것"으로 남는다.
+func (m Model) noteTurn(res intent.Result) Model {
+	if m.turnID != 0 && m.turnSeq == m.ask.seq {
+		return m
+	}
+	t := data.Turn{
+		ID: data.NewTurnID(), At: time.Now(),
+		Prompt: m.asked, Context: res.Context, Title: res.Title,
+	}
+	if err := data.AppendTurn(t); err != nil {
+		m.turnID, m.turnSeq = 0, m.ask.seq
+		return m
+	}
+	m.turnID, m.turnSeq = t.ID, m.ask.seq
+	return m
+}
+
 func (m Model) applyQueue(res intent.Result) (app.App, tea.Cmd) {
 	l := data.Lib()
+	m = m.noteTurn(res)
 	m.queueTitle, m.note = res.Title, res.Note
 	m.usage.PromptTokens += res.Usage.PromptTokens
 	m.usage.CompletionTokens += res.Usage.CompletionTokens
