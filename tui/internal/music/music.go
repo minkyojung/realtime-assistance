@@ -274,10 +274,13 @@ func LibraryIDs() (map[string]bool, error) {
 	if !Running() {
 		return nil, ErrNotRunning
 	}
-	out, err := run(`tell application "Music"
-	set text item delimiters to ","
-	return (persistent ID of every track of library playlist 1) as text
-end tell`)
+	// 구분자는 tell 블록 **밖에서** 세운다. 안에서 세우면 Music.app 의
+	// 속성으로 읽혀 -1731 (Unknown object type) 로 죽는다.
+	out, err := run(`set AppleScript's text item delimiters to ","
+tell application "Music"
+	set ids to persistent ID of every track of library playlist 1
+end tell
+return ids as text`)
 	if err != nil {
 		return nil, err
 	}
