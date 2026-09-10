@@ -357,6 +357,15 @@ func aiKeyCmd(arg string) tea.Cmd {
 	if err := secrets.SaveOpenAIKey(arg); err != nil {
 		return send(errMsg{err})
 	}
+	// 넣었는데 셸이 덮고 있으면 **그 자리에서** 말한다.
+	//
+	// "AI is on." 이라고만 답하면 방금 넣은 키로 나간다고 믿게 된다. 셸의
+	// 옛 키가 잔액이 없으면 사용자는 자기가 방금 넣은 키를 의심한다 —
+	// 화면이 맞다고 한 것을. gh 가 GH_TOKEN 이 있을 때 하는 말과 같다.
+	if secrets.EnvOverridesKeychain() {
+		return app.SayErr("music", errors.New("saved — but "+secrets.EnvOpenAIKey+
+			" in your shell is used instead · unset it to use this one"))
+	}
 	// 저장 즉시 켜진다. 다음 요청부터 이 키로 나간다 — 앱을 껐다 켜지 않는다.
 	return app.Say("music", "AI is on.")
 }

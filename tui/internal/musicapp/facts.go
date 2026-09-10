@@ -86,11 +86,18 @@ func (m Model) factCatalog() string {
 //
 // 켜는 법까지 여기 적는다. 꺼진 것을 보여 놓고 어떻게 켜는지 말하지 않으면
 // 첫 화면을 나가서 팔레트를 뒤져야 한다.
+//
+// **어느 키를 쓰는지도 적는다.** 환경변수가 키체인을 이기는데(secrets),
+// 그것을 말하지 않으면 앱 안에서 넣은 키가 조용히 무시된다. `aws configure
+// list` 가 값마다 출처를 적는 것과 같은 이유다 — 우선순위가 있는 값은
+// 출처까지 말해야 답이 완성된다.
 func (m Model) factAI() string {
-	if !secrets.HasOpenAIKey() {
-		return "off · /ai <key>"
+	src := secrets.OpenAIKeySource()
+	if src == secrets.SourceNone {
+		return "off · /ai"
 	}
-	return "OpenAI · " + intent.Model() + " · " + intent.EditModel()
+	return "OpenAI · " + intent.Model() + " · " + intent.EditModel() +
+		" · key from " + src.String()
 }
 
 func factLibrary(l *data.Library) string {
