@@ -112,9 +112,17 @@ var schema = map[string]any{
 		"context": map[string]any{
 			"type": "string",
 			"enum": contextEnum(),
-			"description": "What the person is doing, judged from their request. " +
-				"Use \"other\" when the request says nothing about the occasion — " +
-				"do not guess from the music itself.",
+			"description": "The single activity the person named in their request. " +
+				"focus: work, study, reading, anything needing concentration. " +
+				"workout: exercise or training. " +
+				"chores: housework, cooking, errands — hands busy, mind free. " +
+				"commute: travelling between places. " +
+				"social: other people are present. " +
+				"unwind: relaxing alone while awake. " +
+				"sleep: going to sleep. " +
+				"other: the request names no occasion. " +
+				"If two could apply, pick the one they actually said. " +
+				"Never infer the occasion from the music itself — that is what \"other\" is for.",
 		},
 		"picks": map[string]any{
 			"type":     "array",

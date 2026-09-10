@@ -143,14 +143,24 @@ Enum turn_status {
   canceled [note: 'esc 로 물렸다']
 }
 
+// One axis only: what the person is doing.
+//
+// `background` ("just having it on") used to sit here. It is not an activity —
+// it is a level of attention, a different axis. Mixing two axes guarantees
+// overlap: studying with music on is both focus and background.
+//
+// Attention would need its own column. We do not add one. Multiplying the
+// columns splits the samples until each cell holds one or two rows, and then
+// there is nothing left to count.
 Enum turn_context {
-  focus      [note: '일하거나 공부하는 중']
-  workout    [note: '운동']
-  sleep      [note: '자려고']
-  commute    [note: '이동 중']
-  social     [note: '사람들과']
-  background [note: '틀어만 두는 것']
-  other      [note: '요청이 자리를 말하지 않았다']
+  focus   [note: 'Work, study, reading — anything needing concentration']
+  workout [note: 'Exercise or training']
+  chores  [note: 'Housework, cooking, errands — hands busy, mind free']
+  commute [note: 'Travelling between places']
+  social  [note: 'Other people are present']
+  unwind  [note: 'Relaxing alone while awake']
+  sleep   [note: 'Going to sleep']
+  other   [note: 'The request names no occasion. Never inferred from the music itself']
 }
 
 Table turn {
