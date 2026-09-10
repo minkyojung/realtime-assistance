@@ -22,9 +22,11 @@ import (
 func (m Model) Facts() []app.Fact {
 	facts := []app.Fact{
 		{Group: sources, Name: "Music.app", Detail: m.factPlayer()},
-		{Group: sources, Name: "Apple Music", Detail: m.factCatalog(), Off: m.cat == nil},
+		{Group: sources, Name: "Apple Music", Detail: m.factCatalog(),
+			Off: m.cat == nil, Fix: fixOf(m, "/setup")},
 		{Group: sources, Name: "LRCLIB", Detail: "synced lyrics"},
-		{Group: sources, Name: "AI", Detail: m.factAI(), Off: !secrets.HasOpenAIKey()},
+		{Group: sources, Name: "AI", Detail: m.factAI(),
+			Off: !secrets.HasOpenAIKey(), Fix: fixOf(m, "/ai")},
 		{Group: library, Detail: factLibrary(data.Lib())},
 	}
 	// 명령은 이름만 늘어놓는다. 무엇을 하는지는 팔레트가 말하고(`/`),
@@ -118,4 +120,22 @@ func comma(n int) string {
 		b.WriteRune(r)
 	}
 	return b.String()
+}
+
+// fixOf — 그 명령을 인자까지 붙여 한 마디로. 없으면 빈 문자열이다.
+//
+// 이름을 여기 두 번 적지 않고 Commands() 에서 찾는 이유는, 인자 표기가
+// 한 곳에만 살아야 하기 때문이다 — 팔레트가 `<key>` 라고 적는데 첫 화면이
+// `<sk-…>` 라고 적으면 같은 것을 두 이름으로 부르게 된다.
+func fixOf(m Model, name string) string {
+	for _, c := range m.Commands() {
+		if c.Name != name {
+			continue
+		}
+		if c.Arg != "" {
+			return c.Name + " " + c.Arg
+		}
+		return c.Name
+	}
+	return ""
 }

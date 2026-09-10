@@ -19,7 +19,7 @@
                                                                                                     
                                                                                                     
                                                                                                     
-                                         [38;2;255;143;163mType /  to set up[m                                          
+                                       [38;2;255;143;163mType /setup <team ID>[m                                        
                                                                                                     
                                     [38;2;85;85;94menter   browse your library[m                                     
                                                                                                     
@@ -104,14 +104,14 @@
  [38;2;168;37;63m╭────────────────────────────────────────────────────────────────────────────────────────────────╮[m 
  [38;2;168;37;63m│[m [38;2;255;90;117mAgent   [m/                                                                                      [38;2;168;37;63m│[m 
  [38;2;168;37;63m╰────────────────────────────────────────────────────────────────────────────────────────────────╯[m 
- [38;2;255;90;117m▌ [m[38;2;232;232;234m/next[m                   [38;2;85;85;94mplay the selected track right after this one[m                             
+ [38;2;255;90;117m▌ [m[38;2;232;232;234m/setup[m[38;2;85;85;94m <team ID>[m        [38;2;85;85;94mconnect Apple Music · your Apple Developer team ID[m                       
+   [38;2;232;232;234m/next[m                   [38;2;85;85;94mplay the selected track right after this one[m                             
    [38;2;232;232;234m/later[m                  [38;2;85;85;94madd the selected track to the end of the queue[m                           
    [38;2;232;232;234m/remove[m                 [38;2;85;85;94mdrop the selected track from the queue[m                                   
    [38;2;232;232;234m/up[m                     [38;2;85;85;94mmove the selected track one place earlier[m                                
    [38;2;232;232;234m/down[m                   [38;2;85;85;94mmove the selected track one place later[m                                  
    [38;2;232;232;234m/love[m                   [38;2;85;85;94madd a heart on the track playing now[m                                     
    [38;2;232;232;234m/shuffle[m                [38;2;85;85;94mturn shuffle on[m                                                          
-   [38;2;232;232;234m/save[m[38;2;85;85;94m <name>[m            [38;2;85;85;94msave the queue as an Apple Music playlist[m                                
  [38;2;138;138;146mRecently Added[m[38;2;85;85;94m · 157[m                                                                               
                                                                                                     
 === help ===

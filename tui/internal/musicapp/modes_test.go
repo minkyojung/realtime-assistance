@@ -139,6 +139,7 @@ var _ tea.Cmd = cmdShuffle(true)
 // 예전에는 여덟 줄이 전부 섹션 이동이라, 정작 할 수 있는 일이 아래로 밀려
 // 보이지 않았다. 되돌아가기 쉬운 자리라 못 박아 둔다.
 func TestPaletteShowsActionsBeforeNavigation(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "sk-test")
 	m := New()
 	m.bodyH = 20
 
@@ -161,6 +162,9 @@ func TestPaletteShowsActionsBeforeNavigation(t *testing.T) {
 	}
 
 	// 그리고 여기서만 갈 수 있는 것들이 보여야 한다.
+	//
+	// 아직 안 켠 것이 있으면 그것이 맨 앞을 가져간다(command.go). 여기서
+	// 보려는 것은 그 다음의 순서이므로 켜 두고 잰다.
 	seen := map[string]bool{}
 	for _, c := range cmds[:visible] {
 		seen[c.Name] = true

@@ -394,17 +394,32 @@ const (
 	homeBrowse = "enter   browse your library"
 )
 
-// somethingOff — 앱이 "켜면 되는데 안 켰다"고 말한 것이 있는가.
+// setupLine — 첫 화면이 권할 한 줄.
 //
-// 무엇이 꺼졌는지는 호스트가 모른다. 앱마다 다르고, 알 필요도 없다 —
-// 앱이 Fact 에 표시하고 호스트는 세기만 한다(app.Fact.Off).
-func (m Model) somethingOff() bool {
+// 켤 것이 하나뿐이면 **그 명령을 그대로 적는다.** "`/` 를 눌러 보라"까지만
+// 말하면, 눌렀을 때 팔레트 여덟 줄에 그 명령이 없을 수도 있다 — 시킨 대로
+// 했는데 시킨 것이 없는 화면이 된다. 실제로 그랬다.
+//
+// 둘 이상이면 `/` 라고만 한다. 한 줄에 둘을 적으면 둘 다 안 읽힌다.
+// 그때는 팔레트가 꺼진 것부터 앞에 세우므로(musicapp/command.go) `/` 만
+// 쳐도 바로 보인다.
+//
+// 무엇이 꺼졌는지는 호스트가 모른다. 앱마다 다르고 알 필요도 없다 —
+// 앱이 app.Fact 에 표시하고 호스트는 세기만 한다.
+func (m Model) setupLine() string {
+	var fixes []string
 	for _, f := range m.app().Facts() {
 		if f.Off {
-			return true
+			fixes = append(fixes, f.Fix)
 		}
 	}
-	return false
+	switch {
+	case len(fixes) == 0:
+		return ""
+	case len(fixes) == 1 && fixes[0] != "":
+		return "Type " + fixes[0]
+	}
+	return homeSetup
 }
 
 // centerRow 는 한 줄을 폭 안에서 가운데에 놓는다.
@@ -427,9 +442,9 @@ func (m Model) viewHome(w, h int) string {
 	// 상태줄도 없어서(host.go View) 손이 가는 자리가 따로 없고, 받는 키가
 	// 이것 하나뿐인 화면에서는 한가운데가 곧 "여기를 보라"는 뜻이다.
 	tail := []string{centerRow(w, style.BrandSoft.Render(homeGate))}
-	if m.somethingOff() {
+	if line := m.setupLine(); line != "" {
 		tail = []string{
-			centerRow(w, style.BrandSoft.Render(homeSetup)),
+			centerRow(w, style.BrandSoft.Render(line)),
 			"",
 			centerRow(w, style.Faint.Render(homeBrowse)),
 		}

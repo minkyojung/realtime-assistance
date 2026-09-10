@@ -581,13 +581,17 @@ func TestMyWordsHaveLeftPadding(t *testing.T) {
 // 꺼진 것을 알았다. 써 보고 나서야 아는 순서는 거꾸로다.
 type factApp struct {
 	stubApp
-	off bool
+	off   bool
+	facts []app.Fact
 }
 
 func (f factApp) Facts() []app.Fact {
+	if f.facts != nil {
+		return f.facts
+	}
 	return []app.Fact{
 		{Group: "Sources", Name: "Music.app", Detail: "play"},
-		{Group: "Sources", Name: "AI", Detail: "on", Off: f.off},
+		{Group: "Sources", Name: "AI", Detail: "on", Off: f.off, Fix: "/ai <key>"},
 	}
 }
 
@@ -607,7 +611,8 @@ func homeWith(off bool) tea.Model {
 
 func TestHomeAsksToSetUpWhenSomethingIsOff(t *testing.T) {
 	out := plain(homeWith(true).View().Content)
-	if !strings.Contains(out, "Type /  to set up") {
+	// 켤 것이 하나뿐이면 그 명령을 그대로 적는다.
+	if !strings.Contains(out, "Type /ai <key>") {
 		t.Error("켤 것이 남았는데 들어가라고만 한다")
 	}
 	if strings.Contains(out, "Press Enter to start") {
@@ -655,5 +660,37 @@ func TestHomeStillSwallowsLetters(t *testing.T) {
 	m, _ = m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	if m.View().Content != before {
 		t.Error("홈에서 글자가 통과했다")
+	}
+}
+
+// 켤 것이 하나뿐이면 첫 화면이 **그 명령을 그대로 적는다.**
+//
+// "`/` 를 눌러 보라"까지만 말하면, 눌렀을 때 팔레트 여덟 줄에 그 명령이
+// 없을 수도 있다. 실제로 그랬다 — 첫 화면이 시킨 대로 `/` 를 쳤는데
+// 큐 조작 명령만 여덟 줄 나왔다.
+func TestHomeNamesTheCommandWhenOnlyOneIsOff(t *testing.T) {
+	home := func(facts []app.Fact) string {
+		hm := New(factApp{stubApp: stubApp{name: "alpha"}, facts: facts})
+		var m tea.Model = &hm
+		m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 30})
+		return plain(m.View().Content)
+	}
+
+	// 배포판 — 애플 토큰이 박혀 있으니 켤 것은 AI 하나다.
+	out := home([]app.Fact{
+		{Name: "Apple Music", Detail: "catalog search"},
+		{Name: "AI", Detail: "off", Off: true, Fix: "/ai <key>"},
+	})
+	if !strings.Contains(out, "Type /ai <key>") {
+		t.Error("켤 것이 하나뿐인데 명령을 안 적는다")
+	}
+
+	// 둘 이상이면 한 줄에 둘을 적지 않는다. 팔레트가 꺼진 것부터 세운다.
+	out = home([]app.Fact{
+		{Name: "Apple Music", Detail: "off", Off: true, Fix: "/setup <team ID>"},
+		{Name: "AI", Detail: "off", Off: true, Fix: "/ai <key>"},
+	})
+	if !strings.Contains(out, "Type /  to set up") {
+		t.Error("둘 다 꺼졌는데 하나만 적는다")
 	}
 }

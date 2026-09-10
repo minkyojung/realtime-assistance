@@ -3,6 +3,7 @@ package musicapp
 import (
 	"amcli/tui/internal/app"
 	"amcli/tui/internal/secrets"
+	"amcli/tui/internal/style"
 	"fmt"
 	"regexp"
 	"strings"
@@ -627,4 +628,58 @@ func TestAddedSinceIsEmptyIfTheSnapshotWasTakenTooLate(t *testing.T) {
 	if got := addedSince(tooLate, now); got != "" {
 		t.Errorf("addedSince = %q — 늦게 찍은 스냅샷이 곡을 찾아냈다면 그게 더 이상하다", got)
 	}
+}
+
+// 아직 안 켠 것이 팔레트 맨 앞에 온다.
+//
+// 팔레트는 여덟 줄에서 끊긴다. 첫 화면이 "Type / to set up" 이라고 시켜
+// 놓고 `/` 를 치면 큐 조작 명령만 여덟 줄 나왔다 — 시킨 대로 했는데
+// 시킨 것이 없는 화면이었다.
+func TestOffCommandsComeFirst(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "")
+	if secrets.HasOpenAIKey() {
+		t.Skip("이 기계 키체인에 실제 키가 들어 있다")
+	}
+	cmds := New().Commands()
+	if len(cmds) == 0 {
+		t.Fatal("명령이 없다")
+	}
+	if cmds[0].Name != "/ai" {
+		var head []string
+		for _, c := range cmds[:style.Min(8, len(cmds))] {
+			head = append(head, c.Name)
+		}
+		t.Errorf("AI 가 꺼졌는데 /ai 가 맨 앞이 아니다: %v", head)
+	}
+	// 켜는 명령에는 무엇을 달라는지가 붙어 있어야 한다.
+	if cmds[0].Arg == "" {
+		t.Error("/ai 가 인자를 안 밝힌다")
+	}
+}
+
+// 켜는 명령의 인자 표기는 한 곳에만 산다.
+//
+// 팔레트가 `<key>` 라고 적는데 첫 화면이 `<sk-…>` 라고 적으면 같은 것을
+// 두 이름으로 부르게 된다.
+func TestFixMatchesTheCommand(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "")
+	if secrets.HasOpenAIKey() {
+		t.Skip("이 기계 키체인에 실제 키가 들어 있다")
+	}
+	m := New()
+	var fix string
+	for _, f := range m.Facts() {
+		if f.Name == "AI" {
+			fix = f.Fix
+		}
+	}
+	for _, c := range m.Commands() {
+		if c.Name == "/ai" {
+			if want := c.Name + " " + c.Arg; fix != want {
+				t.Errorf("첫 화면은 %q, 팔레트는 %q", fix, want)
+			}
+			return
+		}
+	}
+	t.Fatal("/ai 명령이 없다")
 }

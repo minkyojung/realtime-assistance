@@ -34,7 +34,7 @@ import (
 var paletteOrder = []string{
 	"/next", "/later", "/remove", "/up", "/down",
 	"/love", "/shuffle", "/save", "/shazam", "/clear", "/repeat", "/rate",
-	"/volume", "/pause", "/reload", "/setup", "/login",
+	"/volume", "/pause", "/reload", "/ai", "/setup", "/login",
 }
 
 func paletteRank(name string) int {
@@ -44,6 +44,23 @@ func paletteRank(name string) int {
 		}
 	}
 	return len(paletteOrder)
+}
+
+// offCommands — 지금 켜면 되는 것들의 명령 이름.
+//
+// 무엇이 꺼졌는지 아는 것은 앱이다. 첫 화면도 팔레트도 같은 이 답을 쓴다 —
+// 두 군데서 따로 판단하면 한쪽만 고쳤을 때 조용히 어긋난다.
+func (m Model) offCommands() map[string]bool {
+	out := map[string]bool{}
+	if !secrets.HasOpenAIKey() {
+		out["/ai"] = true
+	}
+	if m.cat == nil {
+		out["/setup"] = true
+	} else if m.cat.UserToken == "" {
+		out["/login"] = true
+	}
+	return out
 }
 
 func (m Model) Commands() []app.Command {
@@ -86,8 +103,18 @@ func (m Model) Commands() []app.Command {
 	}
 	actions = append(actions, m.modeCommands()...)
 	// 순위대로 세운다. 같은 순위는 원래 자리를 지킨다.
+	//
+	// **아직 안 켠 것이 있으면 그것이 맨 앞이다.** 첫 화면이 "Type / to
+	// set up" 이라고 시켜 놓고 `/` 를 치면 큐 조작 명령만 여덟 줄 나왔다 —
+	// 시킨 대로 했는데 시킨 것이 없는 화면이었다. 팔레트는 여덟 줄에서
+	// 끊기므로 순서가 곧 보이느냐 마느냐다.
+	off := m.offCommands()
 	sort.SliceStable(actions, func(i, j int) bool {
-		return paletteRank(actions[i].Name) < paletteRank(actions[j].Name)
+		ri, rj := paletteRank(actions[i].Name), paletteRank(actions[j].Name)
+		if oi, oj := off[actions[i].Name], off[actions[j].Name]; oi != oj {
+			return oi // 꺼진 쪽이 앞
+		}
+		return ri < rj
 	})
 	return append(append(actions, jumps...), playlists...)
 }
