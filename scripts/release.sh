@@ -1,7 +1,8 @@
 #!/bin/sh
 # 배포물을 만든다 — 빌드 · 서명 · 공증 · 검역 검증까지 한 번에.
 #
-#   scripts/release.sh
+#   scripts/release.sh          0.1.0 으로
+#   scripts/release.sh 0.2.0    판을 정해서
 #
 # 네 단계를 손으로 이으면 다음에 배포할 때 순서를 다시 기억해야 하고,
 # 하나를 빠뜨려도 **받는 사람 기계에서만 티가 난다.** 그래서 묶는다.
@@ -15,6 +16,9 @@ cd "$(dirname "$0")/.."
 profile="amcli"        # notarytool 자격 증명 프로필 (키체인)
 out="dist/amcli"
 zip="dist/amcli.zip"
+
+# 판. 태그와 같은 값이어야 한다 — 첫 화면이 이것을 적는다.
+version="${1:-0.1.0}"
 
 say() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 die() { printf '\n%s\n' "$1" >&2; exit 1; }
@@ -36,8 +40,8 @@ xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1 || die \
 앱 암호는 appleid.apple.com › 로그인 및 보안 › 앱 암호 에서 만든다."
 
 # ── 빌드 ────────────────────────────────────────────────────────────
-say "1/4  빌드 — 개발자 토큰을 박는다"
-./scripts/build.sh -o "$out"
+say "1/4  빌드 — 개발자 토큰과 판(v$version)을 박는다"
+./scripts/build.sh --version "$version" -o "$out"
 
 # ── 서명 ────────────────────────────────────────────────────────────
 say "2/4  서명 — $identity"
@@ -70,7 +74,7 @@ spctl -a -vvv -t install "$bin" 2>&1 | sed 's/^/  /'
 spctl -a -t install "$bin" 2>/dev/null || die "검역이 붙으면 막힌다 — 공증이 안 먹었다"
 
 say "됐다"
-echo "  $zip  $(ls -lh "$zip" | awk '{print $5}')"
+echo "  $zip  $(ls -lh "$zip" | awk '{print $5}')  ·  v$version"
 echo ""
 echo "  이 파일을 그대로 보내면 된다. 받는 사람이 할 일은 둘뿐이다."
 echo "    · 실행하고 '음악 제어' 권한 승인"

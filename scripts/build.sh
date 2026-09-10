@@ -8,6 +8,7 @@
 #   scripts/build.sh                  토큰을 박아 배포물을 만든다
 #   scripts/build.sh --dev            토큰 없이. 각자 자기 설정으로 돈다
 #   scripts/build.sh -o /tmp/amcli    나갈 자리를 정한다
+#   scripts/build.sh --version 0.1.0  첫 화면에 적힐 판
 #
 # 받는 사람이 해야 하는 것은 둘뿐이다.
 #   · Music.app 자동화 권한 허용 (앱이 안내한다)
@@ -18,11 +19,13 @@ cd "$(dirname "$0")/.."
 
 out="dist/amcli"
 dev=""
+version=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--dev) dev=1 ;;
 	-o) shift; out="$1" ;;
-	*) echo "usage: $0 [--dev] [-o path]" >&2; exit 2 ;;
+	--version) shift; version="$1" ;;
+	*) echo "usage: $0 [--dev] [--version X.Y.Z] [-o path]" >&2; exit 2 ;;
 	esac
 	shift
 done
@@ -46,6 +49,12 @@ if [ -z "$dev" ]; then
 		exit 1
 	}
 	ldflags="-X amcli/tui/internal/applemusic.EmbeddedToken=$token"
+fi
+
+# 판을 박는다. 안 박으면 첫 화면이 "v0.1.0-dev" 라고 말한다 —
+# 받는 사람에게 개발 중인 물건을 준 셈이 된다.
+if [ -n "$version" ]; then
+	ldflags="$ldflags -X amcli/tui/internal/host.Version=$version"
 fi
 
 echo "빌드 중… → $out"

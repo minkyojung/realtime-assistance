@@ -22,9 +22,54 @@
     .page{ width:210mm; min-height:297mm; margin:0 auto 16px; padding:18mm 16mm;
            background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.15); }
   }
+  /* 인쇄 — 섹션 하나가 A4 한 장이다.
+     화면에서 넉넉하던 여백이 여기서는 넘침이 된다. 조판을 조인다. */
   @media print{
-    .page{ page-break-after:always; }
+    body{ font-size:9pt; line-height:1.5; }
+    /* 섹션마다 새 장을 강제하면, 한 장을 조금 넘긴 섹션이 반쯤 빈 장을
+       하나씩 남긴다(11장 설계가 20장이 됐다). 흐르게 두고 표·그림만
+       경계에서 지킨다. 빈 자리 없이 촘촘한 쪽이 읽기 낫다. */
+    .page{ page-break-after:auto; }
+    .page + .page{ page-break-before:auto; }
     .page:last-child{ page-break-after:auto; }
+
+    h1{ font-size:20pt; }
+    h2{ font-size:12pt; margin-bottom:10px; padding-bottom:5px; }
+    h3{ font-size:9.8pt; margin:12px 0 4px; }
+    h4{ font-size:9.3pt; margin:8px 0 3px; }
+    p{ margin:0 0 6px; }
+
+    table{ font-size:8.2pt; margin:6px 0 9px; }
+    th,td{ padding:3px 6px; }
+    .small,small{ font-size:8pt; }
+    .kv{ font-size:8.8pt; gap:3px 10px; }
+
+    .box{ padding:7px 10px; margin-bottom:7px; }
+    .stat{ gap:8px; margin:8px 0 10px; }
+    .stat div{ padding:7px; }
+    .stat b{ font-size:16pt; }
+
+    pre.dia{ font-size:7pt; line-height:1.45; padding:8px; margin:6px 0 9px; }
+    code{ font-size:7.6pt; }
+
+    /* 제목만 페이지 끝에 남는 것을 막는다.
+       "3-5. 예외 · 오류 시나리오" 가 장 끝에 홀로 서고 표는 다음 장에 있었다.
+       제목은 자기가 여는 것과 같은 장에 있어야 제목이다. */
+    h2,h3,h4{ page-break-after:avoid; break-after:avoid; }
+
+    /* 표와 그림은 페이지 경계에서 쪼개지지 않는다 */
+    table,figure,.box,.stat{ page-break-inside:avoid; }
+    tr,td,th{ page-break-inside:avoid; }
+    .shots{ gap:8px 10px; }
+    figcaption{ font-size:7.6pt; margin-top:2px; }
+
+    /* 캡처는 세로로 긴 창이라 폭에 맞추면 한 장을 넘긴다.
+       높이를 먼저 정하고 폭이 따라오게 한다. */
+    figure img{ max-width:100%; width:auto; height:auto; margin:0 auto; }
+    .shots figure img{ max-height:88mm; }
+    figure.full img{ max-height:62mm; }
+    figure.full:first-of-type img{ max-height:96mm; }   /* 검색 화면은 크게 */
+    section:nth-of-type(7) figure img{ max-height:118mm; }  /* ERD */
   }
 
   h1{ font-size:22pt; letter-spacing:-.03em; margin:0 0 4px; }
