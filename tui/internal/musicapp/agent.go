@@ -35,6 +35,24 @@ var (
 	errTooManySteps = errors.New("gave up after going in circles")
 )
 
+// catalog_search — 라이브러리 밖으로 나가는 유일한 문.
+//
+// 기본은 언제나 그 사람의 라이브러리다. 그것이 이 제품의 주장이고,
+// 매번 밖으로 나가면 남의 추천 서비스와 다를 것이 없어진다. 그래서 이 칸은
+// **비어 있는 것이 정상**이고, 문장이 밖을 가리킬 때만 찬다.
+//
+// 고르는 층이 아니라 여기서 검색어를 받는 이유는, 무엇을 찾을지는 사람의
+// 문장을 읽어야 알고 그 문장을 보는 것이 이 층이기 때문이다.
+var catalogSearchParam = map[string]any{
+	"type":  "array",
+	"items": map[string]any{"type": "string"},
+	"description": "Apple Music search terms — ONLY when the request reaches " +
+		"outside what they already own (\"something I have never heard\", " +
+		"\"new music\", an artist or genre they do not have). Leave this out for " +
+		"ordinary requests; their own library is the default and usually the " +
+		"right answer. Anything picked from these gets added to their library.",
+}
+
 // toolSpec 은 도구 하나와, 그 결과를 어떻게 다룰지다.
 type toolSpec struct {
 	intent.Tool
@@ -68,6 +86,7 @@ func (m Model) tools() []toolSpec {
 						"description": "What to play, in the person's own words. " +
 							"Pass their sentence through; do not translate or summarise it.",
 					},
+					"catalog_search": catalogSearchParam,
 				},
 			},
 		}},
@@ -87,6 +106,7 @@ func (m Model) tools() []toolSpec {
 						"description": "What to add, in the person's own words. " +
 							"Pass their sentence through; do not translate or summarise it.",
 					},
+					"catalog_search": catalogSearchParam,
 					"where": map[string]any{
 						"type":        "string",
 						"enum":        []string{"end", "next"},
@@ -151,25 +171,27 @@ func (m Model) runTool(c intent.Call) (Model, string, tea.Cmd) {
 	switch c.Name {
 	case "build_queue":
 		var a struct {
-			Request string `json:"request"`
+			Request       string   `json:"request"`
+			CatalogSearch []string `json:"catalog_search"`
 		}
 		if err := json.Unmarshal([]byte(c.Args), &a); err != nil || strings.TrimSpace(a.Request) == "" {
 			return m, "could not read the request", nil
 		}
 		// 선곡은 라이브러리 전체를 읽는다. 여기서만 그 값을 치른다.
 		ctx := m.ask.ctx
-		return m, "", cmdBuildQueue(ctx, m.ask.seq, a.Request, data.Lib().Tracks, nil, m.current())
+		return m, "", cmdBuildQueue(ctx, m.ask.seq, a.Request, data.Lib().Tracks, m.cat, a.CatalogSearch, m.current())
 
 	case "add_tracks":
 		var a struct {
-			Request string `json:"request"`
-			Where   string `json:"where"`
+			Request       string   `json:"request"`
+			Where         string   `json:"where"`
+			CatalogSearch []string `json:"catalog_search"`
 		}
 		if err := json.Unmarshal([]byte(c.Args), &a); err != nil || strings.TrimSpace(a.Request) == "" {
 			return m, "could not read the request", nil
 		}
 		ctx := m.ask.ctx
-		return m, "", cmdAddTracks(ctx, m.ask.seq, a.Request, data.Lib().Tracks, nil, m.current(), a.Where != "next")
+		return m, "", cmdAddTracks(ctx, m.ask.seq, a.Request, data.Lib().Tracks, m.cat, a.CatalogSearch, m.current(), a.Where != "next")
 
 	case "remove_tracks":
 		var a struct {

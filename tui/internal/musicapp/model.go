@@ -6,6 +6,7 @@ package musicapp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"sort"
 	"strconv"
@@ -297,13 +298,30 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		if !m.ask.fresh(msg.seq) {
 			return m, nil
 		}
-		m.ask = m.ask.done()
 		if msg.err != nil {
+			m.ask = m.ask.done()
 			// 그만둔 것은 실패가 아니다. 호스트가 이미 로그에 남겼다.
 			if errors.Is(msg.err, context.Canceled) {
 				return m, nil
 			}
 			return m, app.SayErr(m.Name(), msg.err)
+		}
+		// 라이브러리 밖에서 고른 곡이 있으면 담아야 튼다. 물음은 아직
+		// 안 끝났다 — 이 요청은 소리가 날 때까지가 한 벌이고, 그래야 esc 도
+		// 계속 듣는다.
+		if !msg.resolved && len(catalogPicks(msg.res)) > 0 {
+			n := len(catalogPicks(msg.res))
+			return m, tea.Batch(
+				cmdResolvePicks(m.ask.ctx, m.cat, msg),
+				app.Say(m.Name(), fmt.Sprintf("Adding %s to your library…", plural(n, "track"))),
+			)
+		}
+		m.ask = m.ask.done()
+		// 담느라 다시 읽은 스냅샷이 실려 왔으면 그것부터 갈아끼운다.
+		// 방금 담은 곡이 스냅샷에 없으면 큐가 그 곡을 못 찾는다.
+		if msg.lib != nil {
+			data.Set(msg.lib)
+			m.resync(data.Lib())
 		}
 		apply := m.applyQueue
 		if msg.add {
@@ -316,7 +334,15 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		if strings.TrimSpace(note) == "" {
 			note = msg.res.Title
 		}
-		return mm.(Model).remember(note), tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
+		say := tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
+		// 버린 곡은 조용히 사라지면 안 된다. 화면에는 안 나오는데 모델의
+		// 근거에는 나오므로, 말해주지 않으면 무엇이 빠졌는지 알 길이 없다.
+		if msg.dropped > 0 {
+			say = tea.Batch(say, app.Say(m.Name(), fmt.Sprintf(
+				"%s could not be added, so %s left out",
+				plural(msg.dropped, "track"), wasWere(msg.dropped))))
+		}
+		return mm.(Model).remember(note), say
 
 	case libraryMsg:
 		return m.applyLibrary(msg)

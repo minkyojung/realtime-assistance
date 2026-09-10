@@ -6,6 +6,7 @@ import (
 
 	"amcli/tui/internal/api"
 	"amcli/tui/internal/app"
+	"amcli/tui/internal/applemusic"
 	"amcli/tui/internal/data"
 	"amcli/tui/internal/intent"
 	"amcli/tui/internal/music"
@@ -27,6 +28,21 @@ type queueMsg struct {
 	res intent.Result
 	err error
 
+	// extras 는 이번 선곡에 후보로 준 라이브러리 밖 곡들이다.
+	// 고른 것을 담고 나서 어느 곡이 어느 픽인지 짝지을 때 쓴다.
+	extras []api.CatalogTrack
+
+	// resolved 는 라이브러리 밖의 픽을 이미 처리했다는 뜻이다.
+	// 이 표시가 없으면 큐를 앉히기 전에 담는 단계를 한 번 거친다.
+	resolved bool
+
+	// lib 은 곡을 담느라 다시 읽은 스냅샷이다. 있으면 함께 갈아끼운다 —
+	// 담은 곡이 스냅샷에 없으면 큐가 그 곡을 못 찾는다.
+	lib *data.Library
+
+	// dropped 는 끝내 담지 못해 버린 곡 수다. 조용히 버리지 않기 위해 센다.
+	dropped int
+
 	// add 가 켜져 있으면 **갈아끼우지 않고 붙인다.** 선곡은 같은 길을
 	// 쓰지만 결과를 앉히는 법이 다르다 — 듣던 곡을 끊느냐 마느냐가 갈린다.
 	add   bool
@@ -41,21 +57,85 @@ const askTimeout = 90 * time.Second
 //
 // ctx 를 바깥에서 받는다. 안에서 만들면 취소 손잡이가 이 함수와 함께
 // 사라져서, 도는 동안 끊을 방법이 없다.
-func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Track, extras []api.CatalogTrack, cur intent.Current) tea.Cmd {
+func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Track, cat *applemusic.Client, terms []string, cur intent.Current) tea.Cmd {
 	return func() tea.Msg {
+		extras := catalogCandidates(ctx, cat, terms)
 		res, err := intent.Build(ctx, prompt, library, extras, reactions(), cur, time.Now())
-		return queueMsg{seq: seq, res: res, err: err}
+		return queueMsg{seq: seq, res: res, err: err, extras: extras}
 	}
+}
+
+// 한 요청이 카탈로그를 뒤지는 횟수와 가져오는 곡 수의 상한.
+//
+// 상한이 있어야 하는 이유는 토큰이다. 라이브러리 166줄이 이미 프롬프트의
+// 대부분인데, 후보가 그만큼 붙으면 캐시가 안 걸리는 절반이 두 배가 된다.
+// 그리고 고를 것이 많다고 잘 고르지 않는다 — 사람도 그렇다.
+const (
+	maxSearchTerms = 3
+	maxCandidates  = 30
+)
+
+// catalogCandidates 는 검색어들을 곡 후보로 바꾼다.
+//
+// 이미 라이브러리에 있는 곡은 뺀다. 라이브러리 표에 이미 있는 곡이
+// 카탈로그 표에도 나오면, 모델이 **가진 곡을 밖에서 다시 사 온다.**
+// 그 판정은 Apple 이 한다(MarkInLibrary) — 이름으로 짐작하지 않는다.
+//
+// 못 뒤져도 조용히 빈 손으로 돌아온다. 카탈로그가 꺼져 있거나 로그인
+// 전이면 지금까지처럼 라이브러리 안에서만 고르면 되고, 그것도 정상이다.
+func catalogCandidates(ctx context.Context, cat *applemusic.Client, terms []string) []api.CatalogTrack {
+	if cat == nil || len(terms) == 0 {
+		return nil
+	}
+	if len(terms) > maxSearchTerms {
+		terms = terms[:maxSearchTerms]
+	}
+	seen := map[string]bool{}
+	var hits []api.CatalogTrack
+	for _, term := range terms {
+		found, err := cat.Search(ctx, term, 10)
+		if err != nil {
+			continue // 한 검색어가 실패해도 나머지는 산다
+		}
+		for _, t := range found {
+			if t.AppleMusicId == "" || seen[t.AppleMusicId] {
+				continue
+			}
+			seen[t.AppleMusicId] = true
+			hits = append(hits, t)
+		}
+	}
+	if len(hits) == 0 {
+		return nil
+	}
+	marked, err := cat.MarkInLibrary(ctx, hits)
+	if err != nil {
+		// 담겼는지 모르면 후보로 못 쓴다. 가진 곡을 밖에서 다시 사 오는 것이
+		// 아무 후보도 없는 것보다 나쁘다.
+		return nil
+	}
+	out := make([]api.CatalogTrack, 0, maxCandidates)
+	for _, t := range marked {
+		if t.InLibrary == nil || *t.InLibrary {
+			continue // 이미 가진 곡이거나, 가졌는지 모르는 곡
+		}
+		out = append(out, t)
+		if len(out) == maxCandidates {
+			break
+		}
+	}
+	return out
 }
 
 // cmdAddTracks — 같은 선곡을 돌리되 결과를 큐에 **붙인다.**
 //
 // 고르는 일은 한 곳뿐이다. 붙이기 위해 선곡을 따로 만들면 두 벌이 되고,
 // 하나를 고칠 때마다 다른 하나가 뒤처진다.
-func cmdAddTracks(ctx context.Context, seq int, prompt string, library []api.Track, extras []api.CatalogTrack, cur intent.Current, atEnd bool) tea.Cmd {
+func cmdAddTracks(ctx context.Context, seq int, prompt string, library []api.Track, cat *applemusic.Client, terms []string, cur intent.Current, atEnd bool) tea.Cmd {
 	return func() tea.Msg {
+		extras := catalogCandidates(ctx, cat, terms)
 		res, err := intent.Build(ctx, prompt, library, extras, reactions(), cur, time.Now())
-		return queueMsg{seq: seq, res: res, err: err, add: true, atEnd: atEnd}
+		return queueMsg{seq: seq, res: res, err: err, extras: extras, add: true, atEnd: atEnd}
 	}
 }
 
