@@ -35,22 +35,33 @@ var (
 	errTooManySteps = errors.New("gave up after going in circles")
 )
 
-// catalog_search — 라이브러리 밖으로 나가는 유일한 문.
+// catalog_search — 애플 뮤직에 물어볼 말.
 //
 // 기본은 언제나 그 사람의 라이브러리다. 그것이 이 제품의 주장이고,
-// 매번 밖으로 나가면 남의 추천 서비스와 다를 것이 없어진다. 그래서 이 칸은
-// **비어 있는 것이 정상**이고, 문장이 밖을 가리킬 때만 찬다.
+// 매번 밖으로 나가면 남의 추천 서비스와 다를 것이 없어진다.
+//
+// 한때 이 칸을 "이미 가진 것 밖의 요청일 때만" 채우라고 했다. **이 층은
+// 라이브러리를 보지 않는다**(intent.NewChat). 가진 것이 무엇인지 모르는
+// 층에게 가졌는지를 판단해서 정하라고 시킨 것이다. 그래서 "야생화 틀어줘"
+// 처럼 이름을 댄 요청이 검색 없이 지나갔다.
+//
+// 이제 위험이 없다. 검색 결과 중 이미 가진 곡은 라이브러리 곡 번호를
+// 달고 오므로(intent.Extra), 골라도 담지 않고 바로 튼다 — 가진 곡을 밖에서
+// 다시 사 오던 일이 구조적으로 사라졌다. 그러니 **이름이 나오면 찾는다.**
 //
 // 고르는 층이 아니라 여기서 검색어를 받는 이유는, 무엇을 찾을지는 사람의
 // 문장을 읽어야 알고 그 문장을 보는 것이 이 층이기 때문이다.
 var catalogSearchParam = map[string]any{
 	"type":  "array",
 	"items": map[string]any{"type": "string"},
-	"description": "Apple Music search terms — ONLY when the request reaches " +
-		"outside what they already own (\"something I have never heard\", " +
-		"\"new music\", an artist or genre they do not have). Leave this out for " +
-		"ordinary requests; their own library is the default and usually the " +
-		"right answer. Anything picked from these gets added to their library.",
+	"description": "Apple Music search terms. Fill this in whenever the request " +
+		"names something specific — a song, an album, an artist — or asks for " +
+		"music they may not own (\"something I have never heard\", \"new music\", " +
+		"a genre). Searching costs nothing: results that are already in their " +
+		"library come back marked as owned and play at once, so you never have " +
+		"to know in advance whether they have it. Leave this out only for " +
+		"requests with nothing to look up (\"something quiet\", \"more like this\"), " +
+		"where their own library is the answer.",
 }
 
 // toolSpec 은 도구 하나와, 그 결과를 어떻게 다룰지다.

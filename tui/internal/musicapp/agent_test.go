@@ -2,6 +2,7 @@ package musicapp
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -320,5 +321,54 @@ func TestMemoryIsCarriedIntoTheNextQuestion(t *testing.T) {
 	if with.chat.Len() <= bare.chat.Len() {
 		t.Errorf("기억이 있는데 물음에 안 실렸다: %d 줄, 기억 없을 때 %d 줄",
 			with.chat.Len(), bare.chat.Len())
+	}
+}
+
+// 이 층은 라이브러리를 보지 않는다(intent.NewChat). 그러니 **가졌는지를
+// 판단해서 정하라고 시키면 안 된다.**
+//
+// 한때 catalog_search 가 "이미 가진 것 밖의 요청일 때만" 채우라고 했다.
+// 보지도 못하는 것을 근거로 결정하라는 지시였고, 그래서 "야생화 틀어줘"
+// 처럼 이름을 댄 요청이 검색 없이 지나갔다 — 실제로 갖고 있는 곡이었다.
+//
+// 이제 검색은 공짜다. 가진 곡은 표시가 붙어서 오므로 미리 알 필요가 없다.
+func TestCatalogSearchDoesNotAskAboutWhatItCannotSee(t *testing.T) {
+	desc, _ := catalogSearchParam["description"].(string)
+	if desc == "" {
+		t.Fatal("설명이 비었다 — 모델이 이 칸을 언제 채울지 알 길이 없다")
+	}
+	// 이 층이 못 보는 것을 근거로 삼으라는 말.
+	for _, bad := range []string{"ONLY when", "already own"} {
+		if strings.Contains(desc, bad) {
+			t.Errorf("%q — 라이브러리를 못 보는 층에게 가졌는지를 묻는다:\n%s", bad, desc)
+		}
+	}
+	// 대신 왜 안전한지를 말해야 한다.
+	if !strings.Contains(desc, "owned") {
+		t.Errorf("가진 곡이 표시되어 온다는 것을 안 알려준다:\n%s", desc)
+	}
+}
+
+// 두 도구가 같은 칸을 쓴다. 하나만 고치면 큐를 짤 때와 곡을 더할 때가
+// 서로 다른 규칙으로 움직인다.
+func TestBothQueueToolsShareTheSameSearchRule(t *testing.T) {
+	m := New()
+	n := 0
+	for _, ts := range m.tools() {
+		props, _ := ts.Params["properties"].(map[string]any)
+		if props == nil {
+			continue
+		}
+		got, ok := props["catalog_search"]
+		if !ok {
+			continue
+		}
+		n++
+		if fmt.Sprint(got) != fmt.Sprint(catalogSearchParam) {
+			t.Errorf("%s 의 catalog_search 가 따로 논다", ts.Name)
+		}
+	}
+	if n != 2 {
+		t.Errorf("catalog_search 를 가진 도구가 %d개 — build_queue 와 add_tracks 둘이어야 한다", n)
 	}
 }
