@@ -1,0 +1,271 @@
+package host
+
+import (
+	"charm.land/lipgloss/v2"
+	"fmt"
+	"strings"
+
+	"amcli/tui/internal/app"
+	"amcli/tui/internal/style"
+	tea "charm.land/bubbletea/v2"
+)
+
+// 명령 팔레트와 도움말.
+//
+// 둘 다 본문 자리를 잠시 빌려 쓴다. 오버레이 창을 따로 만들지 않는다.
+// "화면에 상시로 자리를 주지 않는다"는 원칙에서 나온 결정이다.
+
+// 호스트 자신의 명령. 앱에 속하지 않는 것들이다.
+//
+// 앱 전환도 여기 있다. 전용 키를 두지 않는 이유는 터미널이 ctrl+tab 을
+// tab 과 구별하지 못하기 때문이다 — kitty 키보드 프로토콜이 있어야 하는데
+// Terminal.app 은 지원하지 않는다. 터미널에 따라 되다 안 되다 하는 키는
+// 없는 것만 못하다.
+//
+// 그리고 애초에 새 키가 필요 없다. "화면에 상시로 자리를 주지 않는다"는
+// 원칙대로 `/` 가 갈 곳을 보여주면 된다. 사이드바를 없앤 것과 같은 이유다.
+func (m Model) hostCommands() []app.Command {
+	out := make([]app.Command, 0, len(m.apps)+2)
+	for i, a := range m.apps {
+		if !m.home && i == m.current {
+			continue // 지금 보고 있는 앱으로 갈 이유는 없다
+		}
+		help := "switch to " + a.Name()
+		if n := a.Badge(); n > 0 {
+			help += fmt.Sprintf(" · %d unread", n)
+		}
+		out = append(out, app.Command{
+			Name: "/" + a.Name(), Help: help, Run: switchTo(i),
+		})
+	}
+	return append(out, []app.Command{
+		{Name: "/cost", Help: "what this session has spent",
+			Run: func(string) tea.Cmd { return func() tea.Msg { return showCostMsg{} } }},
+		{Name: "/help", Help: "keys and commands",
+			Run: func(string) tea.Cmd { return func() tea.Msg { return showHelpMsg{} } }},
+	}...)
+}
+
+// 전환은 cmd+tab 에 가깝다. 앱은 시작할 때 전부 켜져서 끝까지 살아 있고,
+// 화면만 갈아끼운다. 그래서 채팅을 보는 중에도 음악은 계속 재생된다.
+func switchTo(i int) func(string) tea.Cmd {
+	return func(string) tea.Cmd {
+		return func() tea.Msg { return switchAppMsg{index: i} }
+	}
+}
+
+type switchAppMsg struct{ index int }
+
+type (
+	showHelpMsg struct{}
+	showCostMsg struct{}
+)
+
+// 호스트 명령과 지금 앱의 명령을 합친다. 사용자에게는 하나로 보인다.
+//
+// 앱 전환을 앞에 둔다. 다른 앱으로 가는 길이 그 앱의 명령보다 먼저다.
+func (m Model) allCommands() []app.Command {
+	host := m.hostCommands()
+	out := make([]app.Command, 0, len(host)+4)
+	for _, c := range host {
+		if strings.HasPrefix(c.Name, "/") && isAppName(m, c.Name) {
+			out = append(out, c)
+		}
+	}
+	// 홈에서는 앱 명령을 내놓지 않는다. 들어가지도 않은 앱의 /queue 를
+	// 실행하면 화면은 홈인데 큐만 바뀌어 있다.
+	if !m.home {
+		out = append(out, m.app().Commands()...)
+	}
+	for _, c := range host {
+		if !isAppName(m, c.Name) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func isAppName(m Model, cmd string) bool {
+	for _, a := range m.apps {
+		if cmd == "/"+a.Name() {
+			return true
+		}
+	}
+	return false
+}
+
+// 입력한 것으로 시작하는 명령만 남긴다.
+func (m Model) matchedCommands() []app.Command {
+	typed := strings.ToLower(strings.Fields(m.input.Value() + " ")[0])
+	var out []app.Command
+	for _, c := range m.allCommands() {
+		if strings.HasPrefix(c.Name, typed) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// 고를 수 있는 줄만 센다. 보이지 않는 줄에 커서가 서면 ↓ 를 눌러도
+// 아무 일도 안 일어나고, enter 는 본 적 없는 명령을 실행한다.
+func (m Model) overlayCount() int {
+	if m.showHelp {
+		return len(m.helpRows())
+	}
+	// 보이는 줄이 아니라 **고를 수 있는 줄**을 센다. 화면에 여덟 줄만
+	// 보여도 ↓ 로 끝까지 갈 수 있어야 한다 — 예전에는 여기서 멈춰서,
+	// 나머지 명령에 닿는 길이 타이핑뿐이었다.
+	return len(m.matchedCommands())
+}
+
+func (m Model) runCommand() (tea.Model, tea.Cmd) {
+	line := m.input.Value()
+	fields := strings.Fields(line)
+	if len(fields) == 0 {
+		return m, nil
+	}
+	name, arg := fields[0], strings.TrimSpace(strings.TrimPrefix(line, fields[0]))
+
+	// 목록에서 고른 것이 있으면 그것을 쓴다. 인자를 이미 쳤으면 친 것을 존중한다.
+	if cs := m.matchedCommands(); len(cs) > 0 && m.pick < len(cs) {
+		if picked := cs[m.pick]; !strings.HasPrefix(line, picked.Name+" ") {
+			name, arg = picked.Name, ""
+		}
+	}
+
+	// 인자가 필요한데 없으면 이름만 남겨 두고 기다린다.
+	for _, c := range m.allCommands() {
+		if c.Name != name {
+			continue
+		}
+		if c.Arg != "" && arg == "" {
+			m.input.SetValue(c.Name + " ")
+			m.input.CursorEnd()
+			return m, nil
+		}
+		m.input.Reset()
+		m.notice = ""
+		m.pick = 0
+		if c.Name == "/help" {
+			m.showHelp = true
+			return m, nil
+		}
+		// 명령이 만든 Cmd 를 그대로 돌려준다. 그것이 뱉는 메시지는
+		// 호스트 것이면 호스트가 처리하고, 앱 것이면 앱으로 흘러간다.
+		return m, c.Run(arg)
+	}
+
+	m.input.Reset()
+	m.log = append(m.log, logEntry{who: "host", text: "No such command: " + name, err: true})
+	return m, nil
+}
+
+// 팔레트는 입력창 바로 아래에 뜬다. 본문을 밀어내지 않는다.
+//
+// 이전에는 본문 자리를 통째로 빌려 썼는데, 명령을 고르는 동안 보고 있던
+// 목록이 사라져 맥락을 잃었다. 눈도 화면 위아래를 왕복해야 했다.
+// 입력창 아래에 붙이면 둘 다 사라진다 — agentic CLI 의 관례이기도 하다.
+const maxOverlayRows = 8
+
+func (m Model) overlayRows(w int) []string {
+	if m.showHelp {
+		rows := m.helpRows()
+		out := make([]string, 0, len(rows))
+		for i, r := range rows {
+			out = append(out, m.renderHelp(i, r, w))
+		}
+		return out
+	}
+	if !m.commanding() {
+		return nil
+	}
+	cs := m.matchedCommands()
+	if len(cs) == 0 {
+		return []string{"  " + style.Faint.Render("No such command")}
+	}
+	// 창을 옮겨 고른 줄이 늘 보이게 한다. 자리를 따로 기억하지 않는다 —
+	// 고른 줄만 알면 어디를 보여줄지가 정해진다.
+	start := 0
+	if m.pick >= maxOverlayRows {
+		start = m.pick - maxOverlayRows + 1
+	}
+	start = style.Clamp(start, 0, style.Max(len(cs)-maxOverlayRows, 0))
+	end := style.Min(start+maxOverlayRows, len(cs))
+
+	out := make([]string, 0, end-start)
+	for i := start; i < end; i++ {
+		out = append(out, m.renderCommand(i, cs[i], w))
+	}
+	return out
+}
+
+// 이름을 적는 칸.
+//
+// 고정폭이다. 양끝 정렬로 두면 창이 넓을수록 이름과 설명이 멀어져, 짝을
+// 맞추려고 눈이 화면을 가로질러야 한다. 고정폭이면 설명이 늘 같은 자리에서
+// 시작하므로 세로로 훑힌다 — 목록이 하는 일이 원래 그것이다.
+//
+// `/repeat <off|one|all>` 이 21칸으로 제일 길다. 그보다 긴 이름(플레이리스트)은
+// 자른다. 칸이 흔들리면 고정폭인 뜻이 없다.
+const cmdNameCol = 24
+
+func (m Model) renderCommand(i int, c app.Command, w int) string {
+	rail := "  "
+	if i == m.pick {
+		rail = style.Brand.Render("▌ ")
+	}
+	name := c.Name
+	if c.Arg != "" {
+		name += " " + c.Arg
+	}
+	name = style.Truncate(name, cmdNameCol-1)
+	pad := strings.Repeat(" ", style.Max(cmdNameCol-lipgloss.Width(name), 1))
+
+	left := style.Body.Render(c.Name)
+	if c.Arg != "" {
+		left += style.Faint.Render(style.Truncate(" "+c.Arg, cmdNameCol-1-lipgloss.Width(c.Name)))
+	}
+	rest := style.Max(w-2-cmdNameCol, 10)
+	return rail + left + pad + style.Faint.Render(style.Truncate(c.Help, rest))
+}
+
+// helpRow 는 도움말 한 줄이다.
+type helpRow struct{ key, what string }
+
+// helpRows 는 지금 화면에서 **실제로 묶여 있는** 키를 모은다.
+//
+// 예전에는 이 자리가 손으로 적은 표였다. 코드와 아무 관계가 없어서
+// 한쪽만 고치면 조용히 어긋났고, 셋이 어긋나 있었다 — 그중 ctrl+o 는
+// 받는 코드가 아예 없는데 도움말만 계속 약속하고 있었다.
+//
+// 이제 키와 설명은 한 값이다(keys.go). 여기서는 그 값들을 줄로 펼 뿐이라
+// **없는 키를 적을 자리가 없다.**
+//
+// 호스트 다음에 앱의 것이 온다. 앱의 키는 앱이 낸다(app.App.Keys) — 남의
+// 키를 여기서 베껴 적던 것이 ctrl+o 를 남긴 길이다.
+func (m Model) helpRows() []helpRow {
+	out := make([]helpRow, 0, 16)
+	for _, r := range notKeys {
+		out = append(out, helpRow{r.key, r.what})
+	}
+	binds := keys.helpOrder()
+	if !m.home {
+		binds = append(binds, m.app().Keys()...)
+	}
+	for _, b := range binds {
+		// 꺼진 키는 안 낸다. 도움말이 스스로 관리된다는 것이 이 구조의 값이다.
+		if !b.Enabled() {
+			continue
+		}
+		h := b.Help()
+		if h.Key == "" || h.Desc == "" {
+			continue // 설명이 없는 것은 다른 줄이 이미 말하고 있다
+		}
+		out = append(out, helpRow{h.Key, h.Desc})
+	}
+	return out
+}
+
+func (m Model) renderHelp(i int, r helpRow, w int) string {
+	return "  " + style.Row(style.BrandSoft.Render(r.key), style.Faint.Render(r.what), w-2)
+}

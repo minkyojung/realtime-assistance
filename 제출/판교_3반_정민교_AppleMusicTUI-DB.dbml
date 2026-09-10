@@ -1,0 +1,263 @@
+// ============================================================
+//  데이터 모델
+//
+//  docs/10-화면-필드.md 의 "저장" 으로 분류된 값만 컬럼이 된다.
+//  "실시간"(재생 위치·앨범 커버·섞기 상태)과 "계산"(진행바·경과 기간·
+//  항목 수)은 여기에 두지 않는다. 저장하면 화면과 어긋나는 순간이 생기고,
+//  어긋난 값은 없는 값보다 나쁘다.
+//
+//  사용자 테이블이 없다. 이 서비스는 한 사람의 기기에서 도는 로컬
+//  데몬이고, 로그인 화면이 없다. 관문은 로그인이 아니라 macOS 자동화
+//  권한이다(S11). 없는 화면을 위한 테이블은 두지 않는다.
+// ============================================================
+
+Project apple_music_tui {
+  database_type: 'SQLite'
+  Note: '''
+    터미널에서 쓰는 Apple Music 클라이언트.
+    Music.app 이 원본이고, 이 DB 는 그 스냅샷 + 우리만 아는 것을 담는다.
+  '''
+}
+
+// ------------------------------------------------------------
+//  1. 라이브러리 — Music.app 스냅샷
+// ------------------------------------------------------------
+
+Table artist {
+  id            integer   [pk, increment]
+  name          varchar(255) [not null, unique, note: 'S5 묶음 행 · S2 아티스트명']
+
+  Note: '아티스트. Music.app 은 아티스트에 ID 를 주지 않으므로 이름이 곧 키다.'
+}
+
+Table album {
+  id            integer   [pk, increment]
+  title         varchar(255) [not null, note: 'S2 앨범명 · S5 묶음 행']
+  artist_id     integer   [not null, ref: > artist.id]
+
+  Indexes {
+    (title, artist_id) [unique]
+  }
+  Note: '''
+    앨범. 같은 제목의 앨범이 아티스트별로 따로 있으므로 (제목, 아티스트)가 키다.
+    앨범 아트는 컬럼이 아니다 — Music.app 이 재생 중에 바이너리로 준다(실시간).
+  '''
+}
+
+Table track {
+  id              integer      [pk, increment]
+  persistent_id   varchar(32)  [not null, unique, note: 'Music.app 동기화 키. 재동기화 시 같은 곡을 알아보는 유일한 근거']
+  title           varchar(255) [not null, note: 'S2·S4 제목']
+  artist_id       integer      [not null, ref: > artist.id]
+  album_id        integer      [null, ref: > album.id, note: '앨범 없는 곡이 있다']
+  genre           varchar(64)  [null, note: 'S2 장르']
+  year            integer      [null, note: 'S2 발매연도']
+  duration_ms     integer      [not null, note: 'S2·S4 길이']
+  play_count      integer      [not null, default: 0, note: 'S2·S4 재생 횟수']
+  added_at        timestamp    [null, note: 'S2 추가일. in_library=false 면 담은 적이 없으므로 null']
+  last_played_at  timestamp    [null, note: '★ play_count = 0 과 함께 보면 담아두고 한 번도 재생하지 않은 곡이다. Never played 구역과 never played 경고가 그 조건에 걸려 있다']
+  in_library      boolean      [not null, default: true, note: '플레이리스트에만 담고 라이브러리에는 없는 곡이 실제로 존재한다. false 면 Songs·Artists·Albums 목록에 나오지 않는다']
+  apple_music_id  varchar(32)  [null, note: 'Apple Music 검색 결과의 보유 표시(✓/+)를 이 값으로 대조한다']
+  synced_at       timestamp    [not null, note: 'Music.app 에서 마지막으로 읽어온 시각']
+
+  Indexes {
+    last_played_at [note: 'Never played 구역이 매번 훑는다']
+    added_at       [note: 'Recently Added 정렬']
+    apple_music_id
+  }
+  Note: '곡. 이 서비스에서 가장 많이 읽히는 표다.'
+}
+
+// ------------------------------------------------------------
+//  2. 플레이리스트 — M:N
+// ------------------------------------------------------------
+
+Table playlist {
+  id            integer      [pk, increment]
+  name          varchar(255) [not null, note: 'S6 구역 이름으로 그대로 쓰인다']
+  synced_at     timestamp    [not null]
+
+  Note: 'Music.app 에서 읽어온 플레이리스트. 곡이 0개면 화면에 구역을 만들지 않는다.'
+}
+
+Table playlist_track {
+  playlist_id   integer  [ref: > playlist.id]
+  track_id      integer  [ref: > track.id]
+  position      integer  [not null, note: '플레이리스트 안의 순서']
+
+  Indexes {
+    (playlist_id, position) [pk]
+  }
+  Note: 'playlist ↔ track 의 M:N 을 푸는 표. 순서가 있으므로 position 이 키의 일부다.'
+}
+
+// ------------------------------------------------------------
+//  3. 큐 — 다음에 틀 것
+// ------------------------------------------------------------
+
+Enum queue_item_origin {
+  user  [note: '사람이 골라 넣은 곡']
+  ai    [note: 'AI 가 선곡한 곡']
+}
+
+Enum queue_item_state {
+  pending  [note: '대기']
+  playing  [note: '재생 중']
+  played   [note: '끝까지 들음']
+  skipped  [note: '넘어감']
+  removed  [note: '큐에서 뺌']
+}
+
+Table queue {
+  id            integer      [pk, increment]
+  title         varchar(255) [null, note: 'S9 상태줄에 뜬다. 사람이 만든 큐는 제목이 없을 수 있다']
+  created_at    timestamp    [not null]
+
+  Note: '재생 큐 하나. 새로 만들면 새 행이고, 이전 큐는 기록으로 남는다.'
+}
+
+Table queue_item {
+  id            integer  [pk, increment]
+  queue_id      integer  [not null, ref: > queue.id]
+  track_id      integer  [not null, ref: > track.id]
+  turn_id       integer  [null, ref: > turn.id, note: '어느 AI 요청에서 나온 곡인지. 사람이 넣었으면 null']
+  position      integer  [not null, note: 'S6 큐 순번']
+  reason        text     [null, note: '★ 곡별 선정 근거 한 줄. 대화 띠에 답과 함께 그대로 보인다(S7). AI 가 근거를 못 내면 null 이고 재생은 계속된다']
+  origin        queue_item_origin [not null]
+  state         queue_item_state  [not null, default: 'pending']
+
+  Indexes {
+    (queue_id, position) [unique]
+  }
+  Note: '큐에 담긴 곡 하나. queue 1:N queue_item, track 1:N queue_item.'
+}
+
+// ------------------------------------------------------------
+//  4. 대화 — 입력창의 짝
+// ------------------------------------------------------------
+
+Enum turn_status {
+  running  [note: '답을 기다리는 중 — 스피너가 돈다']
+  done
+  failed
+  canceled [note: 'esc 로 물렸다']
+}
+
+// One axis only: what the person is doing.
+//
+// `background` ("just having it on") used to sit here. It is not an activity —
+// it is a level of attention, a different axis. Mixing two axes guarantees
+// overlap: studying with music on is both focus and background.
+//
+// Attention would need its own column. We do not add one. Multiplying the
+// columns splits the samples until each cell holds one or two rows, and then
+// there is nothing left to count.
+Enum turn_context {
+  focus   [note: 'Work, study, reading — anything needing concentration']
+  workout [note: 'Exercise or training']
+  chores  [note: 'Housework, cooking, errands — hands busy, mind free']
+  commute [note: 'Travelling between places']
+  social  [note: 'Other people are present']
+  unwind  [note: 'Relaxing alone while awake']
+  sleep   [note: 'Going to sleep']
+  other   [note: 'The request names no occasion. Never inferred from the music itself']
+}
+
+Table turn {
+  id                 integer   [pk, increment]
+  prompt             text      [not null, note: '★ 사람이 친 문장 **원본**. 이것이 남아 있는 한 context 는 언제든 다시 매길 수 있다']
+  context            turn_context [null, note: '★ 모델이 prompt 를 보고 고른 자리. 아래 Note 참조']
+  status             turn_status [not null]
+  model              varchar(64) [null, note: 'S7 상세 — 어느 모델이 답했나']
+  candidate_count    integer   [null, note: 'S7 상세 — 후보 몇 곡에서 골랐나']
+  elapsed_ms         integer   [null, note: 'S7 상세 — 몇 초 걸렸나']
+  prompt_tokens      integer   [not null, default: 0, note: 'S7·S9 토큰 ↑']
+  completion_tokens  integer   [not null, default: 0, note: 'S7·S9 토큰 ↓']
+  cost_usd           decimal(10,6) [not null, default: 0, note: 'S7·S9·S10 비용']
+  error_message      text      [null, note: 'S7 실패했으면 왜']
+  created_at         timestamp [not null]
+
+  Note: '''
+    자연어 요청 한 건. 오래 걸리는 일이라 행을 먼저 만들고 상태를 갱신한다.
+    상태줄의 누적 토큰·비용(S9)과 /cost(S10)는 이 표의 집계다 — 별도 세션 표를 두지 않는다.
+
+    **context 는 이 설계에서 유일하게 저장하는 해석이다.**
+    "무엇을 하는 중인가"를 자유 문장으로 두면 매번 다른 말이 되어 묶을 수 없으므로
+    정해진 일곱 중 하나로 받는다. 판단을 저장하지 않는다는 원칙과 어긋나 보이지만,
+    **원문(prompt)이 그대로 남으므로 되돌릴 수 있다** — 분류가 틀렸다고 판단되면
+    지난 것을 다시 나누면 된다. 되돌릴 수 있는 해석만 저장한다.
+
+    이 값이 있어야 "공부할 때는 어떤 곡을 넘겼나"를 셀 수 있다.
+    재생 사건은 play → queue_item → turn 으로 이어지므로 사건마다 이 값을
+    복사하지 않는다.
+  '''
+}
+
+Enum message_role {
+  user      [note: '사람이 한 말']
+  assistant [note: '앱이 한 말']
+}
+
+Table message {
+  id            integer   [pk, increment]
+  turn_id       integer   [null, ref: > turn.id, note: 'AI 요청에서 나온 말이면 그 요청. 명령 결과면 null']
+  role          message_role [not null, note: 'S7 말한 주체']
+  text          text      [not null, note: 'S7 문장']
+  is_error      boolean   [not null, default: false, note: 'S7 실패를 알리는 말인가. 실패도 대화의 일부다']
+  created_at    timestamp [not null]
+
+  Indexes {
+    created_at
+  }
+  Note: '로그 띠의 한 줄. turn 1:N message.'
+}
+
+// ------------------------------------------------------------
+//  5. 재생 사건 — 우리만 아는 것
+// ------------------------------------------------------------
+
+Enum play_ended_by {
+  finished  [note: '끝까지 들었다']
+  skipped   [note: '사람이 넘겼다']
+  removed   [note: '큐에서 뺐다']
+  replaced  [note: '큐를 갈아끼웠다']
+}
+
+Table play {
+  id            integer   [pk, increment]
+  track_id      integer   [not null, ref: > track.id]
+  queue_item_id integer   [null, ref: > queue_item.id, note: '어느 큐 항목에서 나온 재생인지. 큐 밖에서 튼 곡이면 null']
+  played_at     timestamp [not null]
+  played_ms     integer   [not null, note: '몇 ms 듣고 나갔나']
+  duration_ms   integer   [not null, note: '그때의 곡 길이. 곡이 다른 판본으로 바뀌어도 그날의 셈이 틀어지지 않아야 한다']
+  ended_by      play_ended_by [not null]
+  shuffle       boolean   [not null, note: '섞기가 켜져 있었나. 켜진 상태의 스킵은 뜻이 다르다']
+
+  Indexes {
+    (track_id, played_at)
+  }
+  Note: '''
+    곡 하나가 끝난 사건. Music.app 의 재생 횟수·스킵 횟수에는 넷이 뒤섞여
+    있어서 왜 끝났는지를 알 수 없다. 그것을 우리가 적는다.
+
+    **해석은 적지 않는다.** "일찍 나감" 같은 판정을 저장하면 기준을 바꿀 때
+    지난 것을 다시 계산할 수 없다.
+  '''
+}
+
+// ------------------------------------------------------------
+//  6. 설정 — 홈 화면이 읽는 것
+// ------------------------------------------------------------
+
+Table setting {
+  id                integer   [pk, note: '항상 1. 이 기기의 설정은 하나뿐이다']
+  apple_team_id     varchar(16) [null, note: 'S1·S11 — 없으면 Apple Music 구역 자체가 없다']
+  apple_user_token  text      [null, note: 'S1 — 없으면 "catalog search · /login to add"']
+  ai_provider       varchar(32) [null, note: 'S1 — 없으면 "off · /ai <key>". 키 자체는 macOS 키체인에 있고 DB 에 두지 않는다']
+  updated_at        timestamp [not null]
+
+  Note: '''
+    한 행짜리 표. 화면(S1 홈 · S11 관문)이 "무엇에 붙어 있는가"를 이것으로 말한다.
+    API 키와 사용자 토큰의 비밀값은 키체인에 두고, 여기에는 "붙어 있는가"만 남긴다.
+  '''
+}

@@ -1,0 +1,5918 @@
+{
+ "tracks": [
+  {
+   "id": 1,
+   "persistentId": "81F599359B2E449B",
+   "title": "Jirisan Breeze",
+   "artist": {
+    "id": 1,
+    "name": "Akimbo"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 239375,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-30T15:21:45+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 1,
+    "title": "Red Bull Music Seoul Sori",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 2,
+   "persistentId": "CF97F6DADBCA31C0",
+   "title": "The Swift Programming Language (Swift 5.7)",
+   "artist": {
+    "id": 3,
+    "name": "Apple Inc."
+   },
+   "genre": "Programming",
+   "year": 2014,
+   "durationMs": 0,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2021-03-01T19:56:17+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 2,
+    "title": "The Swift Programming Language (Swift 5.7)",
+    "artist": {
+     "id": 3,
+     "name": "Apple Inc."
+    },
+    "releaseYear": 2014
+   }
+  },
+  {
+   "id": 3,
+   "persistentId": "5D6BA5B487F37235",
+   "title": "Blood Bank",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2009,
+   "durationMs": 284132,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:36:10+09:00",
+   "lastPlayedAt": "2026-08-09T14:41:57+09:00",
+   "album": {
+    "id": 3,
+    "title": "Blood Bank (10th Anniversary Edition) - EP",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2009
+   }
+  },
+  {
+   "id": 4,
+   "persistentId": "09F7B398252D4CC0",
+   "title": "Beach Baby",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2009,
+   "durationMs": 157039,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:36:09+09:00",
+   "lastPlayedAt": "2026-08-17T16:19:34+09:00",
+   "album": {
+    "id": 3,
+    "title": "Blood Bank (10th Anniversary Edition) - EP",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2009
+   }
+  },
+  {
+   "id": 5,
+   "persistentId": "A9677272FCA8243F",
+   "title": "Babys",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2009,
+   "durationMs": 280559,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:36:10+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 3,
+    "title": "Blood Bank (10th Anniversary Edition) - EP",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2009
+   }
+  },
+  {
+   "id": 6,
+   "persistentId": "7AB0D7AE4C7F299F",
+   "title": "Woods",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2009,
+   "durationMs": 285440,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:36:10+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 3,
+    "title": "Blood Bank (10th Anniversary Edition) - EP",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2009
+   }
+  },
+  {
+   "id": 7,
+   "persistentId": "83364081B12FDD9D",
+   "title": "Blood Bank (Live from Ericsson Globe, Stockholm SE, Oct 31 2018)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2020,
+   "durationMs": 345320,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 3,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:36:10+09:00",
+   "lastPlayedAt": "2026-08-09T13:40:45+09:00",
+   "album": {
+    "id": 3,
+    "title": "Blood Bank (10th Anniversary Edition) - EP",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2009
+   }
+  },
+  {
+   "id": 8,
+   "persistentId": "E35068024A59AA1B",
+   "title": "Beach Baby (Live from The Bomb Factory, Dallas TX, Jan 23 2018)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2020,
+   "durationMs": 183880,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 4,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:36:10+09:00",
+   "lastPlayedAt": "2026-08-09T13:54:34+09:00",
+   "album": {
+    "id": 3,
+    "title": "Blood Bank (10th Anniversary Edition) - EP",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2009
+   }
+  },
+  {
+   "id": 9,
+   "persistentId": "A1B5D41244132A8C",
+   "title": "Babys (Live from Eventim Apollo Hammersmith, London UK, Mar 4 2018)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2020,
+   "durationMs": 380852,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:36:10+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 3,
+    "title": "Blood Bank (10th Anniversary Edition) - EP",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2009
+   }
+  },
+  {
+   "id": 10,
+   "persistentId": "C1F8B344C9F46FD5",
+   "title": "Woods (Live from Pitchfork Paris Presented by La Blogothèque, Nov 3 2018)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2020,
+   "durationMs": 206742,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:36:10+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 3,
+    "title": "Blood Bank (10th Anniversary Edition) - EP",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2009
+   }
+  },
+  {
+   "id": 11,
+   "persistentId": "C22BF7ABB6A94A1B",
+   "title": "Wash.",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 298587,
+   "source": "shared",
+   "playCount": 8,
+   "skipCount": 3,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-31T14:35:41+09:00",
+   "lastPlayedAt": "2026-08-27T16:36:30+09:00",
+   "album": {
+    "id": 4,
+    "title": "Bon Iver, Bon Iver",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 12,
+   "persistentId": "AD83C6D445A09F09",
+   "title": "Perth",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 262079,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 13,
+   "persistentId": "2F430046F24A2541",
+   "title": "Minnesota, WI",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 232440,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 14,
+   "persistentId": "B3E7A429D993991F",
+   "title": "Holocene",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 336613,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": "2026-08-29T09:44:35+09:00",
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 15,
+   "persistentId": "8706A5277CF9965B",
+   "title": "Towers",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 188039,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 16,
+   "persistentId": "A9F19D774D5109EA",
+   "title": "Michicant",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 225733,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 17,
+   "persistentId": "58E87B15E27E0EF9",
+   "title": "Hinnom, TX",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 165013,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 18,
+   "persistentId": "6BE43D03E48DC353",
+   "title": "Wash.",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 298587,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 19,
+   "persistentId": "DEEB1ED8F8CE01F3",
+   "title": "Calgary",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 250199,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 20,
+   "persistentId": "C6A8D887D4375EAD",
+   "title": "Lisbon, OH",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 93360,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 21,
+   "persistentId": "1A12EB5D23E85D75",
+   "title": "Beth/Rest",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 316799,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 22,
+   "persistentId": "7ED632E073BE7F68",
+   "title": "Hinnom, TX (AIR Studios – 4AD/Jagjaguwar Session)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 225389,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 23,
+   "persistentId": "D3BEDA4A4703C9E9",
+   "title": "Wash. (AIR Studios – 4AD/Jagjaguwar Session)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 324436,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 24,
+   "persistentId": "69AF8EDA25232955",
+   "title": "I Can't Make You Love Me (AIR Studios – 4AD/Jagjaguwar Session)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 286661,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 25,
+   "persistentId": "E813A10B9A97DB88",
+   "title": "Babys (AIR Studios – 4AD/Jagjaguwar Session)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 373110,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 26,
+   "persistentId": "2BC975E3C4748479",
+   "title": "Beth/Rest (AIR Studios – 4AD/Jagjaguwar Session)",
+   "artist": {
+    "id": 4,
+    "name": "Bon Iver"
+   },
+   "genre": "Alternative",
+   "year": 2011,
+   "durationMs": 404434,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-08T15:45:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 5,
+    "title": "Bon Iver, Bon Iver (10th Anniversary Edition)",
+    "artist": {
+     "id": 4,
+     "name": "Bon Iver"
+    },
+    "releaseYear": 2011
+   }
+  },
+  {
+   "id": 27,
+   "persistentId": "DFE5738961B53766",
+   "title": "We're Still Here",
+   "artist": {
+    "id": 5,
+    "name": "Brother Alfred"
+   },
+   "genre": "Christmas",
+   "year": 2019,
+   "durationMs": 213082,
+   "source": "shared",
+   "playCount": 38,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-23T17:25:52+09:00",
+   "lastPlayedAt": "2026-06-30T21:36:19+09:00",
+   "album": {
+    "id": 6,
+    "title": "We're Still Here - Single",
+    "artist": {
+     "id": 5,
+     "name": "Brother Alfred"
+    },
+    "releaseYear": 2019
+   }
+  },
+  {
+   "id": 28,
+   "persistentId": "4F32F17D8CC36FDA",
+   "title": "Don't Let Me Drown",
+   "artist": {
+    "id": 6,
+    "name": "Burna Boy"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 185591,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-26T18:41:35+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 29,
+   "persistentId": "2A4D89DDA7140D1F",
+   "title": "Don't Let Me Drown",
+   "artist": {
+    "id": 6,
+    "name": "Burna Boy"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 183830,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:03:24+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 30,
+   "persistentId": "FE8D9961364867B4",
+   "title": "Please Wait for Me",
+   "artist": {
+    "id": 7,
+    "name": "Busker Busker"
+   },
+   "genre": "K-Pop",
+   "year": 2012,
+   "durationMs": 81013,
+   "source": "shared",
+   "playCount": 177,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-09-02T20:00:01+09:00",
+   "lastPlayedAt": "2026-09-04T06:52:29+09:00",
+   "album": {
+    "id": 8,
+    "title": "Busker Busker 1st Wrap Up Album - EP",
+    "artist": {
+     "id": 7,
+     "name": "Busker Busker"
+    },
+    "releaseYear": 2012
+   }
+  },
+  {
+   "id": 31,
+   "persistentId": "597F61959D1C44F2",
+   "title": "Bad As I Used To Be",
+   "artist": {
+    "id": 8,
+    "name": "Chris Stapleton"
+   },
+   "genre": "Country",
+   "year": 2025,
+   "durationMs": 300114,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-25T15:25:54+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 32,
+   "persistentId": "C9D625422844B404",
+   "title": "Higher Power",
+   "artist": {
+    "id": 9,
+    "name": "Coldplay"
+   },
+   "genre": "Pop",
+   "year": 2021,
+   "durationMs": 206682,
+   "source": "shared",
+   "playCount": 58,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-25T12:49:21+09:00",
+   "lastPlayedAt": "2026-08-13T06:53:38+09:00",
+   "album": {
+    "id": 9,
+    "title": "Music of the Spheres",
+    "artist": {
+     "id": 9,
+     "name": "Coldplay"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 33,
+   "persistentId": "DC67A0A33D6CD9FE",
+   "title": "Give Me Love",
+   "artist": {
+    "id": 10,
+    "name": "Darkoo"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 140705,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:11:20+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 34,
+   "persistentId": "D862478AA7850A47",
+   "title": "Cinderella",
+   "artist": {
+    "id": 11,
+    "name": "Richard Harding Davis"
+   },
+   "genre": "Fiction & Literature",
+   "year": 1901,
+   "durationMs": 0,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2020-08-20T23:01:43+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 10,
+    "title": "Cinderella",
+    "artist": {
+     "id": 11,
+     "name": "Richard Harding Davis"
+    },
+    "releaseYear": 1901
+   }
+  },
+  {
+   "id": 35,
+   "persistentId": "90DE9BAE522B94E9",
+   "title": "Tango a Mi Padre",
+   "artist": {
+    "id": 12,
+    "name": "Dino Saluzzi & Anja Lechner"
+   },
+   "genre": "Jazz",
+   "year": 2007,
+   "durationMs": 256092,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-27T17:40:50+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 11,
+    "title": "Ojos Negros",
+    "artist": {
+     "id": 13,
+     "name": "Anja Lechner & Dino Saluzzi"
+    },
+    "releaseYear": 2007
+   }
+  },
+  {
+   "id": 36,
+   "persistentId": "B64319C9D2B5DFED",
+   "title": "No Room For A Saint (feat. Nathan Nicholson)",
+   "artist": {
+    "id": 14,
+    "name": "Dom Dolla & Nathan Nicholson"
+   },
+   "genre": "Dance",
+   "year": 2025,
+   "durationMs": 236128,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-26T18:30:00+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 37,
+   "persistentId": "C4C33BD36953103D",
+   "title": "Lose My Mind (feat. Doja Cat)",
+   "artist": {
+    "id": 15,
+    "name": "Don Toliver"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 209050,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-08-28T11:01:07+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 38,
+   "persistentId": "6FDDA86E1B5E8D27",
+   "title": "Lose My Mind (feat. Doja Cat)",
+   "artist": {
+    "id": 15,
+    "name": "Don Toliver"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 212011,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:52:12+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 39,
+   "persistentId": "91EABB06BDD45648",
+   "title": "Drive",
+   "artist": {
+    "id": 16,
+    "name": "Ed Sheeran"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 187397,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-08-03T08:10:56+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 40,
+   "persistentId": "D2DAB7BDFCD32AE7",
+   "title": "Drive",
+   "artist": {
+    "id": 16,
+    "name": "Ed Sheeran"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 191488,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:17:52+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 41,
+   "persistentId": "F3F2E759C5938B4A",
+   "title": "Run",
+   "artist": {
+    "id": 17,
+    "name": "Epik High"
+   },
+   "genre": "K-Pop",
+   "year": 2010,
+   "durationMs": 210386,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-16T19:21:35+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 12,
+    "title": "Epilogue",
+    "artist": {
+     "id": 17,
+     "name": "Epik High"
+    },
+    "releaseYear": 2010
+   }
+  },
+  {
+   "id": 42,
+   "persistentId": "FC2436E7E15FA4F1",
+   "title": "Good Together (10 Years)",
+   "artist": {
+    "id": 18,
+    "name": "HONNE"
+   },
+   "genre": "Pop",
+   "year": 2026,
+   "durationMs": 224600,
+   "source": "shared",
+   "playCount": 13,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-02T16:47:05+09:00",
+   "lastPlayedAt": "2026-08-12T19:37:52+09:00",
+   "album": {
+    "id": 13,
+    "title": "Good Together (10 Years) - Single",
+    "artist": {
+     "id": 18,
+     "name": "HONNE"
+    },
+    "releaseYear": 2026
+   }
+  },
+  {
+   "id": 43,
+   "persistentId": "B5E7796A27C919FC",
+   "title": "gone gone gone",
+   "artist": {
+    "id": 18,
+    "name": "HONNE"
+   },
+   "genre": "Electronic",
+   "year": 2020,
+   "durationMs": 212639,
+   "source": "shared",
+   "playCount": 13,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-26T14:44:08+09:00",
+   "lastPlayedAt": "2026-07-30T18:18:41+09:00",
+   "album": {
+    "id": 14,
+    "title": "no song without you",
+    "artist": {
+     "id": 18,
+     "name": "HONNE"
+    },
+    "releaseYear": 2020
+   }
+  },
+  {
+   "id": 44,
+   "persistentId": "7D0F62CCE8F35124",
+   "title": "la la la that’s how it goes (dream edit)",
+   "artist": {
+    "id": 18,
+    "name": "HONNE"
+   },
+   "genre": "Alternative",
+   "year": 2020,
+   "durationMs": 220447,
+   "source": "shared",
+   "playCount": 11,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-29T08:07:11+09:00",
+   "lastPlayedAt": "2026-08-08T15:34:50+09:00",
+   "album": {
+    "id": 15,
+    "title": "nswy: dream edits",
+    "artist": {
+     "id": 18,
+     "name": "HONNE"
+    },
+    "releaseYear": 2020
+   }
+  },
+  {
+   "id": 45,
+   "persistentId": "8BDC148F1284F99C",
+   "title": "LOVE YA!",
+   "artist": {
+    "id": 19,
+    "name": "HYUKOH"
+   },
+   "genre": "Alternative",
+   "year": 2018,
+   "durationMs": 251964,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-04T08:31:59+09:00",
+   "lastPlayedAt": "2026-06-26T15:31:30+09:00",
+   "album": {
+    "id": 16,
+    "title": "24 : How to find true love and happiness - EP",
+    "artist": {
+     "id": 19,
+     "name": "HYUKOH"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 46,
+   "persistentId": "95C14912D0F22568",
+   "title": "bingle bingle (feat. SUMIN)",
+   "artist": {
+    "id": 20,
+    "name": "IOAH"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 167998,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-30T15:21:45+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 1,
+    "title": "Red Bull Music Seoul Sori",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 47,
+   "persistentId": "83CE9A220C5DAD8A",
+   "title": "On Love, In Sadness",
+   "artist": {
+    "id": 21,
+    "name": "Jason Mraz"
+   },
+   "genre": "Pop",
+   "year": 2002,
+   "durationMs": 208794,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-17T14:33:19+09:00",
+   "lastPlayedAt": "2026-07-18T15:58:02+09:00",
+   "album": {
+    "id": 17,
+    "title": "Waiting for My Rocket to Come",
+    "artist": {
+     "id": 21,
+     "name": "Jason Mraz"
+    },
+    "releaseYear": 2002
+   }
+  },
+  {
+   "id": 48,
+   "persistentId": "70E72FAF7CCCB6A8",
+   "title": "Manshin",
+   "artist": {
+    "id": 22,
+    "name": "Jinsu Park"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 259000,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-30T15:21:45+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 1,
+    "title": "Red Bull Music Seoul Sori",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 49,
+   "persistentId": "E3E55531D25D63D8",
+   "title": "Peanut butter Sandwich",
+   "artist": {
+    "id": 23,
+    "name": "jisokuryClub"
+   },
+   "genre": "Rock",
+   "year": 2023,
+   "durationMs": 231386,
+   "source": "shared",
+   "playCount": 36,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-31T21:26:24+09:00",
+   "lastPlayedAt": "2026-09-03T15:14:56+09:00",
+   "album": {
+    "id": 18,
+    "title": "pool vol. 2 - Peanut Butter Sandwich - Single",
+    "artist": {
+     "id": 23,
+     "name": "jisokuryClub"
+    },
+    "releaseYear": 2023
+   }
+  },
+  {
+   "id": 50,
+   "persistentId": "2D32B34C8F0CB766",
+   "title": "Make Something Wonderful",
+   "artist": {
+    "id": 24,
+    "name": "Steve Jobs"
+   },
+   "genre": "Biography",
+   "year": 2023,
+   "durationMs": 0,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2023-09-11T12:21:20+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 19,
+    "title": "Make Something Wonderful",
+    "artist": {
+     "id": 24,
+     "name": "Steve Jobs"
+    },
+    "releaseYear": 2023
+   }
+  },
+  {
+   "id": 51,
+   "persistentId": "E62387473ACF2D1A",
+   "title": "parachute",
+   "artist": {
+    "id": 25,
+    "name": "John K"
+   },
+   "genre": "Pop",
+   "year": 2020,
+   "durationMs": 156505,
+   "source": "shared",
+   "playCount": 28,
+   "skipCount": 5,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-15T09:53:16+09:00",
+   "lastPlayedAt": "2026-07-26T16:31:12+09:00",
+   "album": {
+    "id": 20,
+    "title": "love + everything else",
+    "artist": {
+     "id": 25,
+     "name": "John K"
+    },
+    "releaseYear": 2020
+   }
+  },
+  {
+   "id": 52,
+   "persistentId": "9AC72E6DD4A5A3FE",
+   "title": "Neon (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 355733,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 3,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-22T12:51:22+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 53,
+   "persistentId": "BFB4DCEF13098ACB",
+   "title": "Stop This Train (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 300200,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-22T13:28:40+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 54,
+   "persistentId": "64FD370A04587BB4",
+   "title": "In Your Atmosphere (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 345627,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-22T13:34:26+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 55,
+   "persistentId": "FFED108749BD20B8",
+   "title": "Daughters (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 304600,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-22T13:58:38+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 56,
+   "persistentId": "DD349F8A42383B03",
+   "title": "Free Fallin' (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 263572,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-22T14:03:02+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 57,
+   "persistentId": "39CED110C9C2C508",
+   "title": "Everyday I Have The Blues (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 254266,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-08-19T07:44:56+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 58,
+   "persistentId": "B1B8345F17E60604",
+   "title": "Wait Until Tomorrow (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 259160,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-08-11T18:29:06+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 59,
+   "persistentId": "164BB2C69D104765",
+   "title": "Who Did You Think I Was (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 263372,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 60,
+   "persistentId": "F60D5458D403DDC5",
+   "title": "Come When I Call (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 203492,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 61,
+   "persistentId": "D693075CB66BE96E",
+   "title": "Good Love Is On the Way (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 258933,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 62,
+   "persistentId": "6028BD9937924AAC",
+   "title": "Out of My Mind (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 610533,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 63,
+   "persistentId": "4313C7C178B27610",
+   "title": "Vultures (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 319933,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-12T13:14:38+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 64,
+   "persistentId": "FA5A873301330958",
+   "title": "Bold As Love (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 517973,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-08-11T18:04:28+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 65,
+   "persistentId": "79F422CE777240CC",
+   "title": "Waiting On the World to Change (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 230800,
+   "source": "shared",
+   "playCount": 6,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-26T08:59:18+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 66,
+   "persistentId": "B66EBD9723FB26F1",
+   "title": "Slow Dancing in a Burning Room (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 319226,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-09-02T21:57:36+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 67,
+   "persistentId": "4D2377380F522DA0",
+   "title": "Why Georgia (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 267399,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 3,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-12T13:35:13+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 68,
+   "persistentId": "729A50D386F090D4",
+   "title": "The Heart of Life (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 220132,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-12T13:38:53+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 69,
+   "persistentId": "466E6B7C8403C088",
+   "title": "I Don't Need No Doctor (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 362572,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-22T17:06:22+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 70,
+   "persistentId": "669FE535CD17E9D5",
+   "title": "Gravity (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 581067,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-22T08:18:48+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 71,
+   "persistentId": "85B15BCA294886A3",
+   "title": "I Don't Trust Myself (With Loving You) [Live at the Nokia Theatre, Los Angeles, CA - December 2007]",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 524893,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-12T16:49:53+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 72,
+   "persistentId": "75B0ECC463C703B4",
+   "title": "Belief (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 363440,
+   "source": "shared",
+   "playCount": 9,
+   "skipCount": 4,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-08-13T08:15:39+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 73,
+   "persistentId": "7E048311C206FDE8",
+   "title": "I'm Gonna Find Another You (Live at the Nokia Theatre, Los Angeles, CA - December 2007)",
+   "artist": {
+    "id": 26,
+    "name": "John Mayer"
+   },
+   "genre": "Pop",
+   "year": 2008,
+   "durationMs": 340627,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T08:23:08+09:00",
+   "lastPlayedAt": "2026-06-12T17:01:35+09:00",
+   "album": {
+    "id": 21,
+    "title": "Where the Light Is: John Mayer Live In Los Angeles",
+    "artist": {
+     "id": 26,
+     "name": "John Mayer"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 74,
+   "persistentId": "94C3B14BA555D42D",
+   "title": "Regret It (Live)",
+   "artist": {
+    "id": 27,
+    "name": "Joshua Slone"
+   },
+   "genre": "Country",
+   "year": 2026,
+   "durationMs": 246542,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-12T15:15:58+09:00",
+   "lastPlayedAt": "2026-06-26T14:09:03+09:00",
+   "album": {
+    "id": 22,
+    "title": "Thinking Too Much (Live)",
+    "artist": {
+     "id": 27,
+     "name": "Joshua Slone"
+    },
+    "releaseYear": 2026
+   }
+  },
+  {
+   "id": 75,
+   "persistentId": "E3E6F4C30273EBAA",
+   "title": "Beach Again (Acoustic Version)",
+   "artist": {
+    "id": 28,
+    "name": "Lee Sang Soon"
+   },
+   "genre": "K-Pop",
+   "year": 2020,
+   "durationMs": 261213,
+   "source": "shared",
+   "playCount": 15,
+   "skipCount": 3,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-01T18:48:56+09:00",
+   "lastPlayedAt": "2026-08-12T19:54:00+09:00",
+   "album": {
+    "id": 23,
+    "title": "Du Ri Jyu Wa X Linda X Let's Dance",
+    "artist": {
+     "id": 29,
+     "name": "SSAK3"
+    },
+    "releaseYear": 2020
+   }
+  },
+  {
+   "id": 76,
+   "persistentId": "9281C8C46130B1A0",
+   "title": "The Phantom of the Opera",
+   "artist": {
+    "id": 30,
+    "name": "Gaston Leroux"
+   },
+   "genre": "Fantasy",
+   "year": 1927,
+   "durationMs": 0,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2018-05-19T15:46:19+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 24,
+    "title": "The Phantom of the Opera",
+    "artist": {
+     "id": 30,
+     "name": "Gaston Leroux"
+    },
+    "releaseYear": 1927
+   }
+  },
+  {
+   "id": 77,
+   "persistentId": "B10E31C01A095276",
+   "title": "Telly (feat. Kim Ximya)",
+   "artist": {
+    "id": 31,
+    "name": "Lionclad"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 174750,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-30T15:21:45+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 1,
+    "title": "Red Bull Music Seoul Sori",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 78,
+   "persistentId": "31FBBC11B07AD037",
+   "title": "All At Once",
+   "artist": {
+    "id": 32,
+    "name": "Madison Beer"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 154617,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-25T15:33:35+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 79,
+   "persistentId": "1C5027AD91C1A34A",
+   "title": "A Person Closer to Tears (2026)",
+   "artist": {
+    "id": 33,
+    "name": "Monday Kiz & Lee Hong Gi"
+   },
+   "genre": "K-Pop",
+   "year": 2026,
+   "durationMs": 310213,
+   "source": "shared",
+   "playCount": 11,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-05T07:25:26+09:00",
+   "lastPlayedAt": "2026-08-08T20:27:07+09:00",
+   "album": {
+    "id": 25,
+    "title": "Monday Kiz's Footprints Vol.3 (with Lee Hong Gi) - Single",
+    "artist": {
+     "id": 33,
+     "name": "Monday Kiz & Lee Hong Gi"
+    },
+    "releaseYear": 2026
+   }
+  },
+  {
+   "id": 80,
+   "persistentId": "954E9986100C9300",
+   "title": "Attention",
+   "artist": {
+    "id": 34,
+    "name": "Mr Eazi"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 173149,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:39:34+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 81,
+   "persistentId": "16F14B7976733E51",
+   "title": "Welcome to the Black Parade",
+   "artist": {
+    "id": 35,
+    "name": "My Chemical Romance"
+   },
+   "genre": "Alternative",
+   "year": 2006,
+   "durationMs": 311106,
+   "source": "shared",
+   "playCount": 4,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-22T08:47:27+09:00",
+   "lastPlayedAt": "2026-08-26T06:47:51+09:00",
+   "album": {
+    "id": 26,
+    "title": "The Black Parade",
+    "artist": {
+     "id": 35,
+     "name": "My Chemical Romance"
+    },
+    "releaseYear": 2006
+   }
+  },
+  {
+   "id": 82,
+   "persistentId": "1BF3DDC8E567BF4F",
+   "title": "Baja California",
+   "artist": {
+    "id": 36,
+    "name": "Myke Towers"
+   },
+   "genre": "Latin",
+   "year": 2025,
+   "durationMs": 143315,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-25T15:00:19+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 83,
+   "persistentId": "A3DD8A874B76B9B0",
+   "title": "Columbia (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 287721,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-09-08T16:36:52+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 84,
+   "persistentId": "E357CA7465E624CE",
+   "title": "Acquiesce (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 236777,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-13T07:36:29+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 85,
+   "persistentId": "A7CE6061807E21C8",
+   "title": "Supersonic (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 309880,
+   "source": "shared",
+   "playCount": 6,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-14T15:11:51+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 86,
+   "persistentId": "0D5DB0D17FA5725A",
+   "title": "Hello (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 175535,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-14T15:14:46+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 87,
+   "persistentId": "C96F80D8C1A25FE3",
+   "title": "Some Might Say (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 304628,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-14T15:19:51+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 88,
+   "persistentId": "25413AEED4B08509",
+   "title": "Roll with It (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 245376,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-14T15:23:57+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 89,
+   "persistentId": "28C41B9553B438D1",
+   "title": "Slide Away (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 347653,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-14T15:29:44+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 90,
+   "persistentId": "2D538FA984614E91",
+   "title": "Morning Glory (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 252876,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 91,
+   "persistentId": "6A2F976F9B91531B",
+   "title": "Round Are Way (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 287878,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 92,
+   "persistentId": "72A96B015C8222B9",
+   "title": "Cigarettes & Alcohol (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 282916,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 93,
+   "persistentId": "2D3ADB2B06748542",
+   "title": "Whatever (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 359312,
+   "source": "shared",
+   "playCount": 6,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-09-08T16:27:21+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 94,
+   "persistentId": "DE58C99A9DA1C380",
+   "title": "Cast No Shadow (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 286463,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 95,
+   "persistentId": "CE6AFE88334D2A8A",
+   "title": "Wonderwall (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 244507,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-21T18:34:48+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 96,
+   "persistentId": "043F9DB6CB6EA102",
+   "title": "The Masterplan (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 280119,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-21T18:39:28+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 97,
+   "persistentId": "E30E35001D5AA9B3",
+   "title": "Don't Look Back in Anger (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 294940,
+   "source": "shared",
+   "playCount": 12,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-09-08T16:17:22+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 98,
+   "persistentId": "174C477752E5F799",
+   "title": "My Big Mouth (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 310252,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 99,
+   "persistentId": "443672BF978EF97C",
+   "title": "It's Gettin' Better (Man!!) [Live at Knebworth, 11 August '96]",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 356541,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 100,
+   "persistentId": "250166F261E393A8",
+   "title": "Live Forever (Live at Knebworth, 10 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 296380,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-13T07:23:56+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 101,
+   "persistentId": "3649DB1DC889AC45",
+   "title": "Champagne Supernova (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 446247,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 102,
+   "persistentId": "6B2958A44B2CC9E4",
+   "title": "I Am the Walrus (Live at Knebworth, 11 August '96)",
+   "artist": {
+    "id": 37,
+    "name": "Oasis"
+   },
+   "genre": "Alternative",
+   "year": 2021,
+   "durationMs": 400868,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-27T17:25:51+09:00",
+   "lastPlayedAt": "2026-08-13T07:32:26+09:00",
+   "album": {
+    "id": 27,
+    "title": "Oasis Knebworth 1996",
+    "artist": {
+     "id": 37,
+     "name": "Oasis"
+    },
+    "releaseYear": 2021
+   }
+  },
+  {
+   "id": 103,
+   "persistentId": "40AA78CBB24DD41F",
+   "title": "Gasoline",
+   "artist": {
+    "id": 38,
+    "name": "Obongjayar"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 219416,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:31:12+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 104,
+   "persistentId": "3DFEFF869C58E562",
+   "title": "I Ain't Worried",
+   "artist": {
+    "id": 39,
+    "name": "OneRepublic"
+   },
+   "genre": "Pop",
+   "year": 2022,
+   "durationMs": 148485,
+   "source": "shared",
+   "playCount": 63,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-22T17:42:43+09:00",
+   "lastPlayedAt": "2026-08-12T19:59:09+09:00",
+   "album": {
+    "id": 28,
+    "title": "Top Gun: Maverick (Music from the Motion Picture)",
+    "artist": {
+     "id": 40,
+     "name": "Lorne Balfe, Harold Faltermeyer, Lady Gaga & Hans Zimmer"
+    },
+    "releaseYear": 2022
+   }
+  },
+  {
+   "id": 105,
+   "persistentId": "58183B55556AB353",
+   "title": "DOUBLE C",
+   "artist": {
+    "id": 41,
+    "name": "PAWSA"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 226988,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:09:51+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 106,
+   "persistentId": "87D521E2484B79B8",
+   "title": "SeOUL SORI",
+   "artist": {
+    "id": 42,
+    "name": "PEEJAY"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 185375,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-30T15:21:45+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 1,
+    "title": "Red Bull Music Seoul Sori",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 107,
+   "persistentId": "AB5BEF30A9EC9E1D",
+   "title": "D.A.N.C.E",
+   "artist": {
+    "id": 43,
+    "name": "Peggy Gou"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 195404,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:28:19+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 108,
+   "persistentId": "8EF534F50B33326F",
+   "title": "Timaeus",
+   "artist": {
+    "id": 44,
+    "name": "Plato"
+   },
+   "genre": "Philosophy",
+   "year": 2008,
+   "durationMs": 0,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2021-03-02T18:17:36+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 29,
+    "title": "Timaeus",
+    "artist": {
+     "id": 44,
+     "name": "Plato"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 109,
+   "persistentId": "F6EAD90E65D88DAD",
+   "title": "California Sober (feat. Chris Stapleton)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 204412,
+   "source": "shared",
+   "playCount": 23,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-30T19:16:27+09:00",
+   "lastPlayedAt": "2026-09-06T15:39:22+09:00",
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 110,
+   "persistentId": "90D0607A31518298",
+   "title": "Sunflower (Spider-Man: Into the Spider-Verse)",
+   "artist": {
+    "id": 46,
+    "name": "Post Malone & Swae Lee"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 158039,
+   "source": "shared",
+   "playCount": 43,
+   "skipCount": 3,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-23T09:47:37+09:00",
+   "lastPlayedAt": "2026-08-30T10:55:52+09:00",
+   "album": {
+    "id": 31,
+    "title": "Spider-Man: Into the Spider-Verse (Soundtrack From & Inspired by the Motion Picture)",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 111,
+   "persistentId": "08CD3DF7E60A68E8",
+   "title": "Grandma Calls The Boy Bad News",
+   "artist": {
+    "id": 47,
+    "name": "RAYE"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 206731,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-26T18:47:24+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 112,
+   "persistentId": "AF9E744D606D606F",
+   "title": "Underdog",
+   "artist": {
+    "id": 48,
+    "name": "Roddy Ricch"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2025,
+   "durationMs": 142328,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-26T18:43:57+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 113,
+   "persistentId": "0101E649AD71C5FC",
+   "title": "Messy",
+   "artist": {
+    "id": 49,
+    "name": "ROSÉ"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 179055,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-26T18:38:29+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 114,
+   "persistentId": "2CC109CEC4B53150",
+   "title": "Messy",
+   "artist": {
+    "id": 49,
+    "name": "ROSÉ"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 185856,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:36:42+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 115,
+   "persistentId": "A881CA579EB6366D",
+   "title": "라라라",
+   "artist": {
+    "id": 50,
+    "name": "SG Wannabe"
+   },
+   "genre": "K-Pop",
+   "year": 2008,
+   "durationMs": 276852,
+   "source": "shared",
+   "playCount": 4,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-10T21:10:32+09:00",
+   "lastPlayedAt": "2026-08-10T07:46:16+09:00",
+   "album": {
+    "id": 32,
+    "title": "My Friend",
+    "artist": {
+     "id": 50,
+     "name": "SG Wannabe"
+    },
+    "releaseYear": 2008
+   }
+  },
+  {
+   "id": 116,
+   "persistentId": "FEB0F54D67946B86",
+   "title": "Chick Chick Pok Pok (feat. Jibin, Supreme Boi & Malmiking)",
+   "artist": {
+    "id": 51,
+    "name": "Simo"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 418609,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-30T15:21:45+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 1,
+    "title": "Red Bull Music Seoul Sori",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 117,
+   "persistentId": "EEB84D3A0D10E6A1",
+   "title": "back to friends",
+   "artist": {
+    "id": 52,
+    "name": "sombr"
+   },
+   "genre": "Indie Rock",
+   "year": 2024,
+   "durationMs": 199031,
+   "source": "shared",
+   "playCount": 9,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-29T12:03:49+09:00",
+   "lastPlayedAt": "2026-09-05T08:14:49+09:00",
+   "album": {
+    "id": 33,
+    "title": "back to friends - Single",
+    "artist": {
+     "id": 52,
+     "name": "sombr"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 118,
+   "persistentId": "306619C1F80C6CDC",
+   "title": "Just Keep Watching",
+   "artist": {
+    "id": 53,
+    "name": "Tate McRae"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 142550,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-26T18:35:30+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 119,
+   "persistentId": "AA16C0F8A7F1878A",
+   "title": "Just Keep Watching",
+   "artist": {
+    "id": 53,
+    "name": "Tate McRae"
+   },
+   "genre": "Pop",
+   "year": 2025,
+   "durationMs": 148863,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:21+09:00",
+   "lastPlayedAt": "2026-04-25T15:42:03+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 120,
+   "persistentId": "283791A9981AC416",
+   "title": "그리움을 사랑한 가시나무",
+   "artist": {
+    "id": 54,
+    "name": "Tei"
+   },
+   "genre": "R&B/Soul",
+   "year": 2005,
+   "durationMs": 277106,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-16T18:31:16+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 34,
+    "title": "Ucupracacia",
+    "artist": {
+     "id": 54,
+     "name": "Tei"
+    },
+    "releaseYear": 2005
+   }
+  },
+  {
+   "id": 121,
+   "persistentId": "653EC19924EDEB35",
+   "title": "OMG!",
+   "artist": {
+    "id": 55,
+    "name": "Tiësto & Sexyy Red"
+   },
+   "genre": "Dance",
+   "year": 2025,
+   "durationMs": 152990,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-04-25T14:19:20+09:00",
+   "lastPlayedAt": "2026-04-25T15:44:35+09:00",
+   "album": {
+    "id": 7,
+    "title": "F1 The Album",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 122,
+   "persistentId": "96DA26331C89AB1D",
+   "title": "Maehwa",
+   "artist": {
+    "id": 56,
+    "name": "Yangyang"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 194625,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-30T15:21:45+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 1,
+    "title": "Red Bull Music Seoul Sori",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 123,
+   "persistentId": "EE06C2350DFB09D1",
+   "title": "Energy",
+   "artist": {
+    "id": 57,
+    "name": "Zayvo"
+   },
+   "genre": "Hip-Hop/Rap",
+   "year": 2018,
+   "durationMs": 201875,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-07-30T15:21:45+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 1,
+    "title": "Red Bull Music Seoul Sori",
+    "artist": {
+     "id": 2,
+     "name": "Various Artists"
+    },
+    "releaseYear": 2018
+   }
+  },
+  {
+   "id": 124,
+   "persistentId": "C48FF0E7D58EF6C5",
+   "title": "Amnesia",
+   "artist": {
+    "id": 58,
+    "name": "5 Seconds of Summer"
+   },
+   "genre": "Pop",
+   "year": 2014,
+   "durationMs": 237630,
+   "source": "shared",
+   "playCount": 12,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-15T20:06:41+09:00",
+   "lastPlayedAt": "2026-09-02T10:27:41+09:00",
+   "album": {
+    "id": 35,
+    "title": "5 Seconds Of Summer (Deluxe)",
+    "artist": {
+     "id": 58,
+     "name": "5 Seconds of Summer"
+    },
+    "releaseYear": 2014
+   }
+  },
+  {
+   "id": 125,
+   "persistentId": "E9ABB2F0CD42ACF2",
+   "title": "Intro (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 235016,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-23T14:40:00+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 126,
+   "persistentId": "AC999896105DE9F2",
+   "title": "The 1975 (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 140098,
+   "source": "shared",
+   "playCount": 4,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-25T16:58:06+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 127,
+   "persistentId": "96C8277EC6A303E9",
+   "title": "Looking For Somebody To Love (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 205492,
+   "source": "shared",
+   "playCount": 4,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-25T17:01:32+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 128,
+   "persistentId": "C145A453C68D2E76",
+   "title": "Happiness (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 322165,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-25T17:06:54+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 129,
+   "persistentId": "F847A234CE72D7EB",
+   "title": "Part Of The Band (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 272363,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-23T14:55:40+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 130,
+   "persistentId": "2D339C7B482ADC4D",
+   "title": "Oh Caroline (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 244895,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-23T14:59:47+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 131,
+   "persistentId": "4B6204DBABA2F555",
+   "title": "I'm In Love With You (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 282368,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-23T15:04:29+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 132,
+   "persistentId": "785CD3A50BAD5293",
+   "title": "A Change of Heart (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 303601,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 133,
+   "persistentId": "8FB4A7E160ACA531",
+   "title": "An Encounter (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 47537,
+   "source": "shared",
+   "playCount": 4,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-18T08:16:57+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 134,
+   "persistentId": "70D8B6E7A431D03E",
+   "title": "Robbers (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 247972,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 4,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-19T20:22:56+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 135,
+   "persistentId": "BAB7F9F49EDE3583",
+   "title": "Me (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 339450,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 136,
+   "persistentId": "88BB1751399B7D85",
+   "title": "You (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 291440,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 137,
+   "persistentId": "EE6AAD354E1B6177",
+   "title": "Fallingforyou (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 238759,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-07-14T07:28:16+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 138,
+   "persistentId": "6CE46C864935498A",
+   "title": "About You (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 337226,
+   "source": "shared",
+   "playCount": 4,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-24T20:38:36+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 139,
+   "persistentId": "8173E587ECCA5968",
+   "title": "When We Are Together (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 441842,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-07-15T07:08:32+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 140,
+   "persistentId": "017F48546592FB22",
+   "title": "Consumption (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 269066,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 141,
+   "persistentId": "5DA382D748C4990D",
+   "title": "I Like America & America Likes Me (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 207621,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 142,
+   "persistentId": "1522F66854199954",
+   "title": "Jesus Christ 2005 God Bless America (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 238895,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-07-14T07:24:18+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 143,
+   "persistentId": "98F1F75D778118FE",
+   "title": "If You're Too Shy (Let Me Know) [Live From The AO Arena, Manchester, 17.02.24]",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 336144,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 144,
+   "persistentId": "86951213BD5591E1",
+   "title": "TOOTIMETOOTIMETOOTIME (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 346545,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-07-15T08:14:39+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 145,
+   "persistentId": "D6E496345F6D8506",
+   "title": "It's Not Living (If It's Not With You) [Live From The AO Arena, Manchester, 17.02.24]",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 373356,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-07-15T07:15:28+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 146,
+   "persistentId": "59D0EB9373391824",
+   "title": "Menswear (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 239432,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 147,
+   "persistentId": "5B3BF653DB3F598F",
+   "title": "Chocolate (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 215445,
+   "source": "shared",
+   "playCount": 12,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-25T08:31:25+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 148,
+   "persistentId": "CAE4E3B7E49FC788",
+   "title": "The Sound (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 252268,
+   "source": "shared",
+   "playCount": 11,
+   "skipCount": 5,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-08-25T08:25:35+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 149,
+   "persistentId": "BD84AA4CD3FAD3E3",
+   "title": "Somebody Else (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 346285,
+   "source": "shared",
+   "playCount": 2,
+   "skipCount": 2,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": "2026-07-14T07:08:52+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 150,
+   "persistentId": "DF77C1173D6A0126",
+   "title": "Guys (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 57761,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:18+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 151,
+   "persistentId": "EB7FB68D7D2A3B01",
+   "title": "I Always Wanna Die (Sometimes) [Live From The AO Arena, Manchester, 17.02.24]",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 278199,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:19+09:00",
+   "lastPlayedAt": "2026-07-15T07:01:12+09:00",
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 152,
+   "persistentId": "3E84A7815E9E9957",
+   "title": "Love It If We Made It (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 277496,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:19+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 153,
+   "persistentId": "E878B922CE4BD71E",
+   "title": "Sex (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 274131,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:19+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 154,
+   "persistentId": "74752554BC9967A3",
+   "title": "People (Live From The AO Arena, Manchester, 17.02.24)",
+   "artist": {
+    "id": 59,
+    "name": "The 1975"
+   },
+   "genre": "Alternative",
+   "year": 2025,
+   "durationMs": 276919,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-06-05T13:20:19+09:00",
+   "lastPlayedAt": null,
+   "album": {
+    "id": 36,
+    "title": "Still... At Their Very Best (Live From The AO Arena, Manchester, 17.02.24)",
+    "artist": {
+     "id": 59,
+     "name": "The 1975"
+    },
+    "releaseYear": 2025
+   }
+  },
+  {
+   "id": 155,
+   "persistentId": "1CD11237BE4804E8",
+   "title": "Djo - 'End of Beginning' (live at Laneway 2025) - triple j (128k)",
+   "artist": {
+    "id": 60,
+    "name": ""
+   },
+   "genre": null,
+   "year": null,
+   "durationMs": 205817,
+   "source": "shared",
+   "playCount": 7,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-05-01T14:22:14+09:00",
+   "lastPlayedAt": "2026-09-08T07:08:10+09:00"
+  },
+  {
+   "id": 156,
+   "persistentId": "8D9DFC6F8A618A75",
+   "title": "Sitting, Waiting, Wishing - Jack Johnson",
+   "artist": {
+    "id": 60,
+    "name": ""
+   },
+   "genre": null,
+   "year": null,
+   "durationMs": 294451,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-23T16:43:40+09:00",
+   "lastPlayedAt": null
+  },
+  {
+   "id": 157,
+   "persistentId": "B5C4C7A459757EDF",
+   "title": "Using Folder With Papers.M",
+   "artist": {
+    "id": 60,
+    "name": ""
+   },
+   "genre": null,
+   "year": null,
+   "durationMs": 5045,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": true,
+   "addedAt": "2026-08-02T16:20:14+09:00",
+   "lastPlayedAt": "2026-08-02T16:20:23+09:00"
+  },
+  {
+   "id": 158,
+   "persistentId": "5F6AC2FD6C2DB9B4",
+   "title": "doom",
+   "artist": {
+    "id": 61,
+    "name": "Steve Lacy"
+   },
+   "genre": "Pop",
+   "year": 2026,
+   "durationMs": 292779,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 37,
+    "title": "Oh yeah?",
+    "artist": {
+     "id": 61,
+     "name": "Steve Lacy"
+    },
+    "releaseYear": 2026
+   }
+  },
+  {
+   "id": 159,
+   "persistentId": "6F78C075CCC17486",
+   "title": "DELRESTO (ECHOES) [feat. Beyoncé]",
+   "artist": {
+    "id": 62,
+    "name": "Travis Scott"
+   },
+   "genre": "힙합/랩",
+   "year": 2023,
+   "durationMs": 274138,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 38,
+    "title": "UTOPIA",
+    "artist": {
+     "id": 62,
+     "name": "Travis Scott"
+    },
+    "releaseYear": 2023
+   }
+  },
+  {
+   "id": 160,
+   "persistentId": "59A7936EDFD78742",
+   "title": "Wrong Ones (feat. Tim McGraw)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 195822,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 161,
+   "persistentId": "E931B40D8933AF59",
+   "title": "Finer Things (feat. Hank Williams, Jr.)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 185533,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 162,
+   "persistentId": "1C291B0A0F02CCA5",
+   "title": "I Had Some Help (feat. Morgan Wallen)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 178205,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 163,
+   "persistentId": "22965CD2A45DFCC0",
+   "title": "Pour Me A Drink (feat. Blake Shelton)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 195123,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 164,
+   "persistentId": "D4AF4F02BDCDF786",
+   "title": "Have The Heart (feat. Dolly Parton)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 183332,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 165,
+   "persistentId": "9D56FC8665EF2F16",
+   "title": "What Don't Belong To Me",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 207175,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 166,
+   "persistentId": "E051091A4CAF6E5C",
+   "title": "Goes Without Saying (feat. Brad Paisley)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 212352,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 167,
+   "persistentId": "F2A48EA79593CE00",
+   "title": "Guy For That (feat. Luke Combs)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 164011,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 168,
+   "persistentId": "134CE346F34D5BC2",
+   "title": "Nosedive (feat. Lainey Wilson)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 192458,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 169,
+   "persistentId": "9A59AF895BD2159C",
+   "title": "Losers (feat. Jelly Roll)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 209037,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 170,
+   "persistentId": "BA9553F5DDF096A6",
+   "title": "Devil I've Been (feat. ERNEST)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 182925,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 171,
+   "persistentId": "6E66AA0392BA9637",
+   "title": "Never Love You Again (feat. Sierra Ferrell)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 186860,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 172,
+   "persistentId": "626511FFAAA80117",
+   "title": "Missin’ You Like This (feat. Luke Combs)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 222781,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 173,
+   "persistentId": "0DFCFE07DCA40C4E",
+   "title": "Hide My Gun (feat. HARDY)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 220479,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 174,
+   "persistentId": "B36FA8079F215A21",
+   "title": "Right About You",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 183046,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 175,
+   "persistentId": "202EDEA57A7C9590",
+   "title": "M-E-X-I-C-O (feat. Billy Strings)",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 155929,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 176,
+   "persistentId": "3D10D3FC78636739",
+   "title": "Yours",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 199438,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 177,
+   "persistentId": "04755D65CA808957",
+   "title": "Fallin’ In Love",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 171184,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 178,
+   "persistentId": "064D3A49294DABB6",
+   "title": "Dead At The Honky Tonk",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 213225,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 179,
+   "persistentId": "3328312AF3295C11",
+   "title": "Killed A Man",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 185608,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 180,
+   "persistentId": "169363129A786C50",
+   "title": "Ain’t How It Ends",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 201962,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 181,
+   "persistentId": "C0443D60407B7563",
+   "title": "Hey Mercedes",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 202639,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 182,
+   "persistentId": "C70DD54823C07382",
+   "title": "Go To Hell",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 267330,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 183,
+   "persistentId": "F5DCC0FB2154D7B2",
+   "title": "Two Hearts",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 206753,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 184,
+   "persistentId": "F8FD101C209FA195",
+   "title": "Who Needs You",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 169865,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 185,
+   "persistentId": "F730EBBD5FB971CD",
+   "title": "Back To Texas",
+   "artist": {
+    "id": 45,
+    "name": "Post Malone"
+   },
+   "genre": "Country",
+   "year": 2024,
+   "durationMs": 167833,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 30,
+    "title": "F-1 Trillion (Long Bed)",
+    "artist": {
+     "id": 45,
+     "name": "Post Malone"
+    },
+    "releaseYear": 2024
+   }
+  },
+  {
+   "id": 186,
+   "persistentId": "2CF0EF2DA3076420",
+   "title": "Our House",
+   "artist": {
+    "id": 63,
+    "name": "Crosby, Stills, Nash & Young"
+   },
+   "genre": "Rock",
+   "year": 1970,
+   "durationMs": 179705,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-08-27T10:08:48+09:00",
+   "album": {
+    "id": 39,
+    "title": "Déjà Vu",
+    "artist": {
+     "id": 63,
+     "name": "Crosby, Stills, Nash & Young"
+    },
+    "releaseYear": 1970
+   }
+  },
+  {
+   "id": 187,
+   "persistentId": "291DABBF17BEA656",
+   "title": "Southern Cross",
+   "artist": {
+    "id": 64,
+    "name": "Crosby, Stills & Nash"
+   },
+   "genre": "Rock",
+   "year": 1982,
+   "durationMs": 284252,
+   "source": "shared",
+   "playCount": 5,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-08-27T10:13:32+09:00",
+   "album": {
+    "id": 40,
+    "title": "Daylight Again",
+    "artist": {
+     "id": 64,
+     "name": "Crosby, Stills & Nash"
+    },
+    "releaseYear": 1982
+   }
+  },
+  {
+   "id": 188,
+   "persistentId": "1C1ED235BA40EC2F",
+   "title": "Suite: Judy Blue Eyes",
+   "artist": {
+    "id": 64,
+    "name": "Crosby, Stills & Nash"
+   },
+   "genre": "Rock",
+   "year": 1969,
+   "durationMs": 443532,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-07-04T18:00:52+09:00",
+   "album": {
+    "id": 41,
+    "title": "Crosby, Stills & Nash",
+    "artist": {
+     "id": 64,
+     "name": "Crosby, Stills & Nash"
+    },
+    "releaseYear": 1969
+   }
+  },
+  {
+   "id": 189,
+   "persistentId": "03850F7F4C1B474F",
+   "title": "Love the One You're With",
+   "artist": {
+    "id": 64,
+    "name": "Crosby, Stills & Nash"
+   },
+   "genre": "Rock",
+   "year": 1970,
+   "durationMs": 184652,
+   "source": "shared",
+   "playCount": 3,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-07-04T18:03:57+09:00",
+   "album": {
+    "id": 42,
+    "title": "Replay",
+    "artist": {
+     "id": 64,
+     "name": "Crosby, Stills & Nash"
+    },
+    "releaseYear": 1970
+   }
+  },
+  {
+   "id": 190,
+   "persistentId": "E44B07C59265265A",
+   "title": "Wooden Ships",
+   "artist": {
+    "id": 64,
+    "name": "Crosby, Stills & Nash"
+   },
+   "genre": "Rock",
+   "year": 1969,
+   "durationMs": 327653,
+   "source": "shared",
+   "playCount": 0,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": null,
+   "album": {
+    "id": 41,
+    "title": "Crosby, Stills & Nash",
+    "artist": {
+     "id": 64,
+     "name": "Crosby, Stills & Nash"
+    },
+    "releaseYear": 1969
+   }
+  },
+  {
+   "id": 191,
+   "persistentId": "625511DEE21C7244",
+   "title": "Ohio",
+   "artist": {
+    "id": 63,
+    "name": "Crosby, Stills, Nash & Young"
+   },
+   "genre": "Rock",
+   "year": 1970,
+   "durationMs": 183658,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-05-17T21:28:52+09:00",
+   "album": {
+    "id": 43,
+    "title": "So Far",
+    "artist": {
+     "id": 63,
+     "name": "Crosby, Stills, Nash & Young"
+    },
+    "releaseYear": 1970
+   }
+  },
+  {
+   "id": 192,
+   "persistentId": "2B20B9FC7A55BA69",
+   "title": "Almost Cut My Hair",
+   "artist": {
+    "id": 63,
+    "name": "Crosby, Stills, Nash & Young"
+   },
+   "genre": "Rock",
+   "year": 1970,
+   "durationMs": 269088,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-05-17T21:33:21+09:00",
+   "album": {
+    "id": 39,
+    "title": "Déjà Vu",
+    "artist": {
+     "id": 63,
+     "name": "Crosby, Stills, Nash & Young"
+    },
+    "releaseYear": 1970
+   }
+  },
+  {
+   "id": 193,
+   "persistentId": "E536062DFD436C8D",
+   "title": "Tangled Up In Blue",
+   "artist": {
+    "id": 65,
+    "name": "Bob Dylan"
+   },
+   "genre": "Singer/Songwriter",
+   "year": 1975,
+   "durationMs": 340776,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-05-17T21:39:02+09:00",
+   "album": {
+    "id": 44,
+    "title": "Blood On the Tracks",
+    "artist": {
+     "id": 65,
+     "name": "Bob Dylan"
+    },
+    "releaseYear": 1975
+   }
+  },
+  {
+   "id": 194,
+   "persistentId": "FBA3E11F97269731",
+   "title": "One More Cup of Coffee",
+   "artist": {
+    "id": 65,
+    "name": "Bob Dylan"
+   },
+   "genre": "Rock",
+   "year": 1976,
+   "durationMs": 226339,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 0,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-05-17T21:42:48+09:00",
+   "album": {
+    "id": 45,
+    "title": "Desire",
+    "artist": {
+     "id": 65,
+     "name": "Bob Dylan"
+    },
+    "releaseYear": 1976
+   }
+  },
+  {
+   "id": 195,
+   "persistentId": "0945B321E29FF6B0",
+   "title": "Forever Young",
+   "artist": {
+    "id": 65,
+    "name": "Bob Dylan"
+   },
+   "genre": "Rock",
+   "year": 1974,
+   "durationMs": 295733,
+   "source": "shared",
+   "playCount": 1,
+   "skipCount": 1,
+   "favorited": false,
+   "disliked": false,
+   "excluded": false,
+   "inLibrary": false,
+   "addedAt": null,
+   "lastPlayedAt": "2026-05-17T21:47:44+09:00",
+   "album": {
+    "id": 46,
+    "title": "The Essential Bob Dylan (Revised Edition)",
+    "artist": {
+     "id": 65,
+     "name": "Bob Dylan"
+    },
+    "releaseYear": 1974
+   }
+  }
+ ],
+ "playlists": [
+  {
+   "id": 1,
+   "name": "Favourite Songs",
+   "trackCount": 20,
+   "trackIds": [
+    42,
+    41,
+    104,
+    110,
+    75,
+    45,
+    74,
+    124,
+    47,
+    32,
+    43,
+    35,
+    11,
+    79,
+    115,
+    81,
+    147,
+    109,
+    49,
+    30
+   ]
+  },
+  {
+   "id": 2,
+   "name": " CH",
+   "trackCount": 30,
+   "trackIds": [
+    158,
+    159,
+    30,
+    160,
+    161,
+    162,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170,
+    171,
+    172,
+    109,
+    173,
+    174,
+    175,
+    176,
+    177,
+    178,
+    179,
+    180,
+    181,
+    182,
+    183,
+    184,
+    185
+   ]
+  },
+  {
+   "id": 3,
+   "name": "Ethos",
+   "trackCount": 1,
+   "trackIds": [
+    51
+   ]
+  },
+  {
+   "id": 4,
+   "name": "from Steve Jobs",
+   "trackCount": 10,
+   "trackIds": [
+    186,
+    187,
+    188,
+    189,
+    190,
+    191,
+    192,
+    193,
+    194,
+    195
+   ]
+  }
+ ]
+}

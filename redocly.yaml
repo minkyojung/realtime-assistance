@@ -1,0 +1,13 @@
+# API 명세 린트 설정
+#
+# security-defined 를 끄는 이유:
+#   과제 세부 평가 기준이 "Security Schemes 제외"를 명시적 제외 항목으로 두었다.
+#   따라서 securitySchemes 를 정의하지 않으며, 이 규칙만 비활성화한다.
+#
+# no-server-example.com 을 끄는 이유:
+#   1인용 로컬 서버가 이 서비스의 배포 형태다. localhost 가 실제 운영 주소다.
+extends:
+  - recommended
+rules:
+  security-defined: off
+  no-server-example.com: off

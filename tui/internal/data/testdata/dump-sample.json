@@ -1,0 +1,80 @@
+{
+  "tracks": [
+    {
+      "persistentId": "81F599359B2E449B",
+      "title": "Pipe | Newline\nTitle",
+      "artist": "Awkward \"Quoted\" Artist",
+      "albumTitle": "Edge Cases",
+      "albumArtist": "Various Artists",
+      "genre": "Test",
+      "year": 2026,
+      "durationMs": 239375,
+      "playCount": 0,
+      "skipCount": 0,
+      "favorited": false,
+      "disliked": false,
+      "source": "shared",
+      "inLibrary": true,
+      "addedAt": "2026-07-30T06:21:45.000Z",
+      "lastPlayedAt": null
+    },
+    {
+      "persistentId": "0000000000000001",
+      "title": "Played Once",
+      "artist": "Someone",
+      "albumTitle": "",
+      "albumArtist": "",
+      "genre": null,
+      "year": null,
+      "durationMs": 1000,
+      "playCount": 3,
+      "skipCount": 1,
+      "favorited": true,
+      "disliked": false,
+      "source": "file",
+      "inLibrary": true,
+      "addedAt": "2026-08-01T00:00:00.000Z",
+      "lastPlayedAt": "2026-09-01T12:00:00.000Z"
+    },
+    {
+      "persistentId": "FFFFFFFFFFFFFFFF",
+      "title": "Playlist Only",
+      "artist": "Nobody",
+      "albumTitle": "Loose",
+      "albumArtist": "Nobody",
+      "genre": null,
+      "year": null,
+      "durationMs": 2000,
+      "playCount": 0,
+      "skipCount": 0,
+      "favorited": false,
+      "disliked": false,
+      "source": "shared",
+      "inLibrary": false,
+      "addedAt": null,
+      "lastPlayedAt": null
+    },
+    {
+      "persistentId": "",
+      "title": "No Persistent ID",
+      "artist": "Ghost",
+      "albumTitle": "",
+      "albumArtist": "",
+      "genre": null,
+      "year": null,
+      "durationMs": 0,
+      "playCount": 0,
+      "skipCount": 0,
+      "favorited": false,
+      "disliked": false,
+      "source": "shared",
+      "inLibrary": true,
+      "addedAt": null,
+      "lastPlayedAt": null
+    }
+  ],
+  "playlists": [
+    { "persistentId": "AAAA000000000001", "name": "Mixed", "trackIds": ["FFFFFFFFFFFFFFFF", "81F599359B2E449B"] },
+    { "persistentId": "AAAA000000000002", "name": "Empty", "trackIds": [] }
+  ]
+}

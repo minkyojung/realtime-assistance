@@ -1,0 +1,749 @@
+// Package host 는 터미널 안에 앱들을 담는 껍데기다.
+//
+// 두 줄만 갖는다 — 입력창과 상태줄. 그 위는 전부 앱의 것이다.
+// 파는 것은 화면이 아니라 조작법이다. docs/07-호스트-계약.md
+package host
+
+import (
+	"strings"
+
+	"amcli/tui/internal/app"
+	"amcli/tui/internal/secrets"
+	"amcli/tui/internal/style"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/textarea"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+)
+
+// 입력창은 하나지만 하는 일이 둘이다. 무엇을 하는 중인지 화면이 말해야 한다.
+//
+//	기본       Agent — 자연어 요청. 목록을 건드리지 않는다
+//	ctrl+f     Search — 지금 보고 있는 것을 즉시 거른다. 같은 키로 돌아온다
+//	/          Agent 에 `/` 로 시작하면 명령 — 로컬에서 바로 실행
+//
+// 모드는 화면을 바꾸지 않고 "친 글자의 뜻"을 바꾼다. 그래서 안 보이면
+// 알아낼 방법이 없다. **입력창 자신이 말한다** — 커서 바로 앞의 글자와
+// 테두리 색이 지금 어느 모드인지다. 아래에 줄을 따로 두지 않는 이유는,
+// 모드를 말할 가장 좋은 자리가 글자를 치는 그 자리이기 때문이다.
+//
+// 창 제목. 터미널 탭에 뜬다.
+const windowTitle = "npm run dev"
+
+type inputMode int
+
+const (
+	modePrompt inputMode = iota
+	modeSearch
+)
+
+type Model struct {
+	apps    []app.App
+	current int
+
+	input    textarea.Model
+	mode     inputMode
+	showHelp bool
+	notice   string
+
+	// 팔레트·도움말에서 고른 줄.
+	pick int
+
+	// 홈에 있는가. 앱을 보고 있지 않다는 뜻이다.
+	//
+	// current 를 지우지 않는 이유는, 그것이 "마지막으로 본 앱"으로 계속
+	// 쓸모가 있기 때문이다 — esc 로 홈에 와도 그 앱은 살아서 재생 중이고,
+	// 상태줄이 그것을 계속 말한다. home.go
+	home bool
+
+	// 로그 — 호스트의 세 번째 자산. 입력의 짝이다.
+	log []logEntry
+	// 대화 띠를 접었나. 기본은 펼침 — 답과 근거가 그냥 보인다.
+	// 목록을 더 보고 싶을 때 ctrl+j 로 접는다.
+	logShut  bool
+	routing  bool            // 라우터의 답을 기다리는 중
+	routeSeq int             // 취소된 요청의 늦은 답을 버리는 데 쓴다
+	pending  map[string]bool // 답을 기다리는 앱
+	spinner  spinner.Model
+
+	w, h int
+	send func(tea.Msg)
+}
+
+func New(apps ...app.App) Model {
+	ta := textarea.New()
+	ta.SetHeight(1)
+	ta.CharLimit = 500
+	ta.ShowLineNumbers = false
+	// 커서는 터미널의 실제 커서다. 한글 조합(IME)은 앱이 아니라 터미널이
+	// 그 자리에 그리므로, 가짜 커서를 쓰면 조합 중인 글자가 엉뚱한 데
+	// 뜨고 커서는 음절이 확정된 뒤에야 따라온다. View 가 위치를 보고한다.
+	ta.SetVirtualCursor(false)
+	styleInput(&ta)
+	ta.Focus() // 입력창은 늘 활성이다. 타이핑이 언제나 먼저 온다.
+
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+	sp.Style = lipgloss.NewStyle().Foreground(style.ColBrand)
+
+	m := Model{apps: apps, input: ta, spinner: sp, pending: map[string]bool{}, home: true}
+	(&m).applyMode()
+	return m
+}
+
+func (m Model) app() app.App { return m.apps[m.current] }
+
+func (m Model) Init() tea.Cmd {
+	// textarea.Blink 를 걸지 않는다. 실제 커서는 터미널이 깜빡인다.
+	//
+	// 배경색을 묻는다. 우리는 선택 줄을 **배경 위에 미리 섞어** 만드는데,
+	// 그러려면 무엇 위에 얹는지를 알아야 한다. 한때 그 값을 한 터미널에서
+	// 픽셀로 재서 박아 두었고, 밝은 배경을 쓰는 사람에게는 흰 글씨가 흰
+	// 바탕에 얹혀 앱이 통째로 안 보였다.
+	cmds := []tea.Cmd{m.spinner.Tick, tea.RequestBackgroundColor}
+	for _, a := range m.apps {
+		cmds = append(cmds, a.Init(m.push))
+	}
+	// 홈에서 시작하면 아직 아무 앱도 보고 있지 않다. 포커스는 앱에
+	// 들어갈 때 준다 — 안 그러면 안 보는 동안 카메라 불이 켜진다.
+	if m.home {
+		return tea.Batch(cmds...)
+	}
+	first, cmd := m.apps[m.current].Update(app.FocusMsg{})
+	m.apps[m.current] = first
+	return tea.Batch(append(cmds, cmd)...)
+}
+
+// push 는 앱이 이벤트 루프 밖에서 메시지를 넣는 통로다.
+// 폴링이 아니라 밀어 넣는 앱(채팅 등)에 필요하다.
+func (m Model) push(msg tea.Msg) {
+	if m.send != nil {
+		m.send(msg)
+	}
+}
+
+// SetSend 는 tea.Program 이 만들어진 뒤 주입한다.
+func (m *Model) SetSend(f func(tea.Msg)) { m.send = f }
+
+// LeaveHome 은 홈을 건너뛰고 곧장 앱 안에서 시작한다.
+// 골든과 화면 테스트가 앱 화면을 보기 위해 쓴다.
+func (m *Model) LeaveHome() { m.home = false }
+
+// commanding — 입력이 `/` 로 시작하면 명령 모드다. 별도 상태를 두지 않는다.
+func (m Model) commanding() bool {
+	return m.mode == modePrompt && strings.HasPrefix(m.input.Value(), "/")
+}
+
+// overlaying — 본문 자리를 호스트가 잠시 빌려 쓰는 중인가.
+func (m Model) overlaying() bool { return m.showHelp || m.commanding() }
+
+// pickCount — ↑↓ 로 고를 것이 지금 화면에 몇 개 있는가.
+//
+// 팔레트와 도움말뿐이다. 홈에는 고를 목록이 없다(home.go) — 앱이 하나여서
+// 목록을 걷어냈고, 그래서 홈의 ↑↓ 는 아무 데도 가지 않는다.
+func (m Model) pickCount() int {
+	if m.overlaying() {
+		return m.overlayCount()
+	}
+	return 0
+}
+
+func (m Model) picking() bool { return m.pickCount() > 0 }
+
+// 두 프롬프트는 폭이 같다(여덟 칸). 모드를 바꿔도 글자가 시작하는
+// 칸이 그대로여서 화면이 흔들리지 않는다.
+const (
+	promptAsk    = "Agent   "
+	promptSearch = "Search  "
+)
+
+// placeholder 는 입력창이 비어 있을 때 그 자리에 놓을 말이다.
+//
+// **그릴 때 정한다.** applyMode 는 모드가 바뀔 때만 불리는데, 이 말은 커서가
+// 한 줄 움직이기만 해도 달라진다. 목록 스크롤을 그릴 때 다시 맞추는 것과
+// 같은 이유다 — 상태를 미리 적어 두면 언젠가 갱신을 빠뜨린다.
+func (m Model) placeholder() string {
+	if m.mode == modeSearch {
+		// 나가는 길을 여기서 말한다. 들어올 때만 알려주면, 검색을 켜 놓고
+		// 왜 물어봐도 답이 없는지 모르는 자리가 생긴다.
+		return "Filter what you are looking at    " + modeKey() + "  back to Agent"
+	}
+	// 왼쪽은 **지금 이 줄에서만 참인 것**, 오른쪽은 언제나 참인 길이다.
+	//
+	// "Ask for anything" 은 언제나 참이라 아무것도 안 알려준다. 앱의 말은
+	// 커서가 놓인 줄에서 enter 가 하는 일이라, 눌러 보기 전에 알 수 있다.
+	head := "Ask for anything"
+	if !m.home {
+		if h := m.app().Hint(); h != "" {
+			head = h
+		}
+	}
+	tail := modeKey() + "  search    /  commands"
+
+	// 키가 없다고 모드를 없애지도, 기본값을 바꾸지도 않는다. Search 로
+	// 시작하면 AI 가 있다는 것 자체를 모르고 지나간다.
+	//
+	// **켜는 법을 오른쪽에 둔다.** 왼쪽을 통째로 차지하면 AI 가 꺼져 있는
+	// 내내 enter 가 무슨 일을 하는지 못 보게 되는데, enter 는 키 없이도
+	// 멀쩡히 동작한다. 둘 다 참이므로 둘 다 말한다.
+	if !secrets.HasOpenAIKey() {
+		if head == "Ask for anything" {
+			head = "AI is off" // 물어봐도 답이 없다. 그 자리에서 거짓말하지 않는다
+		}
+		tail = modeKey() + "  search    /ai <key>  turn AI on"
+	}
+	return head + "    " + tail
+}
+
+// modeKey 는 모드를 왕복하는 키다. **문자열로 적지 않는다.**
+//
+// 여기가 "ctrl+f" 라고 적혀 있었다. 키는 shift+tab 으로 옮겨 갔는데 안내문만
+// 남아서, 화면이 없는 키를 누르라고 말하고 있었다 — keys.go 가 경고하는 바로
+// 그 어긋남이고, 이번에는 안내문 쪽에서 났다.
+func modeKey() string { return keys.Mode.Help().Key }
+
+func (m *Model) applyMode() {
+	styles := m.input.Styles()
+	color := style.ColBrand // 프라이머리는 Agent 의 것이다
+	if m.mode == modeSearch {
+		m.input.Prompt = promptSearch
+		color = style.ColDim
+	} else {
+		m.input.Prompt = promptAsk
+	}
+	styles.Focused.Prompt = lipgloss.NewStyle().Foreground(color)
+	styles.Blurred.Prompt = styles.Focused.Prompt
+	m.input.SetStyles(styles)
+	// textarea 는 프롬프트 폭을 빼서 글자 자리를 잡는다. 프롬프트를 바꾼
+	// 뒤에 다시 불러야 한다.
+	m.input.SetWidth(m.inputWidth())
+}
+
+// 입력창은 테두리 안에 들어간다. 양옆 선 두 칸과 안여백 두 칸을 뺀다.
+func (m Model) inputWidth() int { return style.Max(style.ContentWidth(m.w)-4, 10) }
+
+// 테두리 색도 모드를 말한다. 프라이머리(ColBrand)는 글자가 쓰고, 선은 한 단계
+// 짙은 톤을 쓴다 — 브랜드 색이 화면에서 제일 큰 덩어리가 되면 안 된다.
+func (m Model) inputBox(w int) string {
+	// m 은 값이라 여기서 고쳐도 모델에 남지 않는다. 그릴 때의 커서 자리로
+	// 안내문을 정하는 것이 목적이다 — placeholder 의 주석을 보라.
+	m.input.Placeholder = m.placeholder()
+	color := style.ColBrandDeep
+	if m.mode == modeSearch {
+		color = style.ColRule
+	}
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(color).
+		Padding(0, 1).
+		Width(w). // lipgloss 의 Width 는 테두리와 안여백을 포함한 전체 폭이다
+		Render(m.input.View())
+}
+
+// setMode — 두 모드를 오간다.
+//
+// 들어갈 때도 나올 때도 입력을 비우고 필터를 다시 건다. 남겨 두면 친 글자가
+// 다른 뜻으로 읽히고("조용한 거"가 검색어가 된다), 목록도 왜 걸러졌는지
+// 설명되지 않은 채 남는다.
+func (m *Model) setMode(mode inputMode) {
+	m.mode = mode
+	m.showHelp = false
+	m.input.Reset()
+	m.applyMode()
+	m.apps[m.current] = m.app().Filter("")
+}
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.BackgroundColorMsg:
+		// 터미널이 자기 배경색을 알려줬다. 추측을 실제 값으로 갈아끼운다.
+		//
+		// 시작할 때 한 번 오고, 사람이 터미널 테마를 바꾸면 또 온다.
+		// 팔레트를 여기서만 손대는 이유는 Retheme 이 패키지 전역을
+		// 갈아끼우기 때문이다 — 명령은 다른 고루틴에서 돈다.
+		style.Retheme(msg.Color)
+		return m, nil
+
+	case tea.WindowSizeMsg:
+		m.w, m.h = msg.Width, msg.Height
+		m.input.SetWidth(m.inputWidth())
+		return m.forward(app.ResizeMsg{
+			Width:  style.ContentWidth(m.w),
+			Height: m.bodyHeight(),
+		})
+
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
+	case app.SayMsg:
+		return m.handleSay(msg), nil
+
+	case routedMsg:
+		// 취소하고 다시 물어본 사이에 옛 답이 올 수 있다. 번호로 거른다.
+		if msg.seq != m.routeSeq {
+			return m, nil
+		}
+		return m.deliver(msg)
+
+	case switchAppMsg:
+		// 화면만 갈아끼운다. 다른 앱은 계속 살아 있다.
+		if msg.index >= 0 && msg.index < len(m.apps) {
+			// 나가는 앱에게 먼저 알린다. 장치를 잡고 있는 앱은 여기서 놓는다.
+			// 홈에서 들어가는 길이면 나가는 앱이 없다.
+			var blurCmd tea.Cmd
+			if !m.home {
+				var blur app.App
+				blur, blurCmd = m.app().Update(app.BlurMsg{})
+				m.apps[m.current] = blur
+			}
+
+			m.home = false
+			m.current = msg.index
+			m.mode = modePrompt
+			m.showHelp = false
+			(&m).applyMode()
+
+			focus, focusCmd := m.app().Update(app.FocusMsg{})
+			m.apps[m.current] = focus
+
+			mm, sizeCmd := m.forward(app.ResizeMsg{
+				Width:  style.ContentWidth(m.w),
+				Height: m.bodyHeight(),
+			})
+			return mm, tea.Batch(blurCmd, focusCmd, sizeCmd)
+		}
+		return m, nil
+
+	case showHelpMsg:
+		m.showHelp, m.pick = true, 0
+		return m, nil
+
+	case showCostMsg:
+		// 비용은 이제 상태줄 오른쪽에 늘 있다. 여기서는 로그로 한 번 더
+		// 끌어낸다 — 물어봤으면 대답이 대화에 남아야 한다. 상태줄을 덮지
+		// 않는 이유는 그 자리가 "지금 어디인가"를 말하는 자리이기 때문이다.
+		spend := m.app().Spend()
+		if strings.TrimSpace(spend) == "" {
+			spend = "nothing spent yet"
+		}
+		m.log = append(m.log, logEntry{who: "host", text: spend})
+		return m, nil
+
+	case tea.KeyPressMsg:
+		if handled, mm, cmd := m.handleKey(msg); handled {
+			return mm, cmd
+		}
+		// 호스트가 안 쓰는 키는 입력창이 먼저 본다. 타이핑이 언제나 먼저다.
+		before := m.input.Value()
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		if m.input.Value() != before {
+			m.pick = 0
+			if m.mode == modeSearch {
+				m.apps[m.current] = m.app().Filter(m.input.Value())
+			}
+			return m, cmd
+		}
+		// 홈에서는 넘길 앱이 없다. 보이지도 않는 앱이 방향키를 먹으면
+		// 돌아갔을 때 엉뚱한 곳에 커서가 가 있다.
+		if m.home {
+			return m, cmd
+		}
+		// 입력창이 안 먹은 키만 앱에게 간다 (방향키·tab 등).
+		next, appCmd := m.app().Update(msg)
+		m.apps[m.current] = next
+		return m, tea.Batch(cmd, appCmd)
+	}
+	return m.forward(msg)
+}
+
+// dispatch 는 문장을 어느 앱에게 줄지 정해 보낸다.
+//
+// 라우터를 부르지 않는 경우가 대부분이다 — 앱이 하나이거나, 사용자가
+// @ 로 지정했으면 답이 이미 정해져 있다.
+func (m Model) dispatch(prompt string) (tea.Model, tea.Cmd) {
+	if name, rest := m.mention(prompt); name != "" {
+		return m.ask([]string{name}, rest)
+	}
+	if len(m.apps) == 1 {
+		return m.ask([]string{m.app().Name()}, prompt)
+	}
+	// 홈에서는 기댈 "지금 보는 앱"이 없다. 그것을 넘기면 애매한 문장이
+	// 마지막에 본 앱으로 계속 쏠린다.
+	current := ""
+	if !m.home {
+		current = m.app().Name()
+	}
+	m.routing = true
+	m.routeSeq++
+	return m, tea.Batch(
+		cmdRoute(m.routeSeq, prompt, m.specs(), current),
+		m.spinner.Tick,
+	)
+}
+
+// deliver 는 라우터의 결과를 받아 앱들에게 넘긴다.
+func (m Model) deliver(msg routedMsg) (tea.Model, tea.Cmd) {
+	m.routing = false
+	names := msg.apps
+	if msg.err != nil || len(names) == 0 {
+		// 홈에는 기댈 곳이 없다. 모르면 모른다고 말하고 홈에 머문다.
+		// 여기서 아무 앱이나 열면 고르지도 않은 화면이 튀어나온다.
+		if m.home {
+			m.log = append(m.log, logEntry{
+				who: "host", text: "Not sure which app that is for", err: true,
+			})
+			return m, nil
+		}
+		// 앱 안에서는 지금 보고 있는 앱에게 준다. 틀려도 망하지 않는다 —
+		// 그 앱이 못 하겠다고 로그에 남기고 끝이다.
+		names = []string{m.app().Name()}
+	}
+	return m.ask(names, msg.prompt)
+}
+
+// ask 는 지목된 앱들에게 동시에 묻는다.
+//
+// 순서를 보장하지 않는다. "틀고 꺼줘"는 순서 의존이 없고, 순서가 필요한
+// 요청("A 하고 나서 B")은 지금 범위 밖이다. 결과는 도착하는 대로 로그에 쌓인다.
+func (m Model) ask(names []string, prompt string) (tea.Model, tea.Cmd) {
+	cmds := []tea.Cmd{m.spinner.Tick}
+	enter := -1
+	for _, name := range names {
+		for i, a := range m.apps {
+			if a.Name() != name {
+				continue
+			}
+			if enter < 0 {
+				enter = i
+			}
+			m.pending[name] = true
+			next, cmd := a.Update(app.AskMsg{Prompt: prompt})
+			m.apps[i] = next
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
+	}
+	// 홈에서 문장을 쳤고 앱이 지목됐으면 그 앱으로 들어간다. 목적지를
+	// 고른 것과 같다 — 답이 그 화면에 나올 텐데 홈에 남아 있을 이유가 없다.
+	//
+	// 여럿이 지목되면 첫 번째로 간다. 나머지는 배경에서 답하고, 그 답은
+	// 로그와 상태줄에 남는다 — 원래 그렇게 도는 구조다.
+	if m.home && enter >= 0 {
+		cmds = append(cmds, switchTo(enter)(""))
+	}
+	return m, tea.Batch(cmds...)
+}
+
+// forward 는 메시지를 지금 앱에게 넘긴다.
+// 타입 단언이 없다 — App.Update 가 App 을 돌려주기 때문이다.
+func (m Model) forward(msg tea.Msg) (tea.Model, tea.Cmd) {
+	next, cmd := m.app().Update(msg)
+	m.apps[m.current] = next
+	return m, cmd
+}
+
+func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
+	// 홈은 문이 하나뿐인 화면이다. 그 문은 enter 이고, esc 로 나간다.
+	//
+	// 나머지는 전부 삼킨다. 입력창이 안 보이는데(View) 글자를 받아 두면,
+	// 앱에 들어간 순간 친 적 없는 문장이 거기 들어 있다. 모드도 검색도
+	// 홈에서는 가리킬 것이 없다.
+	if m.home {
+		switch msg.String() {
+		case "enter", "esc", "ctrl+c", "?":
+		case "/":
+			// `/` 만은 통과시킨다. 치는 순간 홈이 걷히고 팔레트가 뜨므로,
+			// 글자를 삼키는 이유(안 보이는 입력창에 쌓인다)에 해당이 없다.
+			//
+			// 홈에서 켤 것을 켜려면 명령을 쳐야 하는데, 그 길이 이것뿐이다.
+			// `/` 는 원래 "갈 곳과 할 것"이다(docs/07 2절).
+			m.input.SetValue("/")
+			m.input.CursorEnd()
+			return true, m, switchTo(m.current)("")
+		default:
+			return true, m, nil
+		}
+	}
+
+	// 문자열이 아니라 묶음으로 가른다. 같은 값이 도움말도 그린다(keys.go).
+	switch {
+	case key.Matches(msg, keys.Quit):
+		return true, m, tea.Quit
+
+	case key.Matches(msg, keys.Pause):
+		// 셸로 잠깐 나간다. fg 로 돌아온다.
+		//
+		// 껍데기를 벗고 원래 화면을 돌려주는 것은 Bubble Tea 가 한다.
+		// 우리가 상태를 저장할 것은 없다 — 재생은 Music.app 이 하므로
+		// 자는 동안에도 계속 흐르고, 돌아오면 폴링이 따라잡는다.
+		return true, m, tea.Suspend
+
+	case key.Matches(msg, keys.Redraw):
+		// 화면을 지우고 처음부터 다시 그린다. 다음 View 가 곧 다시 그리므로
+		// 우리 쪽 상태는 건드리지 않는다.
+		return true, m, tea.ClearScreen
+
+	case key.Matches(msg, keys.Help):
+		if m.input.Value() == "" {
+			m.showHelp, m.pick = true, 0
+			return true, m, nil
+		}
+
+	case key.Matches(msg, keys.Fold):
+		// 대화 띠를 접었다 편다.
+		//
+		// 기본이 펼침이다. 답과 곡별 근거가 눌러야 보이던 시절에는 이 키가
+		// "펼쳐라"였는데, 이제 그것이 기본이므로 뜻이 뒤집혔다 — 목록을 더
+		// 보고 싶을 때 접는다.
+		m.logShut = !m.logShut
+		return true, m, nil
+
+	case key.Matches(msg, keys.Mode):
+		// 모드를 바꾼다. 둘뿐이므로 한 키로 왕복한다.
+		//
+		// 한때 들어가는 키(ctrl+f)와 왕복하는 키(shift+tab)가 따로 있었다.
+		// ctrl+f 는 shift+tab 이 하는 일의 절반이었고, Search 에서 누르면
+		// 아무 일도 안 일어났다 — 이미 거기였기 때문이다.
+		//
+		// **남긴 쪽이 ctrl+f 인 이유는 shift+tab 이 남의 짝이기 때문이다.**
+		// tab 과 shift+tab 은 어디서나 한 쌍인데, 여기서는 tab 이 섹션을
+		// 넘기고(musicapp) shift+tab 은 상관없는 일을 했다. 찾기라는 뜻이
+		// 박힌 키를 쓰면 아무 짝도 뺏지 않는다.
+		// 홈은 여기까지 오지 않는다. 위 관문이 먼저 삼킨다.
+		if m.mode == modeSearch {
+			(&m).setMode(modePrompt)
+		} else {
+			(&m).setMode(modeSearch)
+		}
+		return true, m, nil
+
+	case key.Matches(msg, keys.Back):
+		// 한 단계씩 물러난다 — 요청 → 도움말 → 검색 → 입력 비우기 → 홈 → 종료.
+		//
+		// 방금 시킨 일이 아직 돌고 있으면 그것이 첫 칸이다. 선곡이 7초라
+		// 그 사이에 잘못 물어본 것을 알아채는데, 지금까지는 기다리는 수밖에
+		// 없었다. ctrl+c 는 손대지 않는다 — 그것은 터미널의 탈출구다.
+		if m.routing || len(m.pending) > 0 {
+			return true, m.cancelPending(), nil
+		}
+		if m.showHelp {
+			m.showHelp = false
+			return true, m, nil
+		}
+		m.notice = ""
+		if m.mode == modeSearch {
+			(&m).setMode(modePrompt)
+			return true, m, nil
+		}
+		if m.input.Value() != "" {
+			m.input.Reset()
+			return true, m, nil
+		}
+		if !m.home {
+			// 앱이 자기 안에 물러날 단계를 갖고 있으면 그것이 먼저다.
+			// 파고든 목록에서 esc 를 눌렀는데 앱 밖으로 튕겨 나가면 안 된다.
+			if next, ok := m.app().Back(); ok {
+				m.apps[m.current] = next
+				return true, m, nil
+			}
+			// 앱에서 물러나면 홈이다. 앱은 계속 살아 있고 화면만 떠난다.
+			// current 는 그대로 두므로 다시 enter 면 방금 있던 곳이다.
+			blur, blurCmd := m.app().Update(app.BlurMsg{})
+			m.apps[m.current] = blur
+			m.home = true
+			return true, m, blurCmd
+		}
+		return true, m, tea.Quit
+
+	case key.Matches(msg, keys.Up):
+		if m.picking() {
+			m.pick = style.Max(m.pick-1, 0)
+			return true, m, nil
+		}
+	case key.Matches(msg, keys.Down):
+		if m.picking() {
+			m.pick = style.Min(m.pick+1, m.pickCount()-1)
+			return true, m, nil
+		}
+
+	case key.Matches(msg, keys.Accept):
+		mm, cmd := m.handleEnter()
+		return true, mm, cmd
+	}
+	return false, m, nil
+}
+
+func (m Model) handleEnter() (tea.Model, tea.Cmd) {
+	if m.showHelp {
+		m.showHelp = false
+		return m, nil
+	}
+	if m.commanding() {
+		return m.runCommand()
+	}
+	// 홈에서 빈 입력에 enter 면 앱으로 들어간다. 친 것이 있으면 그것이
+	// 먼저다 — 홈에서도 문장을 던질 수 있어야 한다.
+	//
+	// 갈 곳은 마지막으로 본 앱이다. 앱이 하나면 언제나 그 앱이고,
+	// 여럿이던 시절에도 esc 로 나온 그 자리로 돌아가는 것이 맞았다.
+	if m.home && strings.TrimSpace(m.input.Value()) == "" {
+		return m, switchTo(m.current)("")
+	}
+	// 검색 중에는 고른 것을 앱이 처리한다. 프롬프트일 때만 요청으로 보낸다.
+	if m.mode == modePrompt {
+		if prompt := strings.TrimSpace(m.input.Value()); prompt != "" {
+			m.input.Reset()
+			m.notice = ""
+			m.showHelp = false
+			// 한 말은 곧바로 로그에 남는다. 답을 기다리는 동안에도 보인다.
+			m.log = append(m.log, logEntry{text: prompt})
+			return m.dispatch(prompt)
+		}
+	}
+	return m.forward(tea.KeyPressMsg{Code: tea.KeyEnter})
+}
+
+// 프레임 여백. 커서 위치를 보고할 때 이만큼 밀어야 한다.
+const framePad = 1
+
+// padTo — 본문을 받은 높이만큼 빈 줄로 채운다.
+//
+// 앱이 준 높이를 다 쓰지 않는 일이 흔하다. 음악의 목록은 열네 줄에서
+// 멈추므로(maxListRows) 창이 길면 그만큼 남는다. 그대로 두면 입력창이
+// 화면 한가운데에 떠서, 창 높이에 따라 손이 가는 자리가 달라진다.
+//
+// **입력창과 상태줄은 언제나 맨 아래다.** 홈이 이미 그렇게 그리고 있었고
+// (home.go), 그것을 호스트의 규칙으로 올린다. 앱이 높이를 넘겨 그리면
+// 자르지 않는다 — 잘라서 감추느니 밀려나는 편이 눈에 띈다.
+func padTo(body string, h int) string {
+	if n := strings.Count(body, "\n") + 1; n < h {
+		return body + strings.Repeat("\n", h-n)
+	}
+	return body
+}
+
+func (m Model) bodyHeight() int {
+	// 테두리 친 입력창3 + 상태줄1 + 위아래 여백2
+	w := style.ContentWidth(m.w)
+	h := m.h - 6 - len(m.overlayRows(w)) - len(m.logRows(w))
+	return style.Max(h, 3)
+}
+
+func (m Model) View() tea.View {
+	if m.w == 0 || m.h == 0 {
+		return tea.NewView("")
+	}
+	w := style.ContentWidth(m.w)
+
+	// 홈은 스플래시다. 호스트의 두 줄을 여기서만 접는다.
+	//
+	// 계약은 "칠 곳은 언제나 같은 자리"인데, **홈에는 칠 것이 없다** —
+	// 받는 키는 enter 와 esc 뿐이다(handleKey). 칠 곳을 그려 두면 칠 수
+	// 있다는 뜻이 되고, 쳐 봐야 아무 일도 안 일어나는 입력창은 고장으로
+	// 보인다. 상태줄도 같이 접는다 — 홈에서 말할 것은 관문뿐이고 그것은
+	// 본문이 가운데에 이미 말한다(home.go).
+	//
+	// 커서도 보고하지 않는다. 그릴 입력창이 없는데 좌표를 넘기면 터미널이
+	// 엉뚱한 자리에서 깜빡인다.
+	if m.home {
+		v := tea.NewView(lipgloss.NewStyle().Padding(framePad, framePad).
+			Width(m.w).Render(m.viewHome(w, m.h-2*framePad)))
+		v.AltScreen = true
+		v.WindowTitle = windowTitle
+		return v
+	}
+
+	bodyH := m.bodyHeight()
+
+	var b strings.Builder
+	// 본문은 무엇을 하든 그대로다. 팔레트는 입력창 아래에 붙는다.
+	b.WriteString(padTo(m.app().View(w, bodyH), bodyH))
+	// 로그는 입력창 바로 위, 팔레트는 바로 아래. 둘 다 본문을 밀어내지 않는다.
+	for _, r := range m.logRows(w) {
+		b.WriteString("\n")
+		b.WriteString(r)
+	}
+	b.WriteString("\n")
+	// 입력창이 몇째 줄에 놓이는지는 지금 센다. 본문 높이로 계산하면
+	// 앱이 받은 높이를 다 안 쓸 때(musicapp 의 maxListRows) 어긋난다.
+	inputRow := strings.Count(b.String(), "\n")
+	b.WriteString(m.inputBox(w))
+	for _, r := range m.overlayRows(w) {
+		b.WriteString("\n")
+		b.WriteString(r)
+	}
+	b.WriteString("\n")
+	b.WriteString(m.viewStatus(w))
+
+	v := tea.NewView(lipgloss.NewStyle().Padding(framePad, framePad).Render(b.String()))
+	v.AltScreen = true
+	// 실제 커서를 입력창의 글자 자리에 둔다. 터미널이 한글 조합을 그리는
+	// 자리가 여기다 — 안 알려주면 조합 중인 글자가 엉뚱한 데 뜬다.
+	if c := m.input.Cursor(); c != nil {
+		// 테두리 왼쪽 선과 안여백 두 칸, 윗선 한 줄만큼 더 민다.
+		c.Position.X += framePad + 2
+		c.Position.Y += framePad + inputRow + 1
+		v.Cursor = c
+	}
+	// 어깨너머로 제일 먼저 보이는 자리다. 스플래시보다 노출이 크다.
+	// 이 껍데기의 컨셉대로라면 여기가 가장 정직하지 않아야 한다.
+	v.WindowTitle = windowTitle
+	return v
+}
+
+// 상태줄 — 지금 앱이 말하는 것과, 배경 앱들이 말하는 것을 모은다.
+func (m Model) viewStatus(w int) string {
+	// 왼쪽은 언제나 "앞에 나온 것"이다. 홈에서도 마찬가지다 — 화면은
+	// 떠나 있어도 그 앱은 살아서 재생 중이고, 상태줄이 그것을 계속 말한다.
+	front := m.current
+	left := m.apps[front].Status()
+	if m.notice != "" {
+		left = style.BrandSoft.Render("· ") + style.Dim.Render(style.Truncate(m.notice, w-2))
+	}
+
+	// 오른쪽은 좁아져도 살아남는 자리다.
+	//
+	// 잘리는 것은 언제나 왼쪽의 끝이므로, 한 줄로 이어 붙이면 제일 뒤에
+	// 있던 비용이 제일 먼저 조용히 사라진다. 쓴 돈이 안 보이는 것은
+	// 안 쓴 것처럼 보이는 것과 같다.
+	var right []string
+	if s := m.apps[front].Spend(); strings.TrimSpace(s) != "" {
+		right = append(right, s)
+	}
+	// 배경 앱은 이름과 배지만 내놓는다. 맥 메뉴바와 같다.
+	for i, a := range m.apps {
+		if i == front {
+			continue
+		}
+		s := a.Name()
+		if n := a.Badge(); n > 0 {
+			s += " " + style.Tokens(n)
+		}
+		right = append(right, s)
+	}
+	if len(right) == 0 {
+		return style.Truncate(left, w)
+	}
+	return style.Row(left, style.Faint.Render(strings.Join(right, "   ")), w)
+}
+
+// textarea 기본 스타일은 배경이 검게 깔린다. 나머지 화면과 어긋나므로
+// 배경을 비우고 전경색만 팔레트에 맞춘다.
+func styleInput(ta *textarea.Model) {
+	styles := ta.Styles()
+	for _, st := range []*textarea.StyleState{&styles.Focused, &styles.Blurred} {
+		st.Base = lipgloss.NewStyle()
+		st.CursorLine = lipgloss.NewStyle()
+		st.EndOfBuffer = lipgloss.NewStyle()
+		st.Text = lipgloss.NewStyle().Foreground(style.ColFg)
+		st.Prompt = lipgloss.NewStyle().Foreground(style.ColBrand)
+		st.Placeholder = lipgloss.NewStyle().Foreground(style.ColFaint)
+	}
+	styles.Cursor.Color = style.ColBrand
+	ta.SetStyles(styles)
+}

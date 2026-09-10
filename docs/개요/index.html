@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<title>Apple Music TUI — 프로젝트 기술서</title>
+<style>
+  @page { size: A4 portrait; margin: 18mm 16mm; }
+
+  :root{
+    --ink:#111; --dim:#555; --faint:#888; --line:#ddd; --bg:#fafafa; --accent:#c8102e;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    margin:0; color:var(--ink); background:#fff;
+    font: 10.5pt/1.65 -apple-system, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+    letter-spacing:-.01em;
+  }
+
+  /* 화면에서 볼 때만 A4 종이처럼 보이게. 인쇄에는 영향 없다 */
+  @media screen{
+    body{ background:#eee; padding:24px 0; }
+    .page{ width:210mm; min-height:297mm; margin:0 auto 16px; padding:18mm 16mm;
+           background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+  }
+  /* 인쇄 — 섹션 하나가 A4 한 장이다.
+     화면에서 넉넉하던 여백이 여기서는 넘침이 된다. 조판을 조인다. */
+  @media print{
+    body{ font-size:9pt; line-height:1.5; }
+    /* 섹션마다 새 장을 강제하면, 한 장을 조금 넘긴 섹션이 반쯤 빈 장을
+       하나씩 남긴다(11장 설계가 20장이 됐다). 흐르게 두고 표·그림만
+       경계에서 지킨다. 빈 자리 없이 촘촘한 쪽이 읽기 낫다. */
+    .page{ page-break-after:auto; }
+    .page + .page{ page-break-before:auto; }
+    .page:last-child{ page-break-after:auto; }
+
+    h1{ font-size:20pt; }
+    h2{ font-size:12pt; margin-bottom:10px; padding-bottom:5px; }
+    h3{ font-size:9.8pt; margin:12px 0 4px; }
+    h4{ font-size:9.3pt; margin:8px 0 3px; }
+    p{ margin:0 0 6px; }
+
+    table{ font-size:8.2pt; margin:6px 0 9px; }
+    th,td{ padding:3px 6px; }
+    .small,small{ font-size:8pt; }
+    .kv{ font-size:8.8pt; gap:3px 10px; }
+
+    .box{ padding:7px 10px; margin-bottom:7px; }
+    .stat{ gap:8px; margin:8px 0 10px; }
+    .stat div{ padding:7px; }
+    .stat b{ font-size:16pt; }
+
+    pre.dia{ font-size:7pt; line-height:1.45; padding:8px; margin:6px 0 9px; }
+    code{ font-size:7.6pt; }
+
+    /* 제목만 페이지 끝에 남는 것을 막는다.
+       "3-5. 예외 · 오류 시나리오" 가 장 끝에 홀로 서고 표는 다음 장에 있었다.
+       제목은 자기가 여는 것과 같은 장에 있어야 제목이다. */
+    h2,h3,h4{ page-break-after:avoid; break-after:avoid; }
+
+    /* 표와 그림은 페이지 경계에서 쪼개지지 않는다 */
+    table,figure,.box,.stat{ page-break-inside:avoid; }
+    tr,td,th{ page-break-inside:avoid; }
+    .shots{ gap:8px 10px; }
+    figcaption{ font-size:7.6pt; margin-top:2px; }
+
+    /* 캡처는 세로로 긴 창이라 폭에 맞추면 한 장을 넘긴다.
+       높이를 먼저 정하고 폭이 따라오게 한다. */
+    figure img{ max-width:100%; width:auto; height:auto; margin:0 auto; }
+    .shots figure img{ max-height:88mm; }
+    figure.full img{ max-height:62mm; }
+    figure.full:first-of-type img{ max-height:96mm; }   /* 검색 화면은 크게 */
+    section:nth-of-type(7) figure img{ max-height:118mm; }  /* ERD */
+  }
+
+  h1{ font-size:22pt; letter-spacing:-.03em; margin:0 0 4px; }
+  h2{ font-size:13pt; margin:0 0 14px; padding-bottom:6px; border-bottom:1.5px solid var(--ink); }
+  h3{ font-size:10.5pt; margin:18px 0 6px; color:var(--ink); }
+  h4{ font-size:10pt; margin:12px 0 4px; color:var(--dim); font-weight:600; }
+  p{ margin:0 0 8px; }
+  ul{ margin:0 0 8px; padding-left:16px; }
+  li{ margin:2px 0; }
+  small,.small{ font-size:9pt; color:var(--dim); }
+  .faint{ color:var(--faint); }
+  b,strong{ font-weight:700; }
+  .accent{ color:var(--accent); font-weight:700; }
+
+  table{ width:100%; border-collapse:collapse; margin:8px 0 12px; font-size:9pt; }
+  th,td{ text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:var(--bg); font-weight:600; color:var(--dim); white-space:nowrap; }
+  td.n,th.n{ text-align:right; white-space:nowrap; }
+  code{ font-family:"SF Mono",Menlo,monospace; font-size:8.5pt; background:var(--bg); padding:1px 4px; border-radius:3px; }
+
+  .lead{ font-size:11pt; color:var(--dim); margin-bottom:18px; }
+  .kv{ display:grid; grid-template-columns:26mm 1fr; gap:4px 10px; font-size:9.5pt; margin:10px 0 16px; }
+  .kv dt{ color:var(--faint); }
+  .kv dd{ margin:0; }
+
+  .cols{ display:grid; grid-template-columns:1fr 1fr; gap:0 18px; }
+  .cols3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 14px; }
+
+  .stat{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:12px 0 16px; }
+  .stat div{ border:1px solid var(--line); padding:10px; text-align:center; }
+  .stat b{ display:block; font-size:19pt; letter-spacing:-.04em; line-height:1.1; }
+  .stat span{ font-size:8.5pt; color:var(--faint); }
+
+  .box{ border:1px solid var(--line); padding:10px 12px; margin:0 0 10px; }
+  .box h4{ margin-top:0; }
+  .rule{ border:0; border-top:1px solid var(--line); margin:14px 0; }
+
+  pre.dia{ font-family:"SF Mono",Menlo,monospace; font-size:8pt; line-height:1.5;
+           background:var(--bg); border:1px solid var(--line); padding:10px; margin:8px 0 12px;
+           white-space:pre; overflow:hidden; }
+
+  figure{ margin:0 0 10px; }
+  figure img{ width:100%; border:1px solid var(--line); display:block; }
+  figcaption{ font-size:8.5pt; color:var(--faint); margin-top:3px; }
+  .shots{ display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
+  figure.full{ margin-bottom:12px; }
+
+  .toc{ font-size:10pt; }
+  .toc div{ display:flex; justify-content:space-between; border-bottom:1px dotted var(--line); padding:6px 0; }
+
+  .foot{ position:relative; margin-top:auto; }
+</style>
+
+<!-- ══════════════════════════ 표지 ══════════════════════════ -->
+<section class="page">
+  <div style="height:60mm"></div>
+  <div class="small faint">판교 3반 · 웹 서비스 프로젝트</div>
+  <h1>Apple Music TUI</h1>
+  <p class="lead">터미널에서 끝나는 음악 클라이언트 — 담아만 둔 곡을 다시 듣게 한다</p>
+
+  <hr class="rule">
+  <dl class="kv">
+    <dt>작성자</dt><dd>정민교</dd>
+    <dt>제출일</dt><dd>2026. 09. 10.</dd>
+    <dt>산출물</dt><dd>기술서(PDF) · API 명세(YML) · DB 다이어그램(DBML)</dd>
+  </dl>
+
+  <div style="height:20mm"></div>
+  <h4>목차</h4>
+  <div class="toc">
+    <div><span>1. 서비스 개요</span><span class="faint">3</span></div>
+    <div><span>2. 시스템 액터 정의</span><span class="faint">4</span></div>
+    <div><span>3. UI 흐름 (와이어프레임)</span><span class="faint">5</span></div>
+    <div><span>4. 데이터 모델 설계</span><span class="faint">8</span></div>
+    <div><span>5. API 명세 정의</span><span class="faint">9</span></div>
+    <div><span>6. 고려사항</span><span class="faint">11</span></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 1. 서비스 개요 ══════════════════════════ -->
+<section class="page">
+  <h2>1. 서비스 개요</h2>
+
+  <dl class="kv">
+    <dt>서비스명</dt><dd><b>Apple Music TUI</b> — 터미널에서 쓰는 음악 클라이언트</dd>
+    <dt>한 줄 정의</dt><dd>내가 이미 가진 음악을, 말로 부탁해서, 터미널을 떠나지 않고 듣는다</dd>
+    <dt>타겟 사용자</dt><dd>터미널에서 일하는 사람 — 하루의 대부분을 검은 창 안에서 보내는 개발자</dd>
+    <dt>형태</dt><dd>macOS 로컬 데몬 + 터미널 클라이언트</dd>
+  </dl>
+
+  <h3>문제 정의</h3>
+
+  <div class="box">
+    <h4>배경 — 담는 비용이 0이 되었다</h4>
+    <p>스트리밍이 소유를 대체했다. 마음에 들면 한 번 눌러 담는다. 돈도 저장 공간도 들지 않으므로
+      <b>담는 데 망설일 이유가 없어졌고</b>, 라이브러리는 계속 커진다.</p>
+  </div>
+
+  <div class="box">
+    <h4>현황 — 듣는 쪽은 그만큼 늘지 않았다</h4>
+    <p>실제 라이브러리를 측정한 결과다.</p>
+    <div class="stat">
+      <div><b>98%</b><span>스트리밍으로 담은 곡</span></div>
+      <div><b class="accent">33.7%</b><span>한 번도 재생하지 않은 곡</span></div>
+      <div><b>71%</b><span>상위 10%가 차지한 재생</span></div>
+    </div>
+    <p class="small">라이브러리에 담긴 166곡 중 56곡이 한 번도 재생되지 않았고, 실제로 듣는 것은 16곡이 전부다.
+      <b>담는 일과 고르는 일 사이가 벌어졌다.</b></p>
+  </div>
+
+  <div class="box">
+    <h4>원인 — 도구가 담는 쪽만 싸게 만들었다</h4>
+    <p>고르려면 담은 순서로 나열된 목록을 눈으로 훑어야 한다.
+      <b>“안 들은 것만”, “이런 분위기로” 같은 질문을 던질 방법이 없다.</b>
+      고르는 비용이 담는 비용보다 훨씬 비싼데 아무도 그것을 줄여주지 않았다.</p>
+    <p>여기에 하나가 더 겹친다. 터미널에서 일하는 사람은 <b>곡 하나 바꾸려고 창을 떠나야 한다.</b>
+      돌아오면 하던 일의 맥락이 끊겨 있다.</p>
+  </div>
+
+  <h3>해결 — 핵심 가치와 주요 기능</h3>
+  <table>
+    <tr><th style="width:8mm"></th><th style="width:38mm">핵심 가치</th><th>주요 기능</th></tr>
+    <tr><td>①</td><td><b>안 들은 곡을 보이게</b></td><td>담은 뒤 한 번도 재생하지 않은 곡을 한 구역으로 분리한다</td></tr>
+    <tr><td>②</td><td><b>듣는 중에 알려주기</b></td><td>재생 화면이 그 곡의 이력을 함께 말한다 — <code>never played</code></td></tr>
+    <tr><td>③</td><td><b>고르는 일을 대신</b></td><td>말로 부탁하면 큐를 짜고, <b>곡마다 왜 골랐는지 함께 말한다</b></td></tr>
+    <tr><td>④</td><td><b>터미널 안에서 완결</b></td><td>둘러보기 · 재생 · 큐 편집 · 가사 · 검색 · 플레이리스트 저장</td></tr>
+  </table>
+
+  <p class="small faint">③ 의 “왜 골랐는지”가 이 서비스의 성격을 정한다. 추천은 결과만 주지만,
+    이 서비스는 근거를 함께 준다 — 사용자가 그 판단을 받아들일지 말지 정할 수 있어야 하기 때문이다.</p>
+</section>
+
+<!-- ══════════════════════════ 2. 액터 ══════════════════════════ -->
+<section class="page">
+  <h2>2. 시스템 액터 정의</h2>
+
+  <table>
+    <tr><th style="width:32mm">액터</th><th style="width:42mm">누구인가</th><th>접근 방법</th></tr>
+    <tr><td><b>A. 청취자</b></td><td>지금 듣고 있는 사람</td><td>터미널 클라이언트</td></tr>
+    <tr><td><b>B. 라이브러리 관리자</b></td><td>라이브러리를 손보는 사람</td><td>터미널 클라이언트</td></tr>
+    <tr><td><b>C. 로컬 서버</b></td><td>권한과 열쇠를 쥔 쪽</td><td>—</td></tr>
+    <tr><td><b>D. 외부 시스템</b></td><td>Music.app · Apple Music · LRCLIB · AI 모델</td><td>서버가 호출</td></tr>
+  </table>
+
+  <p class="small"><b>A 와 B 는 대개 같은 사람이다.</b> 하는 일과 시점이 달라 나눈다 —
+    듣는 동안에는 판단을 미루고, 다 듣고 나서 라이브러리를 손본다.</p>
+
+  <h3>A. 청취자</h3>
+  <table>
+    <tr><th class="n" style="width:10mm">#</th><th>기능</th><th style="width:32mm">화면</th><th class="n" style="width:14mm">가치</th></tr>
+    <tr><td class="n">A1</td><td>자연어로 재생 큐를 요청한다</td><td>대화 띠 · Queue</td><td class="n">③</td></tr>
+    <tr><td class="n">A2</td><td>곡별 선정 근거를 확인한다</td><td>대화 띠</td><td class="n">③</td></tr>
+    <tr><td class="n">A3</td><td>재생을 제어한다 — 재생·정지·이전·다음</td><td>지금 재생</td><td class="n">④</td></tr>
+    <tr><td class="n">A4</td><td>섞기·반복·볼륨·좋아요를 바꾼다</td><td>지금 재생</td><td class="n">④</td></tr>
+    <tr><td class="n">A5</td><td>가사를 재생 위치에 맞춰 본다</td><td>지금 재생</td><td class="n">④</td></tr>
+    <tr><td class="n">A6</td><td>곡의 이력을 본다 — 마지막 재생일 · 재생 횟수</td><td>지금 재생</td><td class="n">②</td></tr>
+    <tr><td class="n">A7</td><td>큐를 편집한다 — 넣기·빼기·순서 바꾸기</td><td>Queue</td><td class="n">④</td></tr>
+    <tr><td class="n">A8</td><td>마음에 든 큐를 플레이리스트로 저장한다</td><td>Queue</td><td class="n">④</td></tr>
+    <tr><td class="n">A9</td><td>진행 중인 요청을 취소한다</td><td>대화 띠</td><td class="n">③</td></tr>
+  </table>
+
+  <h3>B. 라이브러리 관리자</h3>
+  <table>
+    <tr><th class="n" style="width:10mm">#</th><th>기능</th><th style="width:32mm">화면</th><th class="n" style="width:14mm">가치</th></tr>
+    <tr><td class="n">B1</td><td>라이브러리를 둘러본다 — 최근·아티스트·앨범·곡·플레이리스트</td><td>목록</td><td class="n">④</td></tr>
+    <tr><td class="n">B2</td><td>제목·아티스트로 즉시 거른다</td><td>목록</td><td class="n">④</td></tr>
+    <tr><td class="n">B3</td><td><b>한 번도 안 튼 곡을 훑는다</b></td><td>Never played</td><td class="n">①</td></tr>
+    <tr><td class="n">B4</td><td>그중 하나를 되살린다 — 재생하거나 큐에 넣는다</td><td>Never played</td><td class="n">①</td></tr>
+    <tr><td class="n">B5</td><td>카탈로그에서 곡을 찾는다</td><td>Apple Music</td><td class="n">③</td></tr>
+    <tr><td class="n">B6</td><td>찾은 곡을 라이브러리에 담는다</td><td>Apple Music</td><td class="n">③</td></tr>
+    <tr><td class="n">B7</td><td>라이브러리를 다시 읽는다</td><td>홈 · 상태줄</td><td class="n">④</td></tr>
+  </table>
+
+  <div class="cols">
+    <div>
+      <h3>C. 로컬 서버</h3>
+      <ul class="small">
+        <li>Music.app 제어 권한을 단독으로 쥔다</li>
+        <li>Apple Music 토큰과 AI 키를 보관한다</li>
+        <li>라이브러리 스냅샷을 저장한다</li>
+        <li>자연어 요청을 비동기로 처리한다</li>
+      </ul>
+    </div>
+    <div>
+      <h3>D. 외부 시스템</h3>
+      <table style="margin-top:6px">
+        <tr><td>Music.app</td><td class="small">라이브러리 · 재생</td></tr>
+        <tr><td>Apple Music</td><td class="small">카탈로그 검색</td></tr>
+        <tr><td>LRCLIB</td><td class="small">가사</td></tr>
+        <tr><td>AI 모델</td><td class="small">선곡과 근거</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 3. UI 흐름 ══════════════════════════ -->
+<section class="page">
+  <h2>3. UI 흐름 (와이어프레임)</h2>
+
+  <h3>3-1. 화면은 하나다</h3>
+  <p>일반적인 서비스는 로그인 → 목록 → 상세로 <b>페이지가 이동한다.</b> 이 서비스는 이동하지 않는다.
+    <b>화면은 하나이고, 그 안의 목록 패널이 무엇을 담을지만 바뀐다.</b></p>
+  <p class="small">재생은 어느 화면에 있든 끊기면 안 되는 유일한 것이다. 그래서 그것을 늘 같은 자리에 두고 나머지를 바꾼다.</p>
+
+<pre class="dia">┌────────────────────────────────────────────────┐
+│  ① 지금 재생    커버 · 제목 · 진행바 · 가사        │ ← 늘 같은 자리
+│ ───────────────────────────────────────────────│
+│                                                │
+│  ② 목록 패널                                    │ ← 여기만 갈아끼워진다
+│     Recent / Artists / Albums / Songs /        │
+│     Playlists / Queue / Never played / Apple Music     │
+│                                                │
+│ ───────────────────────────────────────────────│
+│  ③ 대화 띠     내 말 · 답 · 곡별 근거 · 비용      │ ← 물어봤을 때만
+│  ④ 입력창      [ 여기에 친다 ]                   │ ← 늘 같은 자리
+│  ⑤ 팔레트      / 를 치면 펼쳐진다                │ ← 눌렀을 때만
+│  ⑥ 상태줄      지금 어디 · 큐 N · 토큰 · 비용     │ ← 늘 같은 자리
+└────────────────────────────────────────────────┘</pre>
+
+  <h3>3-2. 사용자 흐름</h3>
+<pre class="dia">                  ┌──────────┐
+     실행 ───────▶ │  홈 (W1) │
+                  └────┬─────┘
+                       │ enter
+                       ▼
+   ┌──────────────────────────────────────────────┐
+   │              메인 (W2 ~ W5)                   │
+   │                                              │
+   │   tab       다음 구역으로 순환                  │
+   │   /         먼 구역으로 곧장 · 명령 팔레트        │
+   │   ↑ ↓       목록 이동                         │
+   │   enter     고른 것 재생 · 묶음이면 파고들기      │
+   │   shift+↓   재생 / 일시정지                    │
+   │   문장 입력   AI 에게 큐 요청 (비동기)            │
+   │   shift+tab 입력 모드 왕복 — 묻기 ↔ 찾기        │
+   └───────────────┬──────────────────────────────┘
+                   │ esc — 한 단계씩 물러난다
+                   ▼
+     요청 취소 → 파고들기 해제 → 홈 → 종료</pre>
+
+  <p class="small"><b><code>esc</code> 는 사슬이다.</b> 물러날 곳이 있으면 거기까지만 가고, 없으면 다음 칸으로 넘어간다.
+    새로 배울 키가 없다.</p>
+
+  <h3>3-3. 화면 목록</h3>
+  <table>
+    <tr><th style="width:12mm">#</th><th style="width:42mm">화면</th><th>보여주는 것</th><th style="width:20mm">기능</th></tr>
+    <tr><td>W1</td><td>홈</td><td>무엇에 붙어 있고 무엇이 막혀 있는가</td><td>진입</td></tr>
+    <tr><td>W2</td><td>메인 — 지금 재생 · Queue</td><td>커버 · 진행바 · 가사 · 다음에 틀 곡</td><td>A2~A8</td></tr>
+    <tr><td>W3</td><td>메인 — Recently Added</td><td>최근 담은 곡</td><td>B1</td></tr>
+    <tr><td>W4</td><td>메인 — Never played</td><td><b>한 번도 안 튼 곡</b></td><td>B3·B4</td></tr>
+    <tr><td>W5</td><td>검색</td><td>내 라이브러리와 Apple Music 을 한 화면에</td><td>B2·B5·B6</td></tr>
+    <tr><td>W6</td><td>요청 — 입력</td><td>자연어로 부탁하는 순간</td><td>A1</td></tr>
+    <tr><td>W7</td><td>요청 — 처리 중</td><td>답이 앉을 자리에 스피너가 앉는다</td><td>A1</td></tr>
+    <tr><td>W8</td><td>요청 — 답과 근거</td><td>후보 수 · <b>곡별 선정 근거</b> · 비용</td><td>A2</td></tr>
+  </table>
+
+  <p class="small faint"><b>예외는 별도 화면이 아니다.</b> 화면이 하나이므로 오류도 같은 자리에서 말한다 —
+    관문은 지금 재생 자리에, 실패는 대화 띠에, 진행 상태는 상태줄에. 3-5 에 전수했다.</p>
+</section>
+
+<!-- ══════════════════════════ 3 계속 — 캡처 ══════════════════════════ -->
+<section class="page">
+  <h2 style="border:0;margin-bottom:8px">3. UI 흐름 — 화면</h2>
+
+  <div class="shots">
+    <figure><img src="images/w1.png" alt="W1 홈"><figcaption><b>W1. 홈</b> — 무엇에 붙어 있고 무엇을 갖고 있는가. <code>enter</code> 로 들어간다</figcaption></figure>
+    <figure><img src="images/w2.png" alt="W2 지금 재생"><figcaption><b>W2. 지금 재생 · Queue</b> — 커버 · 진행바 · <b>가사</b>, 그 아래 큐, 그 아래 대화</figcaption></figure>
+    <figure><img src="images/w3.png" alt="W3 Recently Added"><figcaption><b>W3. Recently Added</b> — 제목 · 아티스트 · 재생 횟수 · 길이</figcaption></figure>
+    <figure><img src="images/w4.png" alt="W4 Never played"><figcaption><b>W4. Never played · 56</b> — 담긴 뒤 한 번도 재생되지 않은 곡</figcaption></figure>
+  </div>
+
+  <p class="small faint" style="margin-top:6px">W2 한 장에 이 서비스의 네 가지 가치가 모두 들어 있다 —
+    가사가 붙은 재생(④), 안 들은 곡으로 짜인 큐(①), 곡별 근거(③), 그리고 쓴 돈(⑦).</p>
+</section>
+
+<section class="page">
+  <h2 style="border:0;margin-bottom:8px">3. UI 흐름 — 검색과 요청</h2>
+
+  <figure class="full"><img src="images/w5.png" alt="W5 검색">
+    <figcaption><b>W5. 검색</b> — 위는 <code>Your Library · 22</code>, 아래는 <code>Apple Music · 25</code>.
+      <b>내 것과 카탈로그를 한 화면에서 본다.</b> <code>✓</code> 는 이미 가진 곡, <code>+</code> 는 담을 수 있는 곡</figcaption></figure>
+
+  <h3>요청 한 건의 흐름</h3>
+  <p class="small">선곡은 초 단위가 걸린다. 그래서 요청을 접수만 하고 화면을 놓아준다.</p>
+
+  <figure class="full"><img src="images/w6.png" alt="W6 요청 입력">
+    <figcaption><b>W6.</b> 자연어로 부탁한다 — “한 시간짜리, 발표 전에 차분해지는, 한 번도 안 들어본 곡으로”</figcaption></figure>
+  <figure class="full"><img src="images/w7.png" alt="W7 처리 중">
+    <figcaption><b>W7.</b> 내 말이 대화 띠에 남고, <b>답이 앉을 자리에 스피너가 앉는다.</b> 입력창은 계속 쓸 수 있다</figcaption></figure>
+  <figure class="full"><img src="images/w8.png" alt="W8 답과 근거">
+    <figcaption><b>W8.</b> 후보 204곡에서 14곡 · 62분. <b>곡마다 왜 골랐는지 함께 온다</b> —
+      “0 plays and no skip signals”. 오른쪽 끝에 이번에 쓴 돈이 남는다</figcaption></figure>
+</section>
+
+<!-- ══════════════════════════ 3 계속 — 구성요소·예외 ══════════════════════════ -->
+<section class="page">
+  <h2 style="border:0;margin-bottom:8px">3. UI 흐름 — 구성 요소와 예외</h2>
+
+  <h3>3-4. 화면 구성 요소</h3>
+  <table>
+    <tr><th style="width:34mm">영역</th><th>보이는 값</th></tr>
+    <tr><td>지금 재생</td><td>앨범 커버 · 제목 · 아티스트 · 앨범 · 진행바 · 재생 위치 / 길이 · 가사</td></tr>
+    <tr><td>지금 재생 (가사 없을 때)</td><td>장르 · 발매연도 · 추가일 · <b>마지막 재생일</b> · 재생 횟수 · <code>never played</code></td></tr>
+    <tr><td>목록 — 곡 행</td><td>제목 · 아티스트 · 재생 횟수 · 길이</td></tr>
+    <tr><td>목록 — 묶음 행</td><td>아티스트명 / 앨범명 · 곡 수 · 누적 재생 수</td></tr>
+    <tr><td>목록 — Queue</td><td>순번 · <b>선정 근거</b> · 넣은 주체 · 항목 상태</td></tr>
+    <tr><td>목록 — Apple Music</td><td>제목 · 아티스트 · 보유 표시</td></tr>
+    <tr><td>대화 띠</td><td>내가 한 말 · 답 · 곡별 근거 · 모델 · 소요 시간 · 토큰 · 비용</td></tr>
+    <tr><td>입력창</td><td>지금 모드(묻기 / 찾기) · 지금 고른 것으로 할 수 있는 일</td></tr>
+    <tr><td>상태줄</td><td>지금 구역 · 항목 수 · 섞기·반복 · 큐 개수 · 누적 토큰 · 비용</td></tr>
+  </table>
+
+  <p class="small"><b>반응형.</b> 창이 좁아지면 칸이 순서대로 사라진다 — 재생 횟수 → 아티스트 → 길이.
+    제목은 버리지 않는다. 세로가 짧으면 앨범 커버 대신 한 줄짜리 재생 바가 된다.</p>
+
+  <h3>3-5. 예외 · 오류 시나리오</h3>
+  <table>
+    <tr><th style="width:38mm">상황</th><th>화면이 하는 말</th><th style="width:34mm">사용자가 할 것</th></tr>
+    <tr><td>자동화 권한 거부</td><td><code>PERMISSION</code> Music 을 제어할 권한이 필요합니다</td><td><code>ctrl+g</code> 시스템 설정</td></tr>
+    <tr><td>Music.app 미실행</td><td><code>MUSIC APP</code> Music 이 실행되어 있지 않습니다</td><td><code>open -a Music</code></td></tr>
+    <tr><td>AI 꺼짐</td><td><code>AI is off</code></td><td><code>/ai &lt;key&gt;</code></td></tr>
+    <tr><td>카탈로그 미설정</td><td>구역 자체가 생기지 않는다</td><td><code>/setup &lt;team ID&gt;</code></td></tr>
+    <tr><td>가사 없음</td><td>그 자리에 곡 이력을 대신 그린다</td><td>없음 — 정상이다</td></tr>
+    <tr><td>동기화 진행 중</td><td>상태줄에 <code>⟳ syncing</code></td><td>기다린다</td></tr>
+    <tr><td>선곡 실패</td><td>대화 띠에 실패 문장이 남는다</td><td>다시 물어본다</td></tr>
+    <tr><td>조건에 맞는 곡 없음</td><td>“조건에 맞는 곡이 없습니다”</td><td>조건을 넓힌다</td></tr>
+  </table>
+
+  <div class="box">
+    <h4>원칙 — 화면은 “왜 안 되는지”가 아니라 “무엇을 하면 되는지”를 말한다</h4>
+    <p class="small" style="margin:0">그래서 모든 오류 응답이 <code>message</code> 와 함께 <code>hint</code> 를 갖는다.
+      <b>실패해도 재생은 멈추지 않는다</b> — AI 가 근거를 못 만들어도 큐는 그대로 돈다.</p>
+  </div>
+
+  <h3>3-6. 비동기 요청의 화면 처리</h3>
+<pre class="dia">문장을 친다 ──▶ 요청 접수 (즉시 응답)
+                    │   대화 띠에 내 말이 뜨고, 답이 앉을 자리에 스피너가 앉는다
+                    ▼
+              진행 상태를 되묻는다
+                    │
+      ┌─────────────┼──────────────┬───────────────┐
+      ▼             ▼              ▼               ▼
+    완료          실패           취소(esc)        계속 대기
+  답·근거·비용   실패 문장       요청을 물린다      스피너 유지
+  큐 갱신       재생은 계속</pre>
+</section>
+
+<!-- ══════════════════════════ 4. 데이터 모델 ══════════════════════════ -->
+<section class="page">
+  <h2>4. 데이터 모델 설계</h2>
+
+  <p class="small"><b>화면에 보이는 값을 먼저 전부 적고, 그중 저장해야 하는 것만 컬럼으로 만들었다.</b>
+    반대 순서로 하면 화면에 있는 데이터가 모델에 없는 일이 생긴다.</p>
+
+  <table>
+    <tr><th style="width:24mm">분류</th><th style="width:60mm">예</th><th>컬럼이 되는가</th></tr>
+    <tr><td><b>저장</b></td><td>곡 제목 · 재생 횟수 · 마지막 재생일</td><td><b>된다</b></td></tr>
+    <tr><td>실시간</td><td>재생 위치 · 앨범 커버 · 섞기 상태</td><td>안 된다 — 그때그때 묻는다</td></tr>
+    <tr><td>계산</td><td>진행바 · “3년 전” · 누적 비용</td><td>안 된다 — 다른 값으로 만든다</td></tr>
+  </table>
+
+  <figure><img src="images/erd.png" alt="ERD"><figcaption>개체 관계도 (ERD) — 전체 정의는 <code>-DB.dbml</code></figcaption></figure>
+
+  <h3>엔티티</h3>
+  <table>
+    <tr><th class="n" style="width:8mm">#</th><th style="width:34mm">개체</th><th>무엇인가</th><th style="width:26mm">화면</th></tr>
+    <tr><td class="n">1</td><td><code>artist</code></td><td>아티스트</td><td>W3 · 곡 행</td></tr>
+    <tr><td class="n">2</td><td><code>album</code></td><td>앨범</td><td>W2 지금 재생</td></tr>
+    <tr><td class="n">3</td><td><code>track</code></td><td><b>곡</b> — 가장 많이 읽히는 개체</td><td>W2~W5</td></tr>
+    <tr><td class="n">4</td><td><code>playlist</code></td><td>플레이리스트</td><td>목록</td></tr>
+    <tr><td class="n">5</td><td><code>playlist_track</code></td><td>플레이리스트에 담긴 곡과 순서</td><td>목록</td></tr>
+    <tr><td class="n">6</td><td><code>queue</code></td><td>재생 큐</td><td>W2</td></tr>
+    <tr><td class="n">7</td><td><code>queue_item</code></td><td>큐에 담긴 곡 · <b>선정 근거</b></td><td>W2 · W8</td></tr>
+    <tr><td class="n">8</td><td><code>turn</code></td><td>자연어 요청 한 건 — 문장 원본 · <b>어떤 자리를 위한 것인가</b> · 토큰 · 비용</td><td>W6~W8 · 상태줄</td></tr>
+    <tr><td class="n">9</td><td><code>message</code></td><td>대화 띠의 한 줄</td><td>대화 띠</td></tr>
+    <tr><td class="n">10</td><td><code>play</code></td><td>곡이 끝난 사건 — <b>왜</b> 끝났나</td><td>없음</td></tr>
+    <tr><td class="n">11</td><td><code>setting</code></td><td>이 기기의 설정 (한 행)</td><td>W1</td></tr>
+  </table>
+
+  <h3>관계</h3>
+  <table>
+    <tr><th style="width:52mm">관계</th><th style="width:22mm">종류</th><th>설명</th></tr>
+    <tr><td><code>artist</code> → <code>album</code></td><td>1 : N</td><td>한 아티스트가 여러 앨범</td></tr>
+    <tr><td><code>artist</code> → <code>track</code></td><td>1 : N</td><td>앨범 없는 싱글도 아티스트는 있다</td></tr>
+    <tr><td><code>album</code> → <code>track</code></td><td>1 : N</td><td>FK 는 <b>NULL 허용</b> — 앨범 없는 곡이 있다</td></tr>
+    <tr><td><code>playlist</code> ↔ <code>track</code></td><td><b>M : N</b></td><td><code>playlist_track</code> 이 푼다. 순서가 있어 복합 PK</td></tr>
+    <tr><td><code>queue</code> → <code>queue_item</code></td><td>1 : N</td><td></td></tr>
+    <tr><td><code>turn</code> → <code>queue_item</code></td><td>1 : N</td><td>FK 는 <b>NULL 허용</b> — 사람이 넣은 곡은 비어 있다</td></tr>
+    <tr><td><code>turn</code> → <code>message</code></td><td>1 : N</td><td></td></tr>
+    <tr><td><code>track</code> → <code>play</code></td><td>1 : N</td><td>같은 곡을 여러 번 듣는다</td></tr>
+    <tr><td><code>play</code> → <code>queue_item</code> → <code>turn</code></td><td>사슬</td><td><b>“이 곡을 언제 넘겼나”가 여기서 풀린다.</b> 사건마다 맥락을 복사하지 않는다</td></tr>
+  </table>
+
+  <div class="box">
+    <h4>이 서비스의 문제가 데이터에서는 한 컬럼의 NULL 이다</h4>
+    <p style="margin:0"><code>play_count = 0 AND last_played_at IS NULL</code> — 담아두고 한 번도 재생하지 않은 곡.
+      <b>Never played 화면(W4) 전체가 이 조건이고</b>, 재생 화면(W2)의 <code>never played</code> 경고도 같은 조건이다.
+      <b>두 컬럼이 화면 두 곳을 지탱한다.</b></p>
+    <p class="small faint" style="margin:6px 0 0">둘 다 보는 이유 — Music.app 이 재생 횟수와 마지막 재생일을 따로 관리해서,
+      한쪽만 채워진 곡이 실제로 존재한다(실측 1곡). 한쪽만 보면 그 곡을 잘못 센다.</p>
+  </div>
+
+  <div class="box">
+    <h4>저장하는 유일한 해석 — <code>turn.context</code></h4>
+    <p style="margin:0 0 6px">요청이 <b>어떤 자리를 위한 것인가</b>를 여덟 중 하나로 받는다 —
+      <code>focus</code> · <code>workout</code> · <code>chores</code> · <code>commute</code> ·
+      <code>social</code> · <code>unwind</code> · <code>sleep</code> · <code>other</code>.
+      <b>축은 하나다</b>(무엇을 하는 중인가). “틀어만 둔다” 같은 주의의 정도는 다른 축이라 넣지 않는다 —
+      섞으면 값이 겹쳐 같은 사건이 두 칸에 갈라진다.</p>
+    <p class="small faint" style="margin:0">판단을 저장하지 않는다는 원칙의 예외로 보이지만,
+      <b>원문(<code>prompt</code>)이 그대로 남으므로 되돌릴 수 있다</b> — 분류가 틀렸다고 판단되면 지난 것을 다시 나누면 된다.
+      <b>되돌릴 수 있는 해석만 저장한다.</b></p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 5. API ══════════════════════════ -->
+<section class="page">
+  <h2>5. API 명세 정의</h2>
+
+  <p class="small">전체 명세는 <code>-API.yml</code>(OpenAPI 3.0.3) 에 있고, 여기에는 목록을 싣는다.</p>
+
+  <div class="stat">
+    <div><b>28</b><span>경로</span></div>
+    <div><b>34</b><span>오퍼레이션</span></div>
+    <div><b>151</b><span>공통 스키마 재사용</span></div>
+  </div>
+
+  <h3>설계 원칙</h3>
+  <table>
+    <tr><td style="width:6mm">①</td><td><b>자연어 요청은 비동기다.</b> 요청은 즉시 접수만 하고, 화면이 진행을 되묻는다. 선곡이 초 단위이므로 기다리게 하면 입력창이 죽는다.</td></tr>
+    <tr><td>②</td><td><b>실시간 값은 저장하지 않는다.</b> 재생 위치·섞기·반복은 그때그때 물어 돌려준다. 사용자가 밖에서 바꿀 수 있기 때문이다.</td></tr>
+    <tr><td>③</td><td><b>관문은 로그인이 아니라 권한이다.</b> 그래서 <code>401</code> 이 없다.</td></tr>
+    <tr><td>④</td><td><b>실패가 재생을 막지 않는다.</b> 선곡 실패는 요청의 상태로 전달되고 큐는 그대로 돈다.</td></tr>
+  </table>
+
+  <h3>엔드포인트</h3>
+  <table>
+    <tr><th style="width:56mm">엔드포인트</th><th>하는 일</th><th style="width:20mm">화면</th></tr>
+
+    <tr><th colspan="3" style="background:#fff;border-bottom:1px solid #111;padding-top:10px">상태 · 설정</th></tr>
+    <tr><td><code>GET /status</code></td><td>무엇에 붙어 있고 무엇을 갖고 있는가</td><td>W1</td></tr>
+    <tr><td><code>GET · PATCH /settings</code></td><td>설정 조회 · 변경</td><td>W1</td></tr>
+
+    <tr><th colspan="3" style="background:#fff;border-bottom:1px solid #111;padding-top:10px">라이브러리</th></tr>
+    <tr><td><code>GET · POST /library/sync</code></td><td>동기화 상태 · 다시 읽기</td><td>W1</td></tr>
+    <tr><td><code>GET /tracks</code></td><td>곡 목록 — 정렬·필터·검색</td><td>W3·W4·W5</td></tr>
+    <tr><td><code>GET /tracks/{id}</code></td><td>곡 하나</td><td>—</td></tr>
+    <tr><td><code>GET /artists</code> · <code>/{id}/tracks</code></td><td>아티스트 묶음 · 파고들기</td><td>W3</td></tr>
+    <tr><td><code>GET /albums</code> · <code>/{id}/tracks</code></td><td>앨범 묶음 · 파고들기</td><td>W3</td></tr>
+    <tr><td><code>GET /playlists</code> · <code>/{id}/tracks</code></td><td>플레이리스트와 담긴 곡</td><td>목록</td></tr>
+    <tr><td><code>POST /playlists</code></td><td>지금 큐를 플레이리스트로 저장</td><td>W2</td></tr>
+
+    <tr><th colspan="3" style="background:#fff;border-bottom:1px solid #111;padding-top:10px">카탈로그</th></tr>
+    <tr><td><code>GET /catalog/tracks</code></td><td>카탈로그 검색</td><td>W5</td></tr>
+    <tr><td><code>POST /library/tracks</code></td><td>찾은 곡을 라이브러리에 담기</td><td>W5</td></tr>
+
+    <tr><th colspan="3" style="background:#fff;border-bottom:1px solid #111;padding-top:10px">재생</th></tr>
+    <tr><td><code>GET · PATCH /playback</code></td><td>지금 재생 중인 것 · 섞기·반복·볼륨</td><td>W2</td></tr>
+    <tr><td><code>POST /playback/play · pause · next</code></td><td>재생 제어</td><td>W2</td></tr>
+    <tr><td><code>GET /playback/artwork</code></td><td>앨범 커버</td><td>W2</td></tr>
+    <tr><td><code>GET /playback/lyrics</code></td><td>가사</td><td>W2</td></tr>
+
+    <tr><th colspan="3" style="background:#fff;border-bottom:1px solid #111;padding-top:10px">큐</th></tr>
+    <tr><td><code>GET · DELETE /queue</code></td><td>지금 큐 · 비우기</td><td>W2</td></tr>
+    <tr><td><code>POST /queue/items</code></td><td>큐에 곡 넣기</td><td>W2</td></tr>
+    <tr><td><code>PATCH · DELETE /queue/items/{id}</code></td><td>순서 바꾸기 · 빼기</td><td>W2</td></tr>
+
+    <tr><th colspan="3" style="background:#fff;border-bottom:1px solid #111;padding-top:10px">대화</th></tr>
+    <tr><td><code>POST /turns</code></td><td>자연어 요청 접수</td><td>W6</td></tr>
+    <tr><td><code>GET /turns/{id}</code></td><td>진행과 결과 — 근거 · 토큰 · 비용</td><td>W7·W8</td></tr>
+    <tr><td><code>POST /turns/{id}/cancel</code></td><td>진행 중인 요청 물리기</td><td>W7</td></tr>
+    <tr><td><code>GET /turns/usage</code></td><td>누적 토큰과 비용</td><td>상태줄</td></tr>
+    <tr><td><code>GET /messages</code></td><td>대화 띠에 그릴 줄들</td><td>대화 띠</td></tr>
+
+    <tr><th colspan="3" style="background:#fff;border-bottom:1px solid #111;padding-top:10px">기록</th></tr>
+    <tr><td><code>POST /plays</code></td><td>곡이 끝났다 — 왜 끝났는지와 함께</td><td>없음</td></tr>
+  </table>
+</section>
+
+<!-- ══════════════════════════ 5 계속 — 에러 ══════════════════════════ -->
+<section class="page">
+  <h2 style="border:0;margin-bottom:8px">5. API — 예외 처리</h2>
+
+  <p class="small">3-5 의 예외 시나리오와 하나씩 대응한다.</p>
+
+  <table>
+    <tr><th style="width:20mm" class="n">HTTP</th><th style="width:60mm">코드</th><th>화면이 하는 말</th></tr>
+    <tr><td class="n">400</td><td><code>VALIDATION_FAILED</code></td><td>요청 형식이 잘못되었다</td></tr>
+    <tr><td class="n">403</td><td><code>AUTOMATION_PERMISSION_DENIED</code></td><td>Music 을 제어할 권한이 필요합니다</td></tr>
+    <tr><td class="n">404</td><td><code>NOT_FOUND</code></td><td>대상을 찾을 수 없다</td></tr>
+    <tr><td class="n">404</td><td><code>LYRICS_NOT_FOUND</code></td><td>가사를 찾지 못했습니다</td></tr>
+    <tr><td class="n">409</td><td><code>SYNC_IN_PROGRESS</code></td><td>이미 읽는 중입니다</td></tr>
+    <tr><td class="n">409</td><td><code>AI_NOT_CONFIGURED</code></td><td>AI is off</td></tr>
+    <tr><td class="n">409</td><td><code>CATALOG_NOT_CONFIGURED</code></td><td>카탈로그 설정이 필요합니다</td></tr>
+    <tr><td class="n">409</td><td><code>TURN_ALREADY_RUNNING</code></td><td>이미 진행 중인 요청이 있습니다</td></tr>
+    <tr><td class="n">409</td><td><code>TRACK_NOT_AVAILABLE</code></td><td>이 곡은 지금 틀 수 없습니다</td></tr>
+    <tr><td class="n">502</td><td><code>CATALOG_UNAVAILABLE</code></td><td>카탈로그에 닿지 못했습니다</td></tr>
+    <tr><td class="n">502</td><td><code>MODEL_UNAVAILABLE</code></td><td>모델이 답하지 않습니다</td></tr>
+    <tr><td class="n">503</td><td><code>MUSIC_APP_NOT_RUNNING</code></td><td>Music 이 실행되어 있지 않습니다</td></tr>
+    <tr><td class="n">—</td><td><code>NO_MATCHING_TRACKS</code></td><td>조건에 맞는 곡이 없습니다 <span class="faint">(요청의 상태로 전달)</span></td></tr>
+  </table>
+
+  <h3>공통 응답 형식</h3>
+  <p class="small">모든 오류가 같은 모양으로 온다. 여섯 개의 공통 응답을 정의하고 재사용한다.</p>
+  <table>
+    <tr><th style="width:30mm">필드</th><th>내용</th></tr>
+    <tr><td><code>code</code></td><td>위 13종 중 하나</td></tr>
+    <tr><td><code>message</code></td><td>화면에 그대로 띄울 수 있는 문장</td></tr>
+    <tr><td><code>hint</code></td><td><b>무엇을 하면 되는지.</b> 예 — <code>open -a Music</code></td></tr>
+  </table>
+
+  <h3>목록 응답</h3>
+  <p class="small">라이브러리는 수천 곡이 될 수 있으므로 커서 기반으로 나눠 준다.
+    목록 응답은 전부 <code>{ items, meta }</code> 모양이며 <code>meta</code> 는 <code>hasMore</code> 와 <code>nextCursor</code> 를 갖는다.</p>
+
+  <hr class="rule">
+
+  <h3>화면 ↔ 데이터 ↔ API 정합성</h3>
+  <table>
+    <tr><th>확인한 것</th><th style="width:16mm" class="n">결과</th></tr>
+    <tr><td>화면의 모든 값이 부를 API 를 갖는가</td><td class="n">✔</td></tr>
+    <tr><td>화면의 모든 저장 값이 컬럼을 갖는가</td><td class="n">✔</td></tr>
+    <tr><td>모든 개체(11)를 쓰는 API 가 있는가</td><td class="n">✔</td></tr>
+    <tr><td>모든 API(34)를 부르는 화면이 있는가</td><td class="n">✔ <span class="faint small">1건 예외</span></td></tr>
+    <tr><td>실시간·계산 값이 컬럼으로 새어 들어갔는가</td><td class="n">없음</td></tr>
+  </table>
+  <p class="small faint">예외 1건 — <code>POST /plays</code>. 화면에 없지만 다음 선곡이 읽는다. 6장에서 설명한다.</p>
+</section>
+
+<!-- ══════════════════════════ 6. 고려사항 ══════════════════════════ -->
+<section class="page">
+  <h2>6. 고려사항</h2>
+
+  <h3>6-1. 범위를 어디서 끊었는가</h3>
+  <p class="small">기능을 더 넣는 것보다 넣지 않기로 한 것을 정하는 쪽이 어려웠다.</p>
+  <table>
+    <tr><th style="width:40mm">뺀 것</th><th>이유</th></tr>
+    <tr><td>취향 규칙 자동 도출</td><td>“이 사람은 잔잔한 걸 좋아한다” 같은 판정을 저장하려면 기준이 필요한데, 그 기준이 맞는지 확인할 데이터가 아직 없다. 대신 판정 이전의 사실만 모은다</td></tr>
+    <tr><td>사용자 계정 · 로그인</td><td>로그인 화면이 없다. 한 사람의 기기에서 도는 로컬 서비스이므로 구분할 대상이 없다</td></tr>
+    <tr><td>다기기 동기화</td><td>위와 같은 이유. 필요해지는 시점은 6-4 에 적었다</td></tr>
+  </table>
+
+  <h3>6-2. 저장할 것과 물어볼 것을 나눈 기준</h3>
+  <p><b>저장하면 어긋난다.</b> 사용자는 이 서비스를 보면서도 Music.app 을 직접 열어 조작할 수 있고,
+    그 순간 우리가 기억한 값은 거짓말이 된다. <b>어긋난 값은 없는 값보다 나쁘다</b> —
+    없으면 다시 물어보면 되지만, 틀린 값은 틀린 줄 모른다.</p>
+  <table>
+    <tr><th style="width:44mm">종류</th><th style="width:44mm">예</th><th>처리</th></tr>
+    <tr><td>밖에서 바뀔 수 있는 것</td><td>재생 위치 · 섞기 · 볼륨</td><td><b>매번 묻는다</b></td></tr>
+    <tr><td>밖에서 안 바뀌는 것</td><td>우리가 만든 큐 · 선정 근거 · 대화</td><td><b>저장한다</b></td></tr>
+    <tr><td>다른 값으로 만들 수 있는 것</td><td>진행바 · 누적 비용 · 항목 수</td><td><b>계산한다</b></td></tr>
+  </table>
+  <p class="small faint">치르는 비용 — 주기적으로 상태를 되묻는 왕복이 생긴다. 그 대신 화면이 옛말을 하지 않는다.</p>
+
+  <h3>6-3. 화면이 없는 데이터를 왜 모으는가</h3>
+  <p>Music.app 은 <b>무슨 일이 있었는지</b>만 센다. 넘긴 횟수는 알려주지만 <b>왜</b> 넘겼는지는 모른다.
+    사람이 넘긴 것, 큐에서 뺀 것, 큐를 갈아끼운 것, 끝까지 들은 것이 한 숫자에 뒤섞여 있다.
+    그래서 우리만 아는 것을 따로 적는다.</p>
+  <p class="small"><b>해석은 적지 않는다.</b> “일찍 나감”의 기준이 3초인지 5%인지 아직 모르는데
+    판정을 저장하면, 기준을 바꿀 때 지난 것을 다시 계산할 수 없다.
+    지금은 이 기록이 다음 선곡의 재료로 쓰인다 — 최근에 넘긴 곡을 후보에서 덜어낸다.</p>
+
+  <h3>6-4. 다음 단계에서 다시 봐야 할 것</h3>
+  <table>
+    <tr><th class="n" style="width:8mm">#</th><th style="width:52mm">지금</th><th>언제 바꿔야 하나</th></tr>
+    <tr><td class="n">1</td><td>사용자 개체가 없다</td><td>다기기 동기화를 넣는 순간. <code>user</code> 를 만들고 소유 관계를 단다</td></tr>
+    <tr><td class="n">2</td><td>인증이 없다</td><td>이 기기 밖으로 여는 순간. 로컬인 동안에는 필요 없다</td></tr>
+    <tr><td class="n">3</td><td>큐가 한 번에 하나다</td><td>여러 큐를 동시에 두려면 활성 표시가 필요하다</td></tr>
+    <tr><td class="n">4</td><td>대화가 무한히 쌓인다</td><td>보관 기간 정책이 필요하다</td></tr>
+    <tr><td class="n">5</td><td>주기적으로 되묻는다</td><td>이벤트를 밀어 주는 통로로 바꾸면 왕복이 준다</td></tr>
+    <tr><td class="n">6</td><td>라이브러리를 통째로 다시 읽는다</td><td>수천 곡대에서 느리다. 변경분만 읽어야 한다</td></tr>
+    <tr><td class="n">7</td><td>AI 비용이 사용자 부담이다</td><td>그래서 화면이 쓴 돈을 상시로 보여준다. 정책이 바뀌면 이 자리도 바뀐다</td></tr>
+    <tr><td class="n">8</td><td><b>선곡이 곡 단위로만 배운다</b></td><td>“여러 번 일찍 나간 곡은 뺀다”까지가 지금이다. <b>“공부할 때만 이 곡을 뺀다”는 아직 못 한다</b> — 맥락별로 세려면 표본이 필요하고, 지금은 그 재료(<code>turn.context</code>)를 모으는 중이다</td></tr>
+  </table>
+
+  <h3>6-5. 이름에 대하여</h3>
+  <p class="small"><b>Apple Music 은 Apple 의 상표다.</b> 이 문서에서는 대상을 분명히 하기 위해 그대로 쓰지만,
+    실제 서비스로 낸다면 고유한 이름을 두고 “Apple Music 을 제어한다”를 부제로 두는 것이 맞다.
+    Music.app 을 제어하는 것 자체는 macOS 가 공식적으로 여는 길이므로 문제가 없다. 이름만 문제다.</p>
+</section>
+</html>
