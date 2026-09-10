@@ -7,7 +7,7 @@
 #
 #   scripts/build.sh                  토큰을 박아 배포물을 만든다
 #   scripts/build.sh --dev            토큰 없이. 각자 자기 설정으로 돈다
-#   scripts/build.sh -o /tmp/amcli    나갈 자리를 정한다
+#   scripts/build.sh -o /tmp/yarrr    나갈 자리를 정한다
 #   scripts/build.sh --version 0.1.0  첫 화면에 적힐 판
 #
 # 받는 사람이 해야 하는 것은 둘뿐이다.
@@ -17,7 +17,7 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-out="dist/amcli"
+out="dist/yarrr"
 dev=""
 version=""
 while [ $# -gt 0 ]; do

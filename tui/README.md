@@ -91,8 +91,8 @@ go test ./...             폭 계산 · 필수 요소 검증
 ## 배포
 
 ```
-scripts/release.sh        빌드 · 서명 · 공증 · 검역 검증  → dist/amcli.zip
-scripts/build.sh          빌드만                        → dist/amcli
+scripts/release.sh        빌드 · 서명 · 공증 · 검역 검증  → dist/yarrr.zip
+scripts/build.sh          빌드만                        → dist/yarrr
 scripts/build.sh --dev    토큰 없이. 각자 자기 설정으로 돈다
 ```
 

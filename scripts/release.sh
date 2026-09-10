@@ -14,8 +14,8 @@ set -eu
 cd "$(dirname "$0")/.."
 
 profile="amcli"        # notarytool 자격 증명 프로필 (키체인)
-out="dist/amcli"
-zip="dist/amcli.zip"
+out="dist/yarrr"
+zip="dist/yarrr.zip"
 
 # 판. 태그와 같은 값이어야 한다 — 첫 화면이 이것을 적는다.
 version="${1:-0.1.0}"

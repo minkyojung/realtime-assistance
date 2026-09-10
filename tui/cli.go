@@ -15,9 +15,16 @@ import (
 // 플래그 패키지를 쓰지 않는다. 받는 것이 둘뿐이고, flag 를 들이면 `-h` 가
 // 자기 형식으로 답하면서 아래 글이 화면에 안 나온다.
 
+// 이 도구를 부르는 이름. **한 곳에만 산다.**
+//
+// 한때 usage 와 --version 과 오류 문구에 각각 적혀 있었다. 이름을 바꾸는
+// 순간 세 군데를 다 고쳐야 하고, 하나를 빠뜨리면 화면이 자기를 두 이름으로
+// 부른다. 실제로 amcli 에서 바꿀 때 테스트가 그것을 잡았다.
+const name = "yarrr"
+
 const usage = `Apple Music from your terminal — ask for music in your own words.
 
-usage: amcli [--help] [--version]
+usage: ` + name + ` [--help] [--version]
 
 Nothing to configure to look around. To let it pick for you, add a key:
 
@@ -37,10 +44,10 @@ func handleArgs(args []string, out io.Writer) (start bool, code int) {
 			fmt.Fprint(out, usage)
 			return false, 0
 		case "-v", "--version", "version":
-			fmt.Fprintln(out, "amcli", version())
+			fmt.Fprintln(out, name, version())
 			return false, 0
 		default:
-			fmt.Fprintf(out, "amcli: unknown argument %q\n\n%s", a, usage)
+			fmt.Fprintf(out, "%s: unknown argument %q\n\n%s", name, a, usage)
 			return false, 2
 		}
 	}

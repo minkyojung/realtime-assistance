@@ -26,12 +26,19 @@
 
 ## 받아서 쓰기
 
-[Releases](../../releases) 에서 `amcli.zip` 을 받아 압축을 푼다.
-애플 공증을 받았으므로 Gatekeeper 가 막지 않는다.
+```sh
+brew install minkyojung/tap/yarrr
+yarrr
+```
+
+Homebrew 를 안 쓴다면 [Releases](../../releases) 에서 `yarrr.zip` 을 받아
+압축을 푼다. **애플 공증을 받았으므로 Gatekeeper 가 막지 않는다.**
 
 ```sh
-./amcli
+./yarrr
 ```
+
+> Apple Silicon 전용이다.
 
 처음 켜면 두 가지를 묻는다. **둘 다 건너뛸 수 있고, 건너뛰면 그 기능만 꺼진다.**
 
@@ -89,7 +96,7 @@
 ## 만들기
 
 ```sh
-scripts/release.sh        빌드 · 서명 · 공증 · 검역 검증  → dist/amcli.zip
+scripts/release.sh        빌드 · 서명 · 공증 · 검역 검증  → dist/yarrr.zip
 scripts/build.sh --dev    토큰 없이. 각자 자기 설정으로
 cd tui && go test ./...
 ```
