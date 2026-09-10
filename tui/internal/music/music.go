@@ -12,6 +12,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 )
 
@@ -49,8 +51,46 @@ type PlayerState struct {
 //
 // AppleScript 로 확인하면 앱이 없을 때 앱을 실행시켜 버리므로,
 // 프로세스 목록을 직접 본다. 권한도 필요 없다.
+//
+// 한때 부를 때마다 pgrep 을 띄웠다. Music.app 에 말을 거는 스무 자리가
+// 전부 이것을 먼저 부르니, 폴링만으로 1초에 프로세스 둘이 생겼다. 이제
+// 찾은 PID 를 기억해 두고 **살아 있는지만** 본다(kill 0) — 프로세스 생성
+// 없이 마이크로초다. 죽었으면 그 자리에서 알고, 그때만 다시 찾는다.
+//
+// 시간으로 캐시하지 않는 이유: 사용자가 Music.app 을 끈 직후 1초 폴링이
+// 묵은 "켜져 있음"을 믿고 스크립트를 보내면, 그 스크립트가 Music.app 을
+// 도로 켠다. 이 함수가 있는 이유 자체를 잃는다.
 func Running() bool {
-	return exec.Command("pgrep", "-x", "Music").Run() == nil
+	musicPID.Lock()
+	defer musicPID.Unlock()
+	if musicPID.pid > 0 && alive(musicPID.pid) {
+		return true
+	}
+	musicPID.pid = findMusic()
+	return musicPID.pid > 0
+}
+
+var musicPID struct {
+	sync.Mutex
+	pid int
+}
+
+// findMusic 은 Music.app 의 PID 를 찾는다. 없으면 0.
+func findMusic() int {
+	out, err := exec.Command("pgrep", "-x", "Music").Output()
+	if err != nil {
+		return 0
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(strings.SplitN(string(out), "\n", 2)[0]))
+	if err != nil {
+		return 0
+	}
+	return pid
+}
+
+// alive 는 그 PID 가 살아 있는지만 본다. 신호 0 은 아무것도 보내지 않는다.
+func alive(pid int) bool {
+	return syscall.Kill(pid, 0) == nil
 }
 
 // tell 블록 안에서는 `as text` 를 쓴다. `as string` 은 구문 오류가 난다.
