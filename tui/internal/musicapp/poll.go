@@ -235,6 +235,17 @@ func StatusMsgFor(state music.PlayerState, err error) tea.Msg {
 	return statusMsg{state: state, err: err}
 }
 
+// QueueNeedsAdding 은 이 답이 담기 단계를 한 번 더 거쳐야 하는지다.
+//
+// 헤드리스 하네스를 위해 내놓는다. 하네스는 Cmd 를 실행해 봐야 무엇이
+// 나오는지 아는데, 담을 것이 없는 답의 다음 Cmd 는 **재생 쓰기**다.
+// 실행해서 알아내는 순간 남의 스피커에서 소리가 난다 — 그래서 실행하기
+// 전에 물을 수 있어야 한다.
+func QueueNeedsAdding(msg tea.Msg) bool {
+	q, ok := msg.(queueMsg)
+	return ok && !q.resolved && len(catalogPicks(q.res)) > 0
+}
+
 // QueueMsgFor 는 의도 층의 결과를 흉내 낸다.
 //
 // 앱을 받는 이유는 답에 번호가 붙기 때문이다. 그만둔 요청의 답은 버려지므로

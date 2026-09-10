@@ -105,15 +105,22 @@ func main() {
 	fmt.Printf("   선곡 도착 (%.1fs)\n\n", time.Since(start).Seconds())
 
 	fmt.Println("② 라이브러리 밖에서 고른 곡이 있으면 담는다…")
-	m2, cmd2 := m.Update(qmsg)
-	m2, resolved := pump(m2, cmd2, 8, isQueueMsg)
-	if resolved == nil {
+	if !musicapp.QueueNeedsAdding(qmsg) {
+		// 담을 것이 없으면 다음 Cmd 는 곧바로 재생 쓰기다. **실행하지 않는다.**
+		// 물어보고 나서 멈춰야 한다 — 실행해서 알아내면 이미 소리가 난 뒤다.
 		fmt.Println("   밖에서 고른 곡 없음 — 라이브러리 안에서만 골랐다")
-		m = m2
+		m, _ = m.Update(qmsg)
 	} else {
-		fmt.Printf("   담기·대기 끝 (%.1fs)\n", time.Since(start).Seconds())
-		// 여기서 돌려받는 Cmd 는 실행하지 않는다 — 그것이 재생 쓰기다.
-		m, _ = m2.Update(resolved)
+		m2, cmd2 := m.Update(qmsg)
+		m2, resolved := pump(m2, cmd2, 8, isQueueMsg)
+		if resolved == nil {
+			fmt.Println("   담기 단계가 답을 안 돌려줬다")
+			m = m2
+		} else {
+			fmt.Printf("   담기·대기 끝 (%.1fs)\n", time.Since(start).Seconds())
+			// 여기서 돌려받는 Cmd 도 실행하지 않는다 — 그것이 재생 쓰기다.
+			m, _ = m2.Update(resolved)
+		}
 	}
 
 	fmt.Println("\n──────── 결과 화면 ────────")
