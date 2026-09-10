@@ -210,6 +210,43 @@ func (c *Client) Search(ctx context.Context, term string, limit int) ([]api.Cata
 	return out, nil
 }
 
+// Durations 는 카탈로그 곡들의 길이를 밀리초로 읽는다.
+//
+// **길이는 현지화되지 않는다.** 제목과 아티스트는 된다 — Music.app 은
+// 시스템 언어가 영어면 kr 카탈로그의 "야생화 — 박효신"을 "Wild Flower —
+// Park Hyo Shin" 으로 적는다. 그래서 방금 담은 곡을 이름으로 되찾으려던
+// 코드가 같은 곡을 못 알아봤다(musicapp/resolve.go).
+//
+// 사용자 토큰이 필요 없다. 카탈로그를 읽을 뿐이다.
+func (c *Client) Durations(ctx context.Context, ids []string) (map[string]int, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	body, err := c.do(ctx, http.MethodGet, "/v1/catalog/"+c.storefront()+"/songs",
+		url.Values{"ids": {strings.Join(ids, ",")}})
+	if err != nil {
+		return nil, err
+	}
+	var res struct {
+		Data []struct {
+			ID         string `json:"id"`
+			Attributes struct {
+				DurationMs int `json:"durationInMillis"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, err
+	}
+	out := make(map[string]int, len(res.Data))
+	for _, d := range res.Data {
+		if d.Attributes.DurationMs > 0 {
+			out[d.ID] = d.Attributes.DurationMs
+		}
+	}
+	return out, nil
+}
+
 // AddToLibrary 는 카탈로그 곡을 내 라이브러리에 담는다. 사용자 토큰이 필요하다.
 //
 // 담아야 재생할 수 있다. Apple Music API 는 재생을 시키지 못하고,
