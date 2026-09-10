@@ -67,6 +67,40 @@ func TestMarkInLibrary(t *testing.T) {
 	}
 }
 
+// Apple 이 답을 줬으면 그 위에 짐작을 덮어쓰지 않는다.
+//
+// 이름으로 맞추는 판정은 같은 곡의 다른 판을 못 가른다. Apple 은 가른다.
+// 여기서 다시 짐작하면 이 커밋 전체가 없던 일이 된다.
+func TestAppleAnswerIsNotOverwrittenByGuessing(t *testing.T) {
+	m := New()
+	yes := true
+	// 픽스처 라이브러리에 없는 곡이다 — 이름으로 맞추면 반드시 false 가 된다.
+	held := catalogTrack("어느 라이브러리에도 없는 제목", "아무개")
+	held.InLibrary = &yes
+
+	mm, _, _ := m.applyCatalog(catalogMsg{
+		seq: m.catSeq, term: "x", items: []api.CatalogTrack{held}, marked: true,
+	})
+	got := mm.(Model)
+	if len(got.catHits) != 1 || !inLibrary(got.catHits[0]) {
+		t.Error("Apple 이 담겼다고 한 곡을 이름으로 짐작해 덮었다")
+	}
+}
+
+// 반대로 아무도 안 채웠으면 그때는 이름으로 짐작한다.
+// 로그인 전에도 검색은 되어야 하고, 그때 유일한 단서가 이름이다.
+func TestUnmarkedResultsStillFallBackToGuessing(t *testing.T) {
+	m := New()
+	mm, _, _ := m.applyCatalog(catalogMsg{
+		seq: m.catSeq, term: "x", marked: false,
+		items: []api.CatalogTrack{catalogTrack("Holocene", "Bon Iver")},
+	})
+	got := mm.(Model)
+	if len(got.catHits) != 1 || !inLibrary(got.catHits[0]) {
+		t.Error("로그인 전 대비책이 안 돌았다")
+	}
+}
+
 // 늦게 온 응답은 버려야 한다. /catalog a 직후 /catalog b 를 칠 수 있다.
 func TestStaleCatalogResponseIsDropped(t *testing.T) {
 	m := New()

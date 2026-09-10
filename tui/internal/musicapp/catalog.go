@@ -59,6 +59,10 @@ type (
 		term  string
 		items []api.CatalogTrack
 		err   error
+
+		// marked 는 담겼는지를 **Apple 에게 물어서** 채웠다는 뜻이다.
+		// 꺼져 있으면 아직 아무도 안 채운 것이고, 그때만 이름으로 짐작한다.
+		marked bool
 	}
 	catalogAddedMsg struct {
 		track api.CatalogTrack
@@ -86,12 +90,26 @@ func cmdCatalogInit() tea.Msg {
 	return catalogReadyMsg{client: c, err: err}
 }
 
+// cmdCatalogSearch — 카탈로그에서 찾고, 그 자리에서 담겼는지까지 묻는다.
+//
+// 두 번 부르는 것을 한 Cmd 안에 두는 이유는 화면이 **한 번만 바뀌어야**
+// 하기 때문이다. 나누면 `+` 로 그려졌다가 `✓` 로 다시 그려진다.
+//
+// 담겼는지를 못 물어도 검색 결과는 내놓는다. 로그인 전이거나 그 요청만
+// 실패했을 때, 목록을 통째로 잃는 것보다 표시가 덜 정확한 편이 낫다.
 func cmdCatalogSearch(c *applemusic.Client, term string, seq int) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), catalogTimeout)
 		defer cancel()
 		items, err := c.Search(ctx, term, 25)
-		return catalogMsg{seq: seq, term: term, items: items, err: err}
+		if err != nil {
+			return catalogMsg{seq: seq, term: term, err: err}
+		}
+		marked, err := c.MarkInLibrary(ctx, items)
+		if err != nil {
+			return catalogMsg{seq: seq, term: term, items: items}
+		}
+		return catalogMsg{seq: seq, term: term, items: marked, marked: true}
 	}
 }
 
@@ -153,10 +171,14 @@ func normalize(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }
 
-// localMatch — 카탈로그 곡이 이미 내 라이브러리에 있는지 이름으로 본다.
+// localMatch — 카탈로그 곡에 대응하는 **로컬 트랙**을 이름으로 찾는다.
 //
-// Music.app 도 Apple Music API 도 카탈로그 id 를 라이브러리 곡에 붙여주지
-// 않는다. 이름으로 맞추는 수밖에 없고, 그래서 이 판정은 참고값이다.
+// 재생은 Music.app 만 하고, Music.app 은 제 라이브러리의 곡을 persistent ID
+// 로만 안다. Apple Music API 는 그 번호를 모른다 — 두 세계가 공유하는
+// 식별자가 없다. 그 사이를 건너는 다리가 아직 이름뿐이라 이 판정은 참고값이다.
+//
+// **담겼는지를 묻는 데는 더 이상 쓰지 않는다.** 그 답은 Apple 이 준다
+// (applemusic.MarkInLibrary). 여기 남은 일은 "튼다면 어느 곡을 트나"뿐이다.
 func localMatch(ct api.CatalogTrack) (api.Track, bool) {
 	title, artist := normalize(ct.Title), normalize(ct.ArtistName)
 	for _, t := range data.Lib().Tracks {
@@ -167,6 +189,10 @@ func localMatch(ct api.CatalogTrack) (api.Track, bool) {
 	return api.Track{}, false
 }
 
+// markInLibrary — Apple 에게 못 물었을 때의 대비책. 이름으로 짐작한다.
+//
+// 로그인 전에는 /me/* 를 부를 수 없고, 그때도 검색은 되어야 한다.
+// 짐작이라는 것은 화면이 아니라 여기 적어 둔다.
 func markInLibrary(items []api.CatalogTrack) []api.CatalogTrack {
 	out := make([]api.CatalogTrack, len(items))
 	copy(out, items)
@@ -283,7 +309,10 @@ func (m Model) applyCatalog(msg tea.Msg) (app.App, tea.Cmd, bool) {
 			return m, app.SayErr(m.Name(), catalogError(msg.err)), true
 		}
 		m.catTerm = msg.term
-		m.catHits = markInLibrary(msg.items)
+		m.catHits = msg.items
+		if !msg.marked {
+			m.catHits = markInLibrary(msg.items)
+		}
 		// 검색 중이면 결과가 같은 화면 아래에 붙는다. 자리를 옮기지 않는다.
 		if m.searching() {
 			m.clampList()
