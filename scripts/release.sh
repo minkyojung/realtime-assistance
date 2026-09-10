@@ -54,7 +54,7 @@ say "3/4  공증 — 애플에 보내고 결과를 기다린다 (보통 1~5분)"
 rm -f "$zip"
 # ditto 를 쓴다. zip(1) 은 확장 속성을 흘려서 서명이 깨질 수 있다.
 # --keepParent 는 쓰지 않는다. 그것을 쓰면 압축 안에 dist/ 가 딸려 들어가서
-# 받는 사람이 amcli 가 아니라 dist/amcli 를 얻는다.
+# 받는 사람이 yarrr 가 아니라 dist/yarrr 를 얻는다.
 ditto -c -k "$out" "$zip"
 xcrun notarytool submit "$zip" --keychain-profile "$profile" --wait ||
 	die "공증 거절. 로그를 본다:
