@@ -132,7 +132,7 @@ func findCmd(t *testing.T, m Model, name string) app.Command {
 	return app.Command{}
 }
 
-var _ tea.Cmd = cmdShuffle(true)
+var _ tea.Cmd = cmdShuffle(music.AppleScript{}, true)
 
 // `/` 만 쳤을 때 보이는 여덟 줄이 "이 앱으로 무엇을 할 수 있는가"의 답이다.
 //

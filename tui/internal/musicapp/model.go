@@ -38,6 +38,10 @@ type Model struct {
 	// Music.app 안에 실제로 만들어 둔 큐 플레이리스트의 persistent ID.
 	//
 	// 비어 있으면 "화면의 큐와 Music.app 의 큐가 다르다"는 뜻이다. 큐를
+	// Music.app. 장치 하나로 본다(music.Player). 기본은 osascript 구현이고,
+	// 테스트는 가짜를 꽂는다(WithPlayer).
+	player music.Player
+
 	// 화면에서만 건드렸을 때(ensureQueued·/clear) 비운다 — 그 상태로
 	// 번호를 믿고 재생하면 엉뚱한 곡이 나온다.
 	queuePID string
@@ -155,12 +159,16 @@ type Model struct {
 // 컴파일 타임에 계약을 지키는지 확인한다.
 var _ app.App = Model{}
 
+// WithPlayer 는 다른 장치를 꽂는다. 테스트가 가짜 Music.app 을 넣는 길이다.
+func (m Model) WithPlayer(p music.Player) Model { m.player = p; return m }
+
 func New() Model {
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
 	sp.Style = lipgloss.NewStyle().Foreground(style.ColBrand)
 
 	return Model{
+		player: music.AppleScript{},
 		// 여기서는 아직 아무것도 읽지 않는다. Init 이 캐시와 실물을 부른다.
 		sections: buildSections(data.Lib()),
 		spinner:  sp,
@@ -183,7 +191,7 @@ func (m Model) Tagline() string { return "only what you own" }
 // 음악은 폴링이라 아직 쓰지 않지만, 계약이 그렇게 되어 있다.
 func (m Model) Init(send func(tea.Msg)) tea.Cmd {
 	// 캐시는 몇 ms, 실물은 몇 초다. 둘 다 띄우고 먼저 오는 것을 그린다.
-	return tea.Batch(m.spinner.Tick, fetchStatus, tick(), cmdLoadCache, cmdDumpLibrary(false),
+	return tea.Batch(m.spinner.Tick, fetchStatus(m.player), tick(), cmdLoadCache, cmdDumpLibrary(m.player, false),
 		cmdCatalogInit, cmdShazamInit)
 }
 
@@ -321,7 +329,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		if !msg.resolved && len(catalogPicks(msg.res)) > 0 {
 			n := len(catalogPicks(msg.res))
 			return m, tea.Batch(
-				cmdResolvePicks(m.ask.ctx, m.cat, msg),
+				cmdResolvePicks(m.ask.ctx, m.player, m.cat, msg),
 				app.Say(m.Name(), fmt.Sprintf("Adding %s to your library…", plural(n, "track"))),
 			)
 		}
@@ -372,7 +380,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 		// 보장하지 않는다. 어긋나면 검색 번호가 모델에 안 남아 답이 조용히
 		// 버려진다 — 증상은 "카탈로그 검색이 안 된다"로만 보인다.
 		search := m.maybeSearchCatalog()
-		return m, tea.Batch(fetchStatus, tick(), search)
+		return m, tea.Batch(fetchStatus(m.player), tick(), search)
 
 	case statusMsg:
 		m.polled = true
@@ -405,7 +413,7 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 					title, artist, album, dur := m.nowPlayingMeta()
 					return m, tea.Batch(
 						noted,
-						cmdArtwork(id),
+						cmdArtwork(m.player, id),
 						cmdLyrics(id, artist, title, album, dur),
 					)
 				}
@@ -495,11 +503,11 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			// 재생 제어는 shift+화살표 한 가족이다. 수식키+화살표라
 			// 입력창도 한글 조합도 건드리지 않는다 — 알파벳이나 space 를
 			// 쓸 수 없는 이유가 그것이다(docs/07 2절).
-			return m, cmdPlayPause()
+			return m, cmdPlayPause(m.player)
 		case key.Matches(msg, keys.Next):
-			return m, cmdNext()
+			return m, cmdNext(m.player)
 		case key.Matches(msg, keys.Previous):
-			return m, cmdPrevious()
+			return m, cmdPrevious(m.player)
 		case key.Matches(msg, keys.Accept):
 			return m.playSelected()
 		}
@@ -603,7 +611,7 @@ func (m Model) applyQueue(res intent.Result) (app.App, tea.Cmd) {
 	m.queuePID = ""
 	// **우리가 끊는 것이다.** 표시해 두지 않으면 다음 폴링이 이것을
 	// "사용자가 넘겼다"로 읽고, 우리가 만든 행동이 취향으로 쌓인다.
-	return m.hintEnd(data.EndedRequeue), cmdWriteQueue(ids, start, pos)
+	return m.hintEnd(data.EndedRequeue), cmdWriteQueue(m.player, ids, start, pos)
 }
 
 var (
@@ -684,7 +692,7 @@ func (m Model) dropAt(at int) (Model, tea.Cmd) {
 	if m.queuePID == "" {
 		return m, nil
 	}
-	return m, cmdRemoveQueueTrack(m.queuePID, at+1, playing)
+	return m, cmdRemoveQueueTrack(m.player, m.queuePID, at+1, playing)
 }
 
 // removeTracks 는 곡 여럿을 큐에서 뺀다. AI 가 지목했을 때 쓴다.

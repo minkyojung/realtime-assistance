@@ -24,9 +24,9 @@ type artMsg struct {
 	err error
 }
 
-func cmdArtwork(pid string) tea.Cmd {
+func cmdArtwork(p music.Player, pid string) tea.Cmd {
 	return func() tea.Msg {
-		b, err := music.Artwork(context.Background())
+		b, err := p.Artwork(context.Background())
 		if err != nil {
 			return artMsg{pid: pid, err: err}
 		}

@@ -171,7 +171,7 @@ func (m Model) reseat(next []api.QueueItem, said string) (Model, tea.Cmd) {
 	m.renumber()
 	m.clampList()
 
-	cmd := cmdRewriteQueueTail(m.queuePID, at+1, ids)
+	cmd := cmdRewriteQueueTail(m.player, m.queuePID, at+1, ids)
 	if said != "" {
 		cmd = tea.Batch(cmd, app.Say(m.Name(), said))
 	}
@@ -201,9 +201,9 @@ func firstDiff(a, b []api.QueueItem) int {
 }
 
 // cmdRewriteQueueTail 은 큐의 꼬리를 다시 쓴다. 앞은 그대로라 음악이 안 끊긴다.
-func cmdRewriteQueueTail(pid string, from int, ids []string) tea.Cmd {
+func cmdRewriteQueueTail(p music.Player, pid string, from int, ids []string) tea.Cmd {
 	return func() tea.Msg {
-		if err := music.RewriteQueueTail(pid, from, ids); err != nil {
+		if err := p.RewriteQueueTail(pid, from, ids); err != nil {
 			return queueWrittenMsg{err: err}
 		}
 		return queueWrittenMsg{pid: pid}

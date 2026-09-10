@@ -221,8 +221,12 @@ func tick() tea.Cmd {
 	return tea.Tick(pollInterval, func(time.Time) tea.Msg { return tickMsg{} })
 }
 
-func fetchStatus() tea.Msg {
-	st, err := music.Status()
+func fetchStatus(p music.Player) tea.Cmd {
+	return func() tea.Msg { return pollStatus(p) }
+}
+
+func pollStatus(p music.Player) tea.Msg {
+	st, err := p.Status()
 	// 통로가 차서 건너뛴 폴링은 메시지를 안 낸다. 화면은 지난 상태와
 	// 위치 보간으로 그대로 흐르고, 1초 뒤에 다시 묻는다(music/lane.go).
 	if errors.Is(err, music.ErrBusy) {
@@ -232,16 +236,16 @@ func fetchStatus() tea.Msg {
 }
 
 // 아래 조작은 결과를 기다리지 않는다. 다음 폴링이 진짜 상태를 알려준다.
-func cmdPlayPause() tea.Cmd {
-	return func() tea.Msg { music.PlayPause(); return fetchStatus() }
+func cmdPlayPause(p music.Player) tea.Cmd {
+	return func() tea.Msg { p.PlayPause(); return pollStatus(p) }
 }
 
-func cmdNext() tea.Cmd {
-	return func() tea.Msg { music.Next(); return fetchStatus() }
+func cmdNext(p music.Player) tea.Cmd {
+	return func() tea.Msg { p.Next(); return pollStatus(p) }
 }
 
-func cmdPrevious() tea.Cmd {
-	return func() tea.Msg { music.Previous(); return fetchStatus() }
+func cmdPrevious(p music.Player) tea.Cmd {
+	return func() tea.Msg { p.Previous(); return pollStatus(p) }
 }
 
 func cmdOpenSettings() tea.Cmd {
@@ -249,7 +253,7 @@ func cmdOpenSettings() tea.Cmd {
 }
 
 // ProbeStatus 는 헤드리스 확인용이다. 실제 Music.app 상태를 한 번 읽는다.
-func ProbeStatus() tea.Msg { return fetchStatus() }
+func ProbeStatus() tea.Msg { return pollStatus(music.AppleScript{}) }
 
 // DrainForQueue 는 헤드리스 확인용이다. Batch 안에서 큐 생성 Cmd 를 찾아 실행한다.
 func DrainForQueue(cmd tea.Cmd) tea.Msg {
@@ -277,7 +281,7 @@ type savedMsg struct {
 	err  error
 }
 
-func cmdSavePlaylist(name string, tracks []api.Track) tea.Cmd {
+func cmdSavePlaylist(p music.Player, name string, tracks []api.Track) tea.Cmd {
 	return func() tea.Msg {
 		ids := make([]string, 0, len(tracks))
 		for _, t := range tracks {
@@ -285,7 +289,7 @@ func cmdSavePlaylist(name string, tracks []api.Track) tea.Cmd {
 				ids = append(ids, *t.PersistentId)
 			}
 		}
-		return savedMsg{name: name, err: music.CreatePlaylist(name, ids)}
+		return savedMsg{name: name, err: p.CreatePlaylist(name, ids)}
 	}
 }
 
@@ -337,9 +341,9 @@ func cmdLoadCache() tea.Msg {
 // cmdDumpLibrary 는 Music.app 라이브러리를 통째로 읽는다. 몇 초다.
 //
 // 읽어낸 것은 캐시에 남긴다. 다음 시작이 즉시 그려지도록.
-func cmdDumpLibrary(announce bool) tea.Cmd {
+func cmdDumpLibrary(p music.Player, announce bool) tea.Cmd {
 	return func() tea.Msg {
-		b, err := music.DumpLibrary(context.Background())
+		b, err := p.DumpLibrary(context.Background())
 		if err != nil {
 			return libraryMsg{live: true, announce: announce, err: err}
 		}
@@ -365,16 +369,16 @@ type queueWrittenMsg struct {
 //
 // 지난번 플레이리스트의 ID 를 넘기는 이유는 그것만 지우기 위해서다.
 // 이름으로 지우면 사용자가 우연히 같은 이름으로 만든 것을 날린다(music/queue.go).
-func cmdWriteQueue(persistentIDs []string, start, positionSec int) tea.Cmd {
+func cmdWriteQueue(p music.Player, persistentIDs []string, start, positionSec int) tea.Cmd {
 	return func() tea.Msg {
-		pid, err := music.ReplaceQueue(data.LoadQueuePID(), persistentIDs)
+		pid, err := p.ReplaceQueue(data.LoadQueuePID(), persistentIDs)
 		if err != nil {
 			return queueWrittenMsg{err: err}
 		}
 		// 적어 두지 못해도 재생은 시킨다. 다음번에 옛 플레이리스트가
 		// 하나 남을 뿐이고, 그것이 남의 것을 지우는 것보다 낫다.
 		_ = data.SaveQueuePID(pid)
-		if err := music.PlayQueueAt(pid, start, positionSec); err != nil {
+		if err := p.PlayQueueAt(pid, start, positionSec); err != nil {
 			return queueWrittenMsg{err: err}
 		}
 		return queueWrittenMsg{pid: pid}
@@ -385,9 +389,9 @@ func cmdWriteQueue(persistentIDs []string, start, positionSec int) tea.Cmd {
 //
 // 통째로 다시 쓰지 않으므로 음악이 끊기지 않는다. advance 는 지금 나오는
 // 곡을 빼는 중이라는 뜻이고, 그때는 지우기 전에 다음 곡으로 넘어간다.
-func cmdRemoveQueueTrack(pid string, n int, advance bool) tea.Cmd {
+func cmdRemoveQueueTrack(p music.Player, pid string, n int, advance bool) tea.Cmd {
 	return func() tea.Msg {
-		if err := music.RemoveQueueTrack(pid, n, advance); err != nil {
+		if err := p.RemoveQueueTrack(pid, n, advance); err != nil {
 			return queueWrittenMsg{err: err}
 		}
 		// 뺀 자리만큼 화면과 플레이리스트가 같이 밀렸다. 짝은 그대로다.

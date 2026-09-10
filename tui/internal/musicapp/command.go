@@ -71,7 +71,7 @@ func (m Model) Commands() []app.Command {
 		{Name: "/save", Arg: "<name>", Help: "save the queue as an Apple Music playlist",
 			Run: m.saveCmd},
 		{Name: "/pause", Help: "play or pause — same as shift+↓",
-			Run: func(string) tea.Cmd { return cmdPlayPause() }},
+			Run: func(string) tea.Cmd { return cmdPlayPause(m.player) }},
 		{Name: "/next", Help: "play the selected track right after this one",
 			Run: func(string) tea.Cmd { return send(reorderMsg{kind: putNext}) }},
 		{Name: "/later", Help: "add the selected track to the end of the queue",
@@ -255,7 +255,7 @@ func (m Model) saveCmd(arg string) tea.Cmd {
 	if len(m.queue) == 0 {
 		return send(errMsg{errNoQueue})
 	}
-	return cmdSavePlaylist(arg, m.queueTracks())
+	return cmdSavePlaylist(m.player, arg, m.queueTracks())
 }
 
 type errMsg struct{ err error }
@@ -294,7 +294,7 @@ func (m Model) reloadCmd(string) tea.Cmd {
 	if m.syncing {
 		return send(errMsg{errSyncing})
 	}
-	return cmdDumpLibrary(true)
+	return cmdDumpLibrary(m.player, true)
 }
 
 func (m Model) loginCmd(string) tea.Cmd {

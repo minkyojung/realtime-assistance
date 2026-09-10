@@ -1,6 +1,7 @@
 package musicapp
 
 import (
+	"amcli/tui/internal/music"
 	"testing"
 
 	"amcli/tui/internal/data"
@@ -117,5 +118,5 @@ func TestPickRemembersWhereItCameFrom(t *testing.T) {
 	}
 }
 
-var _ tea.Cmd = cmdWriteQueue(nil, 1, 0)
+var _ tea.Cmd = cmdWriteQueue(music.AppleScript{}, nil, 1, 0)
 var _ = data.EndedPicked

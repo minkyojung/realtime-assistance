@@ -137,9 +137,9 @@ func cmdStorefront(c *applemusic.Client) tea.Cmd {
 //
 // 찍는 것이 담는 것보다 먼저여야 한다. 뒤에 찍으면 방금 담긴 곡이 이미
 // 들어 있어서 차이가 비고, 그러면 영원히 못 찾는다.
-func cmdAddToLibrary(c *applemusic.Client, ct api.CatalogTrack) tea.Cmd {
+func cmdAddToLibrary(p music.Player, c *applemusic.Client, ct api.CatalogTrack) tea.Cmd {
 	return func() tea.Msg {
-		before, err := music.LibraryIDs()
+		before, err := p.LibraryIDs()
 		if err != nil {
 			// 못 찍어도 담기는 한다. 그때는 차이를 못 보므로 나타났는지만
 			// 알 수 없을 뿐이고, 담긴 것은 사실이다.
@@ -295,7 +295,7 @@ func (m Model) playCatalog(ct api.CatalogTrack) (app.App, tea.Cmd) {
 	}
 	m.adding = &addJob{track: ct}
 	return m, tea.Batch(
-		cmdAddToLibrary(m.cat, ct),
+		cmdAddToLibrary(m.player, m.cat, ct),
 		app.Say(m.Name(), fmt.Sprintf("Adding %q to your library…", ct.Title)),
 	)
 }
@@ -406,7 +406,7 @@ func (m Model) tryPlayAdded(msg catalogTryPlayMsg) (app.App, tea.Cmd, bool) {
 		// 갱신하지 않으면 다음에 같은 곡을 골랐을 때 또 담으려 든다.
 		//
 		// persistent ID·길이는 다음 폴링이 알려준다. 우리가 찾을 필요가 없다.
-		return m, tea.Batch(fetchStatus, cmdDumpLibrary(false),
+		return m, tea.Batch(fetchStatus(m.player), cmdDumpLibrary(m.player, false),
 			app.Say(m.Name(), fmt.Sprintf("Added %q and started playing", msg.track.Title))), true
 	}
 	// 관문은 재시도 대상이 아니다. 기다린다고 권한이 생기지 않는다.
@@ -435,16 +435,16 @@ func (m Model) tryPlayAdded(msg catalogTryPlayMsg) (app.App, tea.Cmd, bool) {
 // 아무것도 안 하는 것보다는 낫다.
 func (m Model) playAdded() error {
 	if m.adding == nil || m.adding.before == nil {
-		return music.PlayByTitleArtist(m.adding.track.Title, m.adding.track.ArtistName)
+		return m.player.PlayByTitleArtist(m.adding.track.Title, m.adding.track.ArtistName)
 	}
 	// 수가 안 늘었으면 열거하지 않는다. 재시도가 열세 번인데 매번 전곡을
 	// 실어 오면, 담은 곡을 받아오느라 바쁜 Music.app 을 더 바쁘게 만든다.
-	if n, err := music.LibraryCount(); err != nil {
+	if n, err := m.player.LibraryCount(); err != nil {
 		return err
 	} else if n <= len(m.adding.before) {
 		return errNotShownUp
 	}
-	now, err := music.LibraryIDs()
+	now, err := m.player.LibraryIDs()
 	if err != nil {
 		return err
 	}
@@ -452,7 +452,7 @@ func (m Model) playAdded() error {
 	if pid == "" {
 		return errNotShownUp
 	}
-	return music.PlayPersistentID(pid)
+	return m.player.PlayPersistentID(pid)
 }
 
 // errNotShownUp — 아직 동기화가 안 끝났다. 실패가 아니라 기다림이다.

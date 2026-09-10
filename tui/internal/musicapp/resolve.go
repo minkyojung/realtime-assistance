@@ -38,7 +38,7 @@ func catalogPicks(res intent.Result) []string {
 // 같은 queueMsg 를 돌려준다. 새 메시지 종류를 만들지 않는 이유는 이 단계가
 // **답을 바꾸는 것이 아니라 준비를 마치는 것**이기 때문이다. 큐를 앉히는
 // 코드는 이 단계가 있었는지 몰라도 된다.
-func cmdResolvePicks(ctx context.Context, cat *applemusic.Client, msg queueMsg) tea.Cmd {
+func cmdResolvePicks(ctx context.Context, p music.Player, cat *applemusic.Client, msg queueMsg) tea.Cmd {
 	return func() tea.Msg {
 		out := msg
 		out.resolved = true
@@ -51,7 +51,7 @@ func cmdResolvePicks(ctx context.Context, cat *applemusic.Client, msg queueMsg) 
 			return out
 		}
 
-		before, err := music.LibraryIDs()
+		before, err := p.LibraryIDs()
 		if err != nil {
 			out.res.Picks, out.dropped = dropCatalogPicks(msg.res.Picks)
 			return out
@@ -67,9 +67,9 @@ func cmdResolvePicks(ctx context.Context, cat *applemusic.Client, msg queueMsg) 
 
 		// 나타나기를 기다린다. 다 오지 않아도 온 만큼은 쓴다 —
 		// 하나가 늦는다고 큐 전체를 버릴 이유가 없다.
-		arrived := waitForArrivals(ctx, before, len(ids), music.LibraryCount, music.LibraryIDs)
+		arrived := waitForArrivals(ctx, before, len(ids), p.LibraryCount, p.LibraryIDs)
 
-		b, err := music.DumpLibrary(ctx)
+		b, err := p.DumpLibrary(ctx)
 		if err != nil {
 			out.res.Picks, out.dropped = dropCatalogPicks(msg.res.Picks)
 			return out

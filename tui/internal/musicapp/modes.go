@@ -42,15 +42,15 @@ func (m Model) modeCommands() []app.Command {
 	}
 	return []app.Command{
 		{Name: "/shuffle", Help: "turn shuffle " + shuffle,
-			Run: func(string) tea.Cmd { return cmdShuffle(!m.live.Shuffle) }},
+			Run: func(string) tea.Cmd { return cmdShuffle(m.player, !m.live.Shuffle) }},
 		{Name: "/repeat", Arg: "<off|one|all>", Help: "repeat nothing, this track, or the queue",
-			Run: cmdRepeat},
+			Run: func(arg string) tea.Cmd { return cmdRepeat(m.player, arg) }},
 		{Name: "/volume", Arg: "<0-100>", Help: "set the volume",
-			Run: cmdVolume},
+			Run: func(arg string) tea.Cmd { return cmdVolume(m.player, arg) }},
 		{Name: "/love", Help: love + " a heart on the track playing now",
-			Run: func(string) tea.Cmd { return cmdFavorite(!m.live.Favorited) }},
+			Run: func(string) tea.Cmd { return cmdFavorite(m.player, !m.live.Favorited) }},
 		{Name: "/rate", Arg: "<0-5>", Help: "give the track playing now a star rating",
-			Run: cmdRate},
+			Run: func(arg string) tea.Cmd { return cmdRate(m.player, arg) }},
 	}
 }
 
@@ -84,24 +84,24 @@ func (m Model) marks() string {
 
 // 아래 명령들은 결과를 기다리지 않는다. 다음 폴링이 진짜 상태를 알려준다.
 
-func cmdShuffle(on bool) tea.Cmd {
-	return modeCmd(func() error { return music.SetShuffle(on) }, "Shuffle "+onOff(on))
+func cmdShuffle(p music.Player, on bool) tea.Cmd {
+	return modeCmd(func() error { return p.SetShuffle(on) }, "Shuffle "+onOff(on))
 }
 
-func cmdRepeat(arg string) tea.Cmd {
+func cmdRepeat(p music.Player, arg string) tea.Cmd {
 	r := music.Repeat(strings.ToLower(strings.TrimSpace(arg)))
 	if !r.Valid() {
 		return sayErr(errBadRepeat)
 	}
-	return modeCmd(func() error { return music.SetRepeat(r) }, "Repeat "+string(r))
+	return modeCmd(func() error { return p.SetRepeat(r) }, "Repeat "+string(r))
 }
 
-func cmdVolume(arg string) tea.Cmd {
+func cmdVolume(p music.Player, arg string) tea.Cmd {
 	n, err := strconv.Atoi(strings.TrimSpace(arg))
 	if err != nil {
 		return sayErr(errBadVolume)
 	}
-	return modeCmd(func() error { return music.SetVolume(n) }, "Volume "+strconv.Itoa(n))
+	return modeCmd(func() error { return p.SetVolume(n) }, "Volume "+strconv.Itoa(n))
 }
 
 // cmdFavorite 은 지금 나오는 곡에 하트를 켜고 끈다.
@@ -109,20 +109,20 @@ func cmdVolume(arg string) tea.Cmd {
 // 커서가 아니라 재생 중인 곡이 대상이다. /remove 는 목록을 손보는 일이고
 // 이것은 소리에 반응하는 일이라, 듣다가 "이거 좋네" 하는 순간에 커서가
 // 어디 있는지는 상관이 없다.
-func cmdFavorite(on bool) tea.Cmd {
+func cmdFavorite(p music.Player, on bool) tea.Cmd {
 	word := "Loved"
 	if !on {
 		word = "Unloved"
 	}
-	return modeCmd(func() error { return music.SetFavorite(on) }, word+" this one")
+	return modeCmd(func() error { return p.SetFavorite(on) }, word+" this one")
 }
 
-func cmdRate(arg string) tea.Cmd {
+func cmdRate(p music.Player, arg string) tea.Cmd {
 	n, err := strconv.Atoi(strings.TrimSpace(arg))
 	if err != nil {
 		return sayErr(errBadRating)
 	}
-	return modeCmd(func() error { return music.SetRating(n) }, "Rated "+strings.Repeat("★", n)+strings.Repeat("☆", 5-n))
+	return modeCmd(func() error { return p.SetRating(n) }, "Rated "+strings.Repeat("★", n)+strings.Repeat("☆", 5-n))
 }
 
 // modeCmd 는 한 일을 로그에 남긴다. 실패도 남긴다 — 조용히 실패하면

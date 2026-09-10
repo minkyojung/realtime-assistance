@@ -61,7 +61,7 @@ func (m Model) playFrom(rows []listRow, at int, label string) (Model, tea.Cmd) {
 	m.positionMs, m.playing = 0, true
 	// 플레이리스트를 새로 쓸 때까지는 화면과 Music.app 이 어긋난 상태다.
 	m.queuePID = ""
-	return m, cmdWriteQueue(ids, 1, 0)
+	return m, cmdWriteQueue(m.player, ids, 1, 0)
 }
 
 // pickLabel 은 이 재생이 어디서 시작됐는지다. 상태줄과 기록에 남는다.
