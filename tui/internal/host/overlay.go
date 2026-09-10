@@ -138,6 +138,12 @@ func (m Model) runCommand() (tea.Model, tea.Cmd) {
 		if c.Name != name {
 			continue
 		}
+		// 비밀은 명령 줄에 이어 치게 두지 않는다. 자리를 따로 만들어
+		// 가린 채로 받는다. secret.go
+		if c.Secret && arg == "" {
+			(&m).askSecret(c)
+			return m, nil
+		}
 		if c.Arg != "" && arg == "" {
 			m.input.SetValue(c.Name + " ")
 			m.input.CursorEnd()

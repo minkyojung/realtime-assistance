@@ -657,10 +657,14 @@ func TestOffCommandsComeFirst(t *testing.T) {
 	}
 }
 
-// 켜는 명령의 인자 표기는 한 곳에만 산다.
+// 첫 화면이 시키는 것은 **그대로 치면 되는 것**이어야 한다.
 //
-// 팔레트가 `<key>` 라고 적는데 첫 화면이 `<sk-…>` 라고 적으면 같은 것을
-// 두 이름으로 부르게 된다.
+// 손으로 적지 않고 Commands() 에서 끌어온다. 팔레트가 `<key>` 라고 적는데
+// 첫 화면이 `<sk-…>` 라고 적으면 같은 것을 두 이름으로 부르게 된다.
+//
+// 다만 비밀 인자는 이어 치지 않는다 — 호스트가 따로, 가린 채로 묻는다
+// (host/secret.go). 그러니 시키는 말에는 이름만 남아야 한다. 여기에
+// `<key>` 를 적으면 화면에 남기지 말라고 만든 길을 화면이 스스로 권한다.
 func TestFixMatchesTheCommand(t *testing.T) {
 	t.Setenv("OPENAI_API_KEY", "")
 	if secrets.HasOpenAIKey() {
@@ -675,8 +679,11 @@ func TestFixMatchesTheCommand(t *testing.T) {
 	}
 	for _, c := range m.Commands() {
 		if c.Name == "/ai" {
-			if want := c.Name + " " + c.Arg; fix != want {
-				t.Errorf("첫 화면은 %q, 팔레트는 %q", fix, want)
+			if !c.Secret {
+				t.Fatal("/ai 가 비밀 인자로 표시되어 있지 않다 — 키가 화면에 남는다")
+			}
+			if fix != c.Name {
+				t.Errorf("시키는 말이 %q — 그대로 칠 수 있는 것은 %q 뿐이다", fix, c.Name)
 			}
 			return
 		}

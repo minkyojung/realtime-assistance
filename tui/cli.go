@@ -28,7 +28,7 @@ usage: ` + name + ` [--help] [--version]
 
 Nothing to configure to look around. To let it pick for you, add a key:
 
-    /ai <key>       turn on AI with your provider API key
+    /ai             turn on AI — it asks for your provider API key
 
 Inside the app, ? lists every key.
 `

@@ -132,7 +132,10 @@ func fixOf(m Model, name string) string {
 		if c.Name != name {
 			continue
 		}
-		if c.Arg != "" {
+		// 비밀은 이어 치지 않는다. 호스트가 따로 물어본다(host/secret.go).
+		// 여기 `<key>` 를 적으면 화면에 남기지 말라고 만든 길을 화면이
+		// 스스로 권하게 된다.
+		if c.Arg != "" && !c.Secret {
 			return c.Name + " " + c.Arg
 		}
 		return c.Name

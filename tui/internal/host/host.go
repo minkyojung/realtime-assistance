@@ -50,6 +50,9 @@ type Model struct {
 	// 팔레트·도움말에서 고른 줄.
 	pick int
 
+	// 비밀을 받는 중이면 그 명령. 화면에 안 찍고, 엔터에 이것이 답한다. secret.go
+	secret *app.Command
+
 	// 홈에 있는가. 앱을 보고 있지 않다는 뜻이다.
 	//
 	// current 를 지우지 않는 이유는, 그것이 "마지막으로 본 앱"으로 계속
@@ -164,6 +167,9 @@ const (
 // 한 줄 움직이기만 해도 달라진다. 목록 스크롤을 그릴 때 다시 맞추는 것과
 // 같은 이유다 — 상태를 미리 적어 두면 언젠가 갱신을 빠뜨린다.
 func (m Model) placeholder() string {
+	if m.asking() {
+		return m.secretPlaceholder()
+	}
 	if m.mode == modeSearch {
 		// 나가는 길을 여기서 말한다. 들어올 때만 알려주면, 검색을 켜 놓고
 		// 왜 물어봐도 답이 없는지 모르는 자리가 생긴다.
@@ -191,7 +197,7 @@ func (m Model) placeholder() string {
 		if head == "Ask for anything" {
 			head = "AI is off" // 물어봐도 답이 없다. 그 자리에서 거짓말하지 않는다
 		}
-		tail = modeKey() + "  search    /ai <key>  turn AI on"
+		tail = modeKey() + "  search    /ai  turn AI on"
 	}
 	return head + "    " + tail
 }
@@ -229,6 +235,9 @@ func (m Model) inputBox(w int) string {
 	// m 은 값이라 여기서 고쳐도 모델에 남지 않는다. 그릴 때의 커서 자리로
 	// 안내문을 정하는 것이 목적이다 — placeholder 의 주석을 보라.
 	m.input.Placeholder = m.placeholder()
+	if m.asking() {
+		(&m).maskInput()
+	}
 	color := style.ColBrandDeep
 	if m.mode == modeSearch {
 		color = style.ColRule
@@ -340,7 +349,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
 		m.pick = 0
-		if m.mode == modeSearch {
+		if m.mode == modeSearch && !m.asking() {
 			m.apps[m.current] = m.app().Filter(m.input.Value())
 		}
 		return m, cmd
@@ -355,7 +364,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input, cmd = m.input.Update(msg)
 		if m.input.Value() != before {
 			m.pick = 0
-			if m.mode == modeSearch {
+			// 비밀은 검색어가 아니다. 걸러 두면 무엇을 치고 있는지가
+			// 목록의 모양으로 드러난다.
+			if m.mode == modeSearch && !m.asking() {
 				m.apps[m.current] = m.app().Filter(m.input.Value())
 			}
 			return m, cmd
@@ -481,6 +492,12 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (bool, tea.Model, tea.Cmd) {
 		default:
 			return true, m, nil
 		}
+	}
+
+	// 비밀을 받는 중이면 그 자리가 먼저다. 여기서 모드가 바뀌거나 팔레트가
+	// 열리면 반쯤 친 키가 다른 뜻으로 읽힌다. secret.go
+	if m.asking() {
+		return m.handleSecretKey(msg)
 	}
 
 	// 문자열이 아니라 묶음으로 가른다. 같은 값이 도움말도 그린다(keys.go).

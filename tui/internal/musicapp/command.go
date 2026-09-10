@@ -87,7 +87,7 @@ func (m Model) Commands() []app.Command {
 		{Name: "/reload", Help: "read your library from Music.app again",
 			Run: m.reloadCmd},
 		{Name: "/ai", Arg: "<key>", Help: "turn on AI · your provider API key",
-			Run: aiKeyCmd},
+			Run: aiKeyCmd, Secret: true},
 		{Name: "/setup", Arg: "<team ID>", Help: "connect Apple Music · your Apple Developer team ID",
 			Run: m.setupCmd},
 		{Name: "/login", Help: "connect your Apple Music account (opens a browser)",
