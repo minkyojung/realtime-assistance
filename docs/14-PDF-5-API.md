@@ -157,15 +157,15 @@ Error:
 | W2 Recently Added | `GET /tracks?sort=addedAt&order=desc` |
 | W3 Artists · 파고들기 | `GET /artists` · `GET /artists/{id}/tracks` |
 | W4 Queue | `GET /queue` · `POST` `PATCH` `DELETE /queue/items` |
-| **W5 Unplayed** | `GET /tracks?unplayed=true` |
-| W6 Catalog | `GET /catalog/tracks?q=` · `POST /library/tracks` |
+| **W5 Never played** | `GET /tracks?unplayed=true` |
+| W6 Apple Music | `GET /catalog/tracks?q=` · `POST /library/tracks` |
 | W7 팔레트 | 클라이언트가 갖고 있다 (API 없음) |
 | W8 관문 | 모든 응답의 에러 코드 |
 | 대화 띠 | `GET /messages` · `POST /turns` · `GET /turns/{id}` |
 | 상태줄 누적 비용 | `GET /turns/usage` |
 
 **`GET /tracks` 하나가 목록 구역 셋을 담당한다** — Recently Added · Songs ·
-Unplayed 가 정렬과 필터만 다르다. 검색(`shift+tab`)도 같은 엔드포인트에
+Never played 가 정렬과 필터만 다르다. 검색(`shift+tab`)도 같은 엔드포인트에
 `q` 를 붙인다.
 
 ## 5-6. 페이지네이션

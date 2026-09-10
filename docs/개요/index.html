@@ -127,10 +127,10 @@
     <p>실제 라이브러리를 측정한 결과다.</p>
     <div class="stat">
       <div><b>98%</b><span>스트리밍으로 담은 곡</span></div>
-      <div><b class="accent">34.3%</b><span>한 번도 재생하지 않은 곡</span></div>
+      <div><b class="accent">33.7%</b><span>한 번도 재생하지 않은 곡</span></div>
       <div><b>71%</b><span>상위 10%가 차지한 재생</span></div>
     </div>
-    <p class="small">라이브러리에 담긴 166곡 중 57곡이 한 번도 재생되지 않았고, 실제로 듣는 것은 16곡이 전부다.
+    <p class="small">라이브러리에 담긴 166곡 중 56곡이 한 번도 재생되지 않았고, 실제로 듣는 것은 16곡이 전부다.
       <b>담는 일과 고르는 일 사이가 벌어졌다.</b></p>
   </div>
 
@@ -190,10 +190,10 @@
     <tr><th class="n" style="width:10mm">#</th><th>기능</th><th style="width:32mm">화면</th><th class="n" style="width:14mm">가치</th></tr>
     <tr><td class="n">B1</td><td>라이브러리를 둘러본다 — 최근·아티스트·앨범·곡·플레이리스트</td><td>목록</td><td class="n">④</td></tr>
     <tr><td class="n">B2</td><td>제목·아티스트로 즉시 거른다</td><td>목록</td><td class="n">④</td></tr>
-    <tr><td class="n">B3</td><td><b>한 번도 안 튼 곡을 훑는다</b></td><td>Unplayed</td><td class="n">①</td></tr>
-    <tr><td class="n">B4</td><td>그중 하나를 되살린다 — 재생하거나 큐에 넣는다</td><td>Unplayed</td><td class="n">①</td></tr>
-    <tr><td class="n">B5</td><td>카탈로그에서 곡을 찾는다</td><td>Catalog</td><td class="n">③</td></tr>
-    <tr><td class="n">B6</td><td>찾은 곡을 라이브러리에 담는다</td><td>Catalog</td><td class="n">③</td></tr>
+    <tr><td class="n">B3</td><td><b>한 번도 안 튼 곡을 훑는다</b></td><td>Never played</td><td class="n">①</td></tr>
+    <tr><td class="n">B4</td><td>그중 하나를 되살린다 — 재생하거나 큐에 넣는다</td><td>Never played</td><td class="n">①</td></tr>
+    <tr><td class="n">B5</td><td>카탈로그에서 곡을 찾는다</td><td>Apple Music</td><td class="n">③</td></tr>
+    <tr><td class="n">B6</td><td>찾은 곡을 라이브러리에 담는다</td><td>Apple Music</td><td class="n">③</td></tr>
     <tr><td class="n">B7</td><td>라이브러리를 다시 읽는다</td><td>홈 · 상태줄</td><td class="n">④</td></tr>
   </table>
 
@@ -234,7 +234,7 @@
 │                                                │
 │  ② 목록 패널                                    │ ← 여기만 갈아끼워진다
 │     Recent / Artists / Albums / Songs /        │
-│     Playlists / Queue / Unplayed / Catalog     │
+│     Playlists / Queue / Never played / Apple Music     │
 │                                                │
 │ ───────────────────────────────────────────────│
 │  ③ 대화 띠     내 말 · 답 · 곡별 근거 · 비용      │ ← 물어봤을 때만
@@ -274,8 +274,8 @@
     <tr><td>W2</td><td>메인 — Recently Added</td><td>최근 담은 곡</td><td>B1</td></tr>
     <tr><td>W3</td><td>메인 — Artists 파고들기</td><td>아티스트 묶음 → 그 아티스트의 곡</td><td>B1</td></tr>
     <tr><td>W4</td><td>메인 — Queue</td><td>다음에 틀 곡 · <b>선정 근거</b></td><td>A1·A2·A7</td></tr>
-    <tr><td>W5</td><td>메인 — Unplayed</td><td><b>한 번도 안 튼 곡</b></td><td>B3·B4</td></tr>
-    <tr><td>W6</td><td>메인 — Catalog</td><td>카탈로그 검색 · 담기</td><td>B5·B6</td></tr>
+    <tr><td>W5</td><td>메인 — Never played</td><td><b>한 번도 안 튼 곡</b></td><td>B3·B4</td></tr>
+    <tr><td>W6</td><td>메인 — Apple Music</td><td>카탈로그 검색 · 담기</td><td>B5·B6</td></tr>
     <tr><td>W7</td><td>명령 팔레트</td><td>갈 수 있는 곳과 할 수 있는 일 전부</td><td>—</td></tr>
     <tr><td>W8</td><td>관문 · 오류</td><td>막혔을 때 무엇을 하면 되는가</td><td>예외</td></tr>
   </table>
@@ -290,8 +290,8 @@
     <figure><img src="images/w2.png" alt="W2 Recently Added"><figcaption><b>W2. Recently Added</b> — 제목 · 아티스트 · 재생 횟수 · 길이</figcaption></figure>
     <figure><img src="images/w3.png" alt="W3 Artists"><figcaption><b>W3. Artists 파고들기</b> — 묶음에서 <code>enter</code>, <code>esc</code> 로 나온다</figcaption></figure>
     <figure><img src="images/w4.png" alt="W4 Queue"><figcaption><b>W4. Queue</b> — 순번과 곡별 선정 근거</figcaption></figure>
-    <figure><img src="images/w5.png" alt="W5 Unplayed"><figcaption><b>W5. Unplayed</b> — 담긴 뒤 한 번도 재생되지 않은 곡</figcaption></figure>
-    <figure><img src="images/w6.png" alt="W6 Catalog"><figcaption><b>W6. Catalog</b> — 보유 표시 <code>✓</code> · <code>+</code></figcaption></figure>
+    <figure><img src="images/w5.png" alt="W5 Never played"><figcaption><b>W5. Never played</b> — 담긴 뒤 한 번도 재생되지 않은 곡</figcaption></figure>
+    <figure><img src="images/w6.png" alt="W6 Apple Music"><figcaption><b>W6. Apple Music</b> — 보유 표시 <code>✓</code> · <code>+</code></figcaption></figure>
     <figure><img src="images/w7.png" alt="W7 팔레트"><figcaption><b>W7. 명령 팔레트</b> — <code>/</code> 로 펼친다</figcaption></figure>
     <figure><img src="images/w8.png" alt="W8 오류"><figcaption><b>W8. 관문</b> — 권한이 막혔을 때</figcaption></figure>
   </div>
@@ -309,7 +309,7 @@
     <tr><td>목록 — 곡 행</td><td>제목 · 아티스트 · 재생 횟수 · 길이</td></tr>
     <tr><td>목록 — 묶음 행</td><td>아티스트명 / 앨범명 · 곡 수 · 누적 재생 수</td></tr>
     <tr><td>목록 — Queue</td><td>순번 · <b>선정 근거</b> · 넣은 주체 · 항목 상태</td></tr>
-    <tr><td>목록 — Catalog</td><td>제목 · 아티스트 · 보유 표시</td></tr>
+    <tr><td>목록 — Apple Music</td><td>제목 · 아티스트 · 보유 표시</td></tr>
     <tr><td>대화 띠</td><td>내가 한 말 · 답 · 곡별 근거 · 모델 · 소요 시간 · 토큰 · 비용</td></tr>
     <tr><td>입력창</td><td>지금 모드(묻기 / 찾기) · 지금 고른 것으로 할 수 있는 일</td></tr>
     <tr><td>상태줄</td><td>지금 구역 · 항목 수 · 섞기·반복 · 큐 개수 · 누적 토큰 · 비용</td></tr>
@@ -397,9 +397,11 @@
 
   <div class="box">
     <h4>이 서비스의 문제가 데이터에서는 한 컬럼의 NULL 이다</h4>
-    <p style="margin:0"><code>track.last_played_at IS NULL</code> — 담아두고 한 번도 재생하지 않은 곡.
-      <b>Unplayed 화면(W5) 전체가 이 조건 하나이고</b>, 재생 화면(W2)의 <code>never played</code> 도 같은 조건이다.
-      컬럼 하나가 화면 두 곳을 지탱한다.</p>
+    <p style="margin:0"><code>play_count = 0 AND last_played_at IS NULL</code> — 담아두고 한 번도 재생하지 않은 곡.
+      <b>Never played 화면(W5) 전체가 이 조건이고</b>, 재생 화면(W2)의 <code>never played</code> 경고도 같은 조건이다.
+      <b>두 컬럼이 화면 두 곳을 지탱한다.</b></p>
+    <p class="small faint" style="margin:6px 0 0">둘 다 보는 이유 — Music.app 이 재생 횟수와 마지막 재생일을 따로 관리해서,
+      한쪽만 채워진 곡이 실제로 존재한다(실측 1곡). 한쪽만 보면 그 곡을 잘못 센다.</p>
   </div>
 </section>
 

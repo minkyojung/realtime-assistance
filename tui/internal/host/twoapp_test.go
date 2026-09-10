@@ -642,7 +642,7 @@ func TestSlashLeavesHome(t *testing.T) {
 	if strings.Contains(out, "browse your library") {
 		t.Error("`/` 를 쳤는데 홈에 그대로 있다")
 	}
-	if !strings.Contains(out, "Ask AI  /") {
+	if !strings.Contains(out, "Agent   /") {
 		t.Error("입력창에 `/` 가 안 들어갔다 — 팔레트가 안 뜬다")
 	}
 }

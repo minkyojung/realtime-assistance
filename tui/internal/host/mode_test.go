@@ -43,16 +43,18 @@ func TestPromptSaysMode(t *testing.T) {
 	var m tea.Model = &hm
 	m, _ = m.Update(tea.WindowSizeMsg{Width: 96, Height: 32})
 
-	if out := m.View().Content; !strings.Contains(out, "Ask AI") {
-		t.Error("입력창 앞에 Ask AI 가 없다")
+	if out := m.View().Content; !strings.Contains(out, promptAsk) {
+		t.Error("입력창 앞에 Agent 가 없다")
 	}
 	m, _ = m.Update(shiftTab)
 	out := m.View().Content
 	if !strings.Contains(out, "Search") {
 		t.Error("검색 모드인데 입력창 앞이 Search 가 아니다")
 	}
-	if strings.Contains(out, "Ask AI") {
-		t.Error("검색 모드인데 Ask AI 가 남아 있다")
+	// 안내문의 "back to Agent" 는 나가는 길이라 남아 있어도 된다. 남으면
+	// 안 되는 것은 커서 앞의 프롬프트다.
+	if strings.Contains(out, promptAsk) {
+		t.Error("검색 모드인데 입력창 앞에 Agent 가 남아 있다")
 	}
 }
 

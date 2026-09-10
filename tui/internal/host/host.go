@@ -19,9 +19,9 @@ import (
 
 // 입력창은 하나지만 하는 일이 둘이다. 무엇을 하는 중인지 화면이 말해야 한다.
 //
-//	기본       Ask AI — 자연어 요청. 목록을 건드리지 않는다
+//	기본       Agent — 자연어 요청. 목록을 건드리지 않는다
 //	ctrl+f     Search — 지금 보고 있는 것을 즉시 거른다. 같은 키로 돌아온다
-//	/          Ask AI 에 `/` 로 시작하면 명령 — 로컬에서 바로 실행
+//	/          Agent 에 `/` 로 시작하면 명령 — 로컬에서 바로 실행
 //
 // 모드는 화면을 바꾸지 않고 "친 글자의 뜻"을 바꾼다. 그래서 안 보이면
 // 알아낼 방법이 없다. **입력창 자신이 말한다** — 커서 바로 앞의 글자와
@@ -151,10 +151,10 @@ func (m Model) pickCount() int {
 
 func (m Model) picking() bool { return m.pickCount() > 0 }
 
-// 두 프롬프트는 폭이 같다(6글자 + 공백 둘). 모드를 바꿔도 글자가 시작하는
+// 두 프롬프트는 폭이 같다(여덟 칸). 모드를 바꿔도 글자가 시작하는
 // 칸이 그대로여서 화면이 흔들리지 않는다.
 const (
-	promptAsk    = "Ask AI  "
+	promptAsk    = "Agent   "
 	promptSearch = "Search  "
 )
 
@@ -167,7 +167,7 @@ func (m Model) placeholder() string {
 	if m.mode == modeSearch {
 		// 나가는 길을 여기서 말한다. 들어올 때만 알려주면, 검색을 켜 놓고
 		// 왜 물어봐도 답이 없는지 모르는 자리가 생긴다.
-		return "Filter what you are looking at    " + modeKey() + "  back to Ask"
+		return "Filter what you are looking at    " + modeKey() + "  back to Agent"
 	}
 	// 왼쪽은 **지금 이 줄에서만 참인 것**, 오른쪽은 언제나 참인 길이다.
 	//
@@ -205,7 +205,7 @@ func modeKey() string { return keys.Mode.Help().Key }
 
 func (m *Model) applyMode() {
 	styles := m.input.Styles()
-	color := style.ColBrand // 프라이머리는 Ask AI 의 것이다
+	color := style.ColBrand // 프라이머리는 Agent 의 것이다
 	if m.mode == modeSearch {
 		m.input.Prompt = promptSearch
 		color = style.ColDim
