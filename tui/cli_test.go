@@ -34,7 +34,7 @@ func TestVersionPrintsAndDoesNotStart(t *testing.T) {
 		if start || code != 0 {
 			t.Errorf("%s 가 앱을 켜거나 오류로 끝났다", a)
 		}
-		if !strings.HasPrefix(b.String(), "amcli ") {
+		if !strings.HasPrefix(b.String(), name+" ") {
 			t.Errorf("%s 의 답이 이름으로 시작하지 않는다: %q", a, b.String())
 		}
 	}
