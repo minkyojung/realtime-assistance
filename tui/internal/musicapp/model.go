@@ -344,12 +344,22 @@ func (m Model) Update(msg tea.Msg) (app.App, tea.Cmd) {
 			note = msg.res.Title
 		}
 		say := tea.Batch(cmd, app.SayWith(m.Name(), note, queueDetail(msg.res)))
-		// 버린 곡은 조용히 사라지면 안 된다. 화면에는 안 나오는데 모델의
+		// 빠진 곡은 조용히 사라지면 안 된다. 화면에는 안 나오는데 모델의
 		// 근거에는 나오므로, 말해주지 않으면 무엇이 빠졌는지 알 길이 없다.
+		//
+		// **둘을 나눠 말한다.** 담지 못한 것과 담겼는데 아직 안 온 것은
+		// 사용자가 할 일이 다르다 — 하나는 다시 시켜야 하고 하나는
+		// 기다리면 온다.
 		if msg.dropped > 0 {
 			say = tea.Batch(say, app.Say(m.Name(), fmt.Sprintf(
 				"%s could not be added, so %s left out",
 				plural(msg.dropped, "track"), wasWere(msg.dropped))))
+		}
+		if msg.syncing > 0 {
+			say = tea.Batch(say, app.Say(m.Name(), fmt.Sprintf(
+				"Added %s to your library — Music has not synced %s yet, so %s not in this queue. "+
+					"If %s do not show up, check that Sync Library is on",
+				plural(msg.syncing, "track"), them(msg.syncing), theyAre(msg.syncing), they(msg.syncing))))
 		}
 		return mm.(Model).remember(note), say
 

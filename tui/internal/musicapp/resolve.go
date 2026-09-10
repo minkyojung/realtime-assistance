@@ -82,7 +82,9 @@ func cmdResolvePicks(ctx context.Context, cat *applemusic.Client, msg queueMsg) 
 		_ = data.SaveCache(lib) // 실패해도 다음 시작이 조금 느릴 뿐이다
 
 		out.lib = lib
-		out.res.Picks, out.dropped = attachAdded(msg.res.Picks, msg.extras, newTracks(lib, arrived), durMs)
+		// 여기서 못 붙인 것은 담기에 실패한 것이 아니다. 담겼고, Music.app
+		// 이 아직 안 받아왔을 뿐이다. 애플의 동기화 시간은 우리가 못 정한다.
+		out.res.Picks, out.syncing = attachAdded(msg.res.Picks, msg.extras, newTracks(lib, arrived), durMs)
 		return out
 	}
 }
@@ -237,4 +239,27 @@ func wasWere(n int) string {
 		return "it was"
 	}
 	return "they were"
+}
+
+// 같은 이유로 대명사도 수에 맞춘다. 한 곡인데 "them" 이라고 하면
+// 사용자가 몇 곡이 빠졌는지 다시 세어 보게 된다.
+func them(n int) string {
+	if n == 1 {
+		return "it"
+	}
+	return "them"
+}
+
+func they(n int) string {
+	if n == 1 {
+		return "it"
+	}
+	return "they"
+}
+
+func theyAre(n int) string {
+	if n == 1 {
+		return "it is"
+	}
+	return "they are"
 }
