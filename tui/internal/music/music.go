@@ -264,7 +264,40 @@ func runArgs(script string, args ...string) (string, error) {
 	return s, nil
 }
 
+// LibraryIDs 는 라이브러리에 있는 모든 곡의 persistent ID 를 돌려준다.
+//
+// 이름을 안 받고 이름을 안 준다. 이 함수가 답하는 질문은 "무엇이 있나"가
+// 아니라 **"무엇이 늘었나"**이고, 그 답에 이름은 필요 없다 — 오히려 해롭다.
+//
+// 이벤트 한 번이다. 곡마다 물으면 곡 수만큼 늘어난다(dump.js 머리말).
+func LibraryIDs() (map[string]bool, error) {
+	if !Running() {
+		return nil, ErrNotRunning
+	}
+	out, err := run(`tell application "Music"
+	set text item delimiters to ","
+	return (persistent ID of every track of library playlist 1) as text
+end tell`)
+	if err != nil {
+		return nil, err
+	}
+	ids := make(map[string]bool, 256)
+	for _, id := range strings.Split(out, ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			ids[id] = true
+		}
+	}
+	return ids, nil
+}
+
 // PlayByTitleArtist 는 방금 담긴 곡을 이름으로 찾아 튼다.
+//
+// **더 이상 쓰지 않는다.** 담긴 곡을 찾는 일은 LibraryIDs 의 차이가 한다.
+// 왜 이름이 안 되는지는 실측이 말한다 — 카탈로그(kr)가 "로제"라고 준 곡을
+// Music.app 은 "ROSÉ" 로 적었고, 제목도 "Messy (From F1(R) The Movie)" 와
+// "Messy" 로 갈렸다. 그때 이 경로는 담기까지 해놓고 "안 나타났다"고 말했다.
+//
+// 남겨 두는 이유는 이 주석 때문이다. 지우면 다음 사람이 같은 길을 다시 판다.
 //
 // Music.app 은 Apple Music 카탈로그 id 를 AppleScript 로 내주지 않는다.
 // persistent ID 는 곡이 라이브러리에 나타난 뒤에야 생기므로, 담자마자

@@ -40,9 +40,13 @@ var (
 
 // addJob — 카탈로그 곡 하나를 담고, 나타나면 트는 일.
 // Music.app 동기화는 우리가 제어할 수 없으므로 시도 횟수를 들고 있는다.
+//
+// before 는 담기 **직전**의 라이브러리다. 나타난 곡을 이름이 아니라
+// 이 집합과의 차이로 찾는다 — 왜인지는 addedSince 머리말.
 type addJob struct {
 	track   api.CatalogTrack
 	attempt int
+	before  map[string]bool
 }
 
 type (
@@ -65,8 +69,9 @@ type (
 		marked bool
 	}
 	catalogAddedMsg struct {
-		track api.CatalogTrack
-		err   error
+		track  api.CatalogTrack
+		before map[string]bool
+		err    error
 	}
 	catalogTryPlayMsg struct {
 		track   api.CatalogTrack
@@ -125,13 +130,40 @@ func cmdStorefront(c *applemusic.Client) tea.Cmd {
 	}
 }
 
+// cmdAddToLibrary — 담는다. 담기 **전에** 라이브러리를 찍어 둔다.
+//
+// 찍는 것이 담는 것보다 먼저여야 한다. 뒤에 찍으면 방금 담긴 곡이 이미
+// 들어 있어서 차이가 비고, 그러면 영원히 못 찾는다.
 func cmdAddToLibrary(c *applemusic.Client, ct api.CatalogTrack) tea.Cmd {
 	return func() tea.Msg {
+		before, err := music.LibraryIDs()
+		if err != nil {
+			// 못 찍어도 담기는 한다. 그때는 차이를 못 보므로 나타났는지만
+			// 알 수 없을 뿐이고, 담긴 것은 사실이다.
+			before = nil
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), catalogTimeout)
 		defer cancel()
-		err := c.AddToLibrary(ctx, []string{ct.AppleMusicId})
-		return catalogAddedMsg{track: ct, err: err}
+		err = c.AddToLibrary(ctx, []string{ct.AppleMusicId})
+		return catalogAddedMsg{track: ct, before: before, err: err}
 	}
+}
+
+// addedSince — before 에 없던 persistent ID 하나. 없으면 빈 문자열.
+//
+// 이름으로 찾지 않는 이유는 실측이 말한다. 카탈로그(kr 스토어프론트)가
+// "로제"라고 준 곡을 Music.app 은 "ROSÉ" 로 적었고, 제목도
+// "Messy (From F1(R) The Movie)" 와 "Messy" 로 갈렸다. 그때 옛 경로는
+// 담기까지 해놓고 "안 나타났다"고 말했다 — 담긴 것은 사실인데.
+//
+// 번호는 어긋나지 않는다. 늘어난 번호가 곧 방금 담긴 곡이다.
+func addedSince(before, now map[string]bool) string {
+	for id := range now {
+		if !before[id] {
+			return id
+		}
+	}
+	return ""
 }
 
 // cmdCatalogLogin — 브라우저를 열고 최대 3분을 기다린다.
@@ -341,6 +373,9 @@ func (m Model) applyCatalog(msg tea.Msg) (app.App, tea.Cmd, bool) {
 			m.adding = nil
 			return m, app.SayErr(m.Name(), catalogError(msg.err)), true
 		}
+		if m.adding != nil && m.adding.track.AppleMusicId == msg.track.AppleMusicId {
+			m.adding.before = msg.before
+		}
 		m.catHits = setInLibrary(m.catHits, msg.track.AppleMusicId)
 		return m, tea.Tick(addPlayInterval, func(time.Time) tea.Msg {
 			return catalogTryPlayMsg{track: msg.track, attempt: 1}
@@ -361,7 +396,7 @@ func (m Model) tryPlayAdded(msg catalogTryPlayMsg) (app.App, tea.Cmd, bool) {
 		return m, nil, true // 그새 다른 것을 담기 시작했다
 	}
 
-	err := music.PlayByTitleArtist(msg.track.Title, msg.track.ArtistName)
+	err := m.playAdded()
 	if err == nil {
 		m.adding = nil
 		// 라이브러리를 다시 읽는다. 담긴 곡이 우리 스냅샷에는 아직 없어서,
@@ -390,3 +425,25 @@ func (m Model) tryPlayAdded(msg catalogTryPlayMsg) (app.App, tea.Cmd, bool) {
 		return catalogTryPlayMsg{track: msg.track, attempt: next}
 	}), true
 }
+
+// playAdded — 늘어난 곡을 찾아 튼다. 아직 안 왔으면 오류다(재시도가 받는다).
+//
+// before 를 못 찍었으면 옛 길로 간다. 이름으로 찾는 것이 틀릴 수 있어도,
+// 아무것도 안 하는 것보다는 낫다.
+func (m Model) playAdded() error {
+	if m.adding == nil || m.adding.before == nil {
+		return music.PlayByTitleArtist(m.adding.track.Title, m.adding.track.ArtistName)
+	}
+	now, err := music.LibraryIDs()
+	if err != nil {
+		return err
+	}
+	pid := addedSince(m.adding.before, now)
+	if pid == "" {
+		return errNotShownUp
+	}
+	return music.PlayPersistentID(pid)
+}
+
+// errNotShownUp — 아직 동기화가 안 끝났다. 실패가 아니라 기다림이다.
+var errNotShownUp = errors.New("not in Music yet")

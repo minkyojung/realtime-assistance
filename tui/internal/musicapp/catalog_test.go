@@ -596,3 +596,35 @@ func factOf(t *testing.T, m Model, name string) string {
 	t.Fatalf("%q 줄이 없다", name)
 	return ""
 }
+
+// 담긴 곡을 이름으로 찾으면 틀린다. 실측에서 카탈로그(kr)가 "로제"라고 준
+// 곡을 Music.app 은 "ROSÉ" 로 적었고, 제목도 갈렸다. 그때 옛 경로는
+// 담기까지 해놓고 "안 나타났다"고 말했다.
+//
+// 번호는 어긋나지 않는다.
+func TestAddedSinceFindsTheNewTrackWithoutNames(t *testing.T) {
+	before := map[string]bool{"AAA": true, "BBB": true}
+	now := map[string]bool{"AAA": true, "BBB": true, "CCC": true}
+
+	if got := addedSince(before, now); got != "CCC" {
+		t.Errorf("addedSince = %q, want CCC", got)
+	}
+}
+
+// 아직 안 왔으면 빈 값이다. 그것이 "기다려라"라는 뜻이고,
+// 없는 곡을 아무거나 골라 트는 것보다 낫다.
+func TestAddedSinceSaysNothingWhenNothingArrived(t *testing.T) {
+	same := map[string]bool{"AAA": true}
+	if got := addedSince(same, same); got != "" {
+		t.Errorf("addedSince = %q, want empty", got)
+	}
+}
+
+// 담기 **전에** 찍어야 한다. 뒤에 찍으면 차이가 비어 영원히 못 찾는다.
+func TestAddedSinceIsEmptyIfTheSnapshotWasTakenTooLate(t *testing.T) {
+	tooLate := map[string]bool{"AAA": true, "CCC": true}
+	now := map[string]bool{"AAA": true, "CCC": true}
+	if got := addedSince(tooLate, now); got != "" {
+		t.Errorf("addedSince = %q — 늦게 찍은 스냅샷이 곡을 찾아냈다면 그게 더 이상하다", got)
+	}
+}
