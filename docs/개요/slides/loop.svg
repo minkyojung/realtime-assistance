@@ -24,10 +24,11 @@
   <line x1="122" y1="440" x2="458" y2="440" stroke="#2e2e36" stroke-width="1.5"/>
   <text x="122" y="482" font-size="19" fill="#6b6b76" letter-spacing="1">저장</text>
   <text x="178" y="482" font-size="21" font-weight="700" fill="#ff5a75" font-family="SF Mono, Menlo, monospace">turn</text>
-  <text x="122" y="530" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">prompt</text>
-  <text x="122" y="566" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">model · elapsed_ms</text>
-  <text x="122" y="602" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">tokens · cost_usd</text>
-  <text x="122" y="672" font-size="19" fill="#6b6b76">무슨 말을 했나 · 얼마 썼나</text>
+  <text x="122" y="530" font-size="20" fill="#e8e8ea" font-family="SF Mono, Menlo, monospace" font-weight="700">prompt</text>
+  <text x="122" y="562" font-size="19" fill="#6b6b76">└ 사람이 친 문장 그대로</text>
+  <text x="122" y="600" font-size="20" fill="#e8e8ea" font-family="SF Mono, Menlo, monospace" font-weight="700">context = focus</text>
+  <text x="122" y="632" font-size="19" fill="#6b6b76">└ 모델이 고른 자리</text>
+  <text x="122" y="682" font-size="19" fill="#ff5a75">원문이 남으니 다시 나눌 수 있다</text>
 
   <line x1="500" y1="495" x2="527" y2="495" stroke="#ff5a75" stroke-width="2.5" marker-end="url(#a)"/>
 
@@ -61,7 +62,7 @@
   <text x="1016" y="548" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">played_ms = 12000</text>
   <text x="1016" y="580" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">dur_ms    = 215000</text>
   <text x="1016" y="612" font-size="20" fill="#e8e8ea" font-family="SF Mono, Menlo, monospace" font-weight="700">ended_by  = skipped</text>
-  <text x="1016" y="644" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">context   = 공부용</text>
+  <text x="1016" y="644" font-size="20" fill="#ff5a75" font-family="SF Mono, Menlo, monospace" font-weight="700">turn_id   → ①</text>
   <text x="1016" y="694" font-size="19" fill="#6b6b76">✕  “락을 싫어함” 은 적지 않는다</text>
 
   <line x1="1394" y1="495" x2="1421" y2="495" stroke="#ff5a75" stroke-width="2.5" marker-end="url(#a)"/>
@@ -74,12 +75,14 @@
   <text x="1463" y="400" font-size="23" fill="#c9c9cf">쌓인 사실을 그 자리에서</text>
   <text x="1463" y="430" font-size="23" fill="#c9c9cf">집계해 후보에 붙인다</text>
   <line x1="1463" y1="462" x2="1799" y2="462" stroke="#2e2e36" stroke-width="1.5"/>
-  <text x="1463" y="504" font-size="19" fill="#6b6b76" letter-spacing="1">읽기</text>
-  <text x="1519" y="504" font-size="21" font-weight="700" fill="#ff5a75" font-family="SF Mono, Menlo, monospace">play 집계</text>
-  <text x="1463" y="552" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">2 dropped early</text>
-  <text x="1463" y="588" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">1 removed</text>
-  <text x="1463" y="636" font-size="19" fill="#ff5a75">판단은 여기서 한다 —</text>
-  <text x="1463" y="664" font-size="19" fill="#ff5a75">저장할 때가 아니라</text>
+
+  <text x="1463" y="502" font-size="18" fill="#5cc98a" letter-spacing="1">● 지금 되는 것 — 곡 단위</text>
+  <text x="1463" y="540" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">2 dropped early</text>
+  <text x="1463" y="572" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">1 removed</text>
+
+  <text x="1463" y="622" font-size="18" fill="#6b6b76" letter-spacing="1">○ 다음 단계 — 맥락 단위</text>
+  <text x="1463" y="658" font-size="20" fill="#55555e" font-family="SF Mono, Menlo, monospace">focus × Rock</text>
+  <text x="1463" y="686" font-size="18" fill="#55555e">표본이 쌓이면 켠다</text>
 
   <!-- 되돌아오는 화살표 -->
   <path d="M1631,752 L1631,828 L737,828 L737,752" fill="none" stroke="#6b6b76" stroke-width="2.5" stroke-dasharray="8 7" marker-end="url(#af)"/>
@@ -90,4 +93,5 @@
   <line x1="90" y1="920" x2="1830" y2="920" stroke="#2e2e36" stroke-width="2"/>
   <text x="90" y="990" font-size="34" font-weight="700" fill="#e8e8ea" letter-spacing="-0.8">무엇이 일어났는지를 적고, 무엇을 뜻하는지는 매번 다시 계산한다</text>
   <text x="90" y="1032" font-size="21" fill="#6b6b76">“일찍 나감”의 기준은 지금 절반이다. 그 기준이 바뀌면 지난 기록 전부가 새 기준으로 다시 읽힌다</text>
+  <text x="1830" y="1032" font-size="20" fill="#55555e" text-anchor="end">● 구현됨   ○ 다음 단계</text>
 </svg>
