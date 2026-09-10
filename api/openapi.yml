@@ -36,12 +36,12 @@ info:
     | S2·S3 지금 재생 | `GET /playback` · `GET /playback/lyrics` |
     | S4 목록 — Recently Added | `GET /tracks?sort=addedAt` |
     | S4 목록 — Songs | `GET /tracks?sort=title` |
-    | S4 목록 — Unplayed | `GET /tracks?unplayed=true` |
+    | S4 목록 — Never played | `GET /tracks?unplayed=true` |
     | S5 목록 — Artists · Albums | `GET /artists` · `GET /albums` |
     | S5 파고들기 | `GET /artists/{id}/tracks` · `GET /albums/{id}/tracks` |
     | S6 플레이리스트 | `GET /playlists` · `GET /playlists/{id}/tracks` |
     | S6 Queue | `GET /queue` · `POST /queue/items` · `PATCH`·`DELETE /queue/items/{id}` |
-    | S6 Catalog | `GET /catalog/tracks?q=` · `POST /library/tracks` |
+    | S6 Apple Music | `GET /catalog/tracks?q=` · `POST /library/tracks` |
     | S7 로그 띠 | `GET /messages` · `POST /turns` · `GET /turns/{id}` |
     | S8 입력창 — Search | `GET /tracks?q=` |
     | S8 입력창 — 취소(esc) | `POST /turns/{id}/cancel` |
@@ -80,7 +80,7 @@ tags:
   - name: library
     description: Music.app 스냅샷 — 곡 · 아티스트 · 앨범 · 플레이리스트 (S4·S5·S6)
   - name: catalog
-    description: Apple Music 카탈로그 검색과 담기 (S6 Catalog)
+    description: Apple Music 카탈로그 검색과 담기 (S6 Apple Music)
   - name: playback
     description: 지금 재생 중인 것과 그 제어 (S2·S3)
   - name: queue
@@ -192,7 +192,7 @@ paths:
         |---|---|
         | Recently Added | `?sort=addedAt&order=desc` |
         | Songs | `?sort=title` |
-        | Unplayed | `?unplayed=true` |
+        | Never played | `?unplayed=true` |
         | 검색(ctrl+f) | `?q=<검색어>` |
 
         `inLibrary=false` 인 곡은 기본으로 빠진다 — 플레이리스트에만
@@ -202,7 +202,7 @@ paths:
         - $ref: '#/components/parameters/Query'
         - name: unplayed
           in: query
-          description: '`true` 면 한 번도 재생하지 않은 곡만 (`lastPlayedAt` 이 null)'
+          description: '`true` 면 한 번도 재생하지 않은 곡만 — `playCount` 가 0 이고 `lastPlayedAt` 이 null'
           schema: { type: boolean, default: false }
         - name: sort
           in: query
@@ -374,7 +374,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   # ===================================================================
-  #  catalog — S6 Catalog 구역
+  #  catalog — S6 Apple Music 구역
   # ===================================================================
   /catalog/tracks:
     get:

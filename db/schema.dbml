@@ -55,13 +55,13 @@ Table track {
   duration_ms     integer      [not null, note: 'S2·S4 길이']
   play_count      integer      [not null, default: 0, note: 'S2·S4 재생 횟수']
   added_at        timestamp    [null, note: 'S2 추가일. in_library=false 면 담은 적이 없으므로 null']
-  last_played_at  timestamp    [null, note: '★ null = 담아두고 한 번도 재생하지 않은 곡. Unplayed 구역과 never played 경고가 이 한 컬럼에 걸려 있다']
+  last_played_at  timestamp    [null, note: '★ play_count = 0 과 함께 보면 담아두고 한 번도 재생하지 않은 곡이다. Never played 구역과 never played 경고가 그 조건에 걸려 있다']
   in_library      boolean      [not null, default: true, note: '플레이리스트에만 담고 라이브러리에는 없는 곡이 실제로 존재한다. false 면 Songs·Artists·Albums 목록에 나오지 않는다']
-  apple_music_id  varchar(32)  [null, note: 'Catalog 검색 결과의 보유 표시(✓/+)를 이 값으로 대조한다']
+  apple_music_id  varchar(32)  [null, note: 'Apple Music 검색 결과의 보유 표시(✓/+)를 이 값으로 대조한다']
   synced_at       timestamp    [not null, note: 'Music.app 에서 마지막으로 읽어온 시각']
 
   Indexes {
-    last_played_at [note: 'Unplayed 구역이 매번 훑는다']
+    last_played_at [note: 'Never played 구역이 매번 훑는다']
     added_at       [note: 'Recently Added 정렬']
     apple_music_id
   }
@@ -220,7 +220,7 @@ Table play {
 
 Table setting {
   id                integer   [pk, note: '항상 1. 이 기기의 설정은 하나뿐이다']
-  apple_team_id     varchar(16) [null, note: 'S1·S11 — 없으면 Catalog 구역 자체가 없다']
+  apple_team_id     varchar(16) [null, note: 'S1·S11 — 없으면 Apple Music 구역 자체가 없다']
   apple_user_token  text      [null, note: 'S1 — 없으면 "catalog search · /login to add"']
   ai_provider       varchar(32) [null, note: 'S1 — 없으면 "off · /ai <key>". 키 자체는 macOS 키체인에 있고 DB 에 두지 않는다']
   updated_at        timestamp [not null]

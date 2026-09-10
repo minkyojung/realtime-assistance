@@ -71,10 +71,20 @@ var schema = map[string]any{
 			"maxLength":   60,
 			"description": "Short label for this queue, in the user's language.",
 		},
+		// maxLength 는 **안전망이지 가위가 아니다.**
+		//
+		// 한때 120 이었다. 모델이 그 길이를 목표로 삼지 않으니 딱 걸리는 일이
+		// 생겼고, 걸리면 문장이 말 끝에서 잘렸다 — "…with no skip history so".
+		// 잘린 문장은 틀린 문장보다 나쁘다. 무슨 말을 하려던 건지 모르는 채로
+		// 화면에 남는다.
+		//
+		// 그래서 짧게 쓰라는 말은 설명에 두고, 상한은 문장이 끝날 자리를 남겨
+		// 둔다. 화면은 어차피 접어서 그린다(style.Wrap).
 		"note": map[string]any{
-			"type":        "string",
-			"maxLength":   120,
-			"description": "One sentence to the user about the queue as a whole.",
+			"type":      "string",
+			"maxLength": 200,
+			"description": "One short sentence to the user about the queue as a whole. " +
+				"Aim for under 100 characters and finish the sentence.",
 		},
 		"picks": map[string]any{
 			"type":     "array",
