@@ -28,9 +28,9 @@ type queueMsg struct {
 	res intent.Result
 	err error
 
-	// extras 는 이번 선곡에 후보로 준 라이브러리 밖 곡들이다.
+	// extras 는 이번 선곡에 후보로 준 애플 뮤직 검색 결과다.
 	// 고른 것을 담고 나서 어느 곡이 어느 픽인지 짝지을 때 쓴다.
-	extras []api.CatalogTrack
+	extras []intent.Extra
 
 	// resolved 는 라이브러리 밖의 픽을 이미 처리했다는 뜻이다.
 	// 이 표시가 없으면 큐를 앉히기 전에 담는 단계를 한 번 거친다.
@@ -67,7 +67,7 @@ const askTimeout = 90 * time.Second
 // 사라져서, 도는 동안 끊을 방법이 없다.
 func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Track, cat *applemusic.Client, terms []string, cur intent.Current) tea.Cmd {
 	return func() tea.Msg {
-		extras := catalogCandidates(ctx, cat, terms)
+		extras := catalogCandidates(ctx, cat, terms, library)
 		res, err := intent.Build(ctx, prompt, library, extras, reactions(), cur, time.Now())
 		return queueMsg{seq: seq, res: res, err: err, extras: extras}
 	}
@@ -85,13 +85,23 @@ const (
 
 // catalogCandidates 는 검색어들을 곡 후보로 바꾼다.
 //
-// 이미 라이브러리에 있는 곡은 뺀다. 라이브러리 표에 이미 있는 곡이
-// 카탈로그 표에도 나오면, 모델이 **가진 곡을 밖에서 다시 사 온다.**
-// 그 판정은 Apple 이 한다(MarkInLibrary) — 이름으로 짐작하지 않는다.
+// 이미 라이브러리에 있는 곡도 **버리지 않고 표시해서** 준다.
+//
+// 한때 버렸다. 가진 곡이 카탈로그 표에 또 나오면 모델이 그것을 밖에서
+// 다시 사 오기 때문이다. 그런데 버리면 더 나쁜 일이 생긴다 — Music.app
+// 이 시스템 언어에 맞춰 이름을 현지화하므로, "야생화" 를 찾는 사람에게
+// 라이브러리 표는 "Wild Flower" 라고 적혀 있다. 검색이 그 곡을 찾아
+// 놓고도 버리면, 가진 곡을 못 찾은 채로 끝난다.
+//
+// 그래서 라이브러리 곡 번호를 붙여서 넘긴다. 모델이 그것을 고르면
+// 담기도 동기화도 없이 바로 튼다.
+//
+// 짝짓기는 **길이**로 한다. 이름으로 하면 방금 말한 그 현지화에 또
+// 걸린다(resolve.go 의 attachAdded 와 같은 이유다).
 //
 // 못 뒤져도 조용히 빈 손으로 돌아온다. 카탈로그가 꺼져 있거나 로그인
 // 전이면 지금까지처럼 라이브러리 안에서만 고르면 되고, 그것도 정상이다.
-func catalogCandidates(ctx context.Context, cat *applemusic.Client, terms []string) []api.CatalogTrack {
+func catalogCandidates(ctx context.Context, cat *applemusic.Client, terms []string, library []api.Track) []intent.Extra {
 	if cat == nil || len(terms) == 0 {
 		return nil
 	}
@@ -122,17 +132,55 @@ func catalogCandidates(ctx context.Context, cat *applemusic.Client, terms []stri
 		// 아무 후보도 없는 것보다 나쁘다.
 		return nil
 	}
-	out := make([]api.CatalogTrack, 0, maxCandidates)
+	// 가진 곡을 라이브러리 표의 어느 줄인지 잇는다. 길이를 못 받으면
+	// 이을 수가 없으므로, 그때는 예전처럼 가진 곡을 빼는 쪽이 안전하다 —
+	// 표시 없이 남기면 가진 곡을 밖에서 다시 사 온다.
+	durMs, _ := cat.Durations(ctx, idsOf(marked))
+
+	out := make([]intent.Extra, 0, maxCandidates)
+	used := map[int64]bool{}
 	for _, t := range marked {
-		if t.InLibrary == nil || *t.InLibrary {
-			continue // 이미 가진 곡이거나, 가졌는지 모르는 곡
+		if t.InLibrary == nil {
+			continue // 가졌는지 모르는 곡. 판정 없이 쓰지 않는다
 		}
-		out = append(out, t)
+		e := intent.Extra{Track: t}
+		if *t.InLibrary {
+			e.TrackID = matchLibrary(library, used, durMs[t.AppleMusicId])
+			if e.TrackID == 0 {
+				continue // 어느 곡인지 못 이었다. 밖의 곡으로 내놓으면 또 산다
+			}
+			used[e.TrackID] = true
+		}
+		out = append(out, e)
 		if len(out) == maxCandidates {
 			break
 		}
 	}
 	return out
+}
+
+func idsOf(ts []api.CatalogTrack) []string {
+	out := make([]string, 0, len(ts))
+	for _, t := range ts {
+		if t.AppleMusicId != "" {
+			out = append(out, t.AppleMusicId)
+		}
+	}
+	return out
+}
+
+// matchLibrary 는 라이브러리에서 이 길이의 곡을 찾는다.
+// 길이를 모르면 짐작하지 않는다 — 틀린 곡을 트는 것이 못 트는 것보다 나쁘다.
+func matchLibrary(library []api.Track, used map[int64]bool, wantMs int) int64 {
+	if wantMs <= 0 {
+		return 0
+	}
+	for _, t := range library {
+		if !used[t.Id] && abs(t.DurationMs-wantMs) <= durationSlack {
+			return t.Id
+		}
+	}
+	return 0
 }
 
 // cmdAddTracks — 같은 선곡을 돌리되 결과를 큐에 **붙인다.**
@@ -141,7 +189,7 @@ func catalogCandidates(ctx context.Context, cat *applemusic.Client, terms []stri
 // 하나를 고칠 때마다 다른 하나가 뒤처진다.
 func cmdAddTracks(ctx context.Context, seq int, prompt string, library []api.Track, cat *applemusic.Client, terms []string, cur intent.Current, atEnd bool) tea.Cmd {
 	return func() tea.Msg {
-		extras := catalogCandidates(ctx, cat, terms)
+		extras := catalogCandidates(ctx, cat, terms, library)
 		res, err := intent.Build(ctx, prompt, library, extras, reactions(), cur, time.Now())
 		return queueMsg{seq: seq, res: res, err: err, extras: extras, add: true, atEnd: atEnd}
 	}

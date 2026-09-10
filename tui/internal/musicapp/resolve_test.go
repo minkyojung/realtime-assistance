@@ -27,8 +27,8 @@ func TestAttachAddedIgnoresLocalisedArtistNames(t *testing.T) {
 		{TrackID: 7, Reason: "이미 가진 곡"},
 		{CatalogID: "c1", Reason: "밖에서 온 곡"},
 	}
-	extras := []api.CatalogTrack{
-		{AppleMusicId: "c1", Title: "Messy (From F1 The Movie)", ArtistName: "로제"},
+	extras := []intent.Extra{
+		{Track: api.CatalogTrack{AppleMusicId: "c1", Title: "Messy (From F1 The Movie)", ArtistName: "로제"}},
 	}
 	got, dropped := attachAdded(picks, extras, []api.Track{added(99, "Messy (From F1 The Movie)")}, nil)
 
@@ -50,9 +50,9 @@ func TestAttachAddedCountsWhatItDropped(t *testing.T) {
 		{CatalogID: "c1"},
 		{CatalogID: "c2"},
 	}
-	extras := []api.CatalogTrack{
-		{AppleMusicId: "c1", Title: "arrived"},
-		{AppleMusicId: "c2", Title: "never showed up"},
+	extras := []intent.Extra{
+		{Track: api.CatalogTrack{AppleMusicId: "c1", Title: "arrived"}},
+		{Track: api.CatalogTrack{AppleMusicId: "c2", Title: "never showed up"}},
 	}
 	got, dropped := attachAdded(picks, extras, []api.Track{added(1, "arrived")}, nil)
 
@@ -68,9 +68,9 @@ func TestAttachAddedCountsWhatItDropped(t *testing.T) {
 // 큐에 같은 곡이 두 번 들어가고, 근거는 서로 다른 말을 한다.
 func TestAttachAddedNeverUsesOneTrackTwice(t *testing.T) {
 	picks := []intent.Pick{{CatalogID: "c1"}, {CatalogID: "c2"}}
-	extras := []api.CatalogTrack{
-		{AppleMusicId: "c1", Title: "same name"},
-		{AppleMusicId: "c2", Title: "same name"},
+	extras := []intent.Extra{
+		{Track: api.CatalogTrack{AppleMusicId: "c1", Title: "same name"}},
+		{Track: api.CatalogTrack{AppleMusicId: "c2", Title: "same name"}},
 	}
 	got, dropped := attachAdded(picks, extras, []api.Track{added(1, "same name"), added(2, "same name")}, nil)
 
@@ -128,7 +128,7 @@ func TestPluralReadsLikeAPersonWroteIt(t *testing.T) {
 // 있는데 화면은 "담지 못했다"고 말했다.
 func TestAttachAddedSurvivesLocalisedTitles(t *testing.T) {
 	picks := []intent.Pick{{CatalogID: "c1", Reason: "야생화"}}
-	extras := []api.CatalogTrack{{AppleMusicId: "c1", Title: "야생화", ArtistName: "박효신"}}
+	extras := []intent.Extra{{Track: api.CatalogTrack{AppleMusicId: "c1", Title: "야생화", ArtistName: "박효신"}}}
 	durMs := map[string]int{"c1": 312092}
 
 	got, dropped := attachAdded(picks, extras,
@@ -145,7 +145,7 @@ func TestAttachAddedSurvivesLocalisedTitles(t *testing.T) {
 // 밀리초까지 똑같지는 않다. 1초 안이면 같은 곡이다.
 func TestAttachAddedAllowsASecondOfSlack(t *testing.T) {
 	picks := []intent.Pick{{CatalogID: "c1"}}
-	extras := []api.CatalogTrack{{AppleMusicId: "c1", Title: "야생화"}}
+	extras := []intent.Extra{{Track: api.CatalogTrack{AppleMusicId: "c1", Title: "야생화"}}}
 
 	got, dropped := attachAdded(picks, extras,
 		[]api.Track{addedMs(42, "Wild Flower", 312092+700)}, map[string]int{"c1": 312092})
@@ -164,7 +164,7 @@ func TestAttachAddedAllowsASecondOfSlack(t *testing.T) {
 // 길이가 같은 두 곡이 함께 담겨도 한 곡을 두 번 쓰지 않는다.
 func TestAttachAddedNeverUsesOneTrackTwiceByDuration(t *testing.T) {
 	picks := []intent.Pick{{CatalogID: "c1"}, {CatalogID: "c2"}}
-	extras := []api.CatalogTrack{{AppleMusicId: "c1"}, {AppleMusicId: "c2"}}
+	extras := []intent.Extra{{Track: api.CatalogTrack{AppleMusicId: "c1"}}, {Track: api.CatalogTrack{AppleMusicId: "c2"}}}
 	durMs := map[string]int{"c1": 200000, "c2": 200000}
 
 	got, dropped := attachAdded(picks, extras,
@@ -174,5 +174,57 @@ func TestAttachAddedNeverUsesOneTrackTwiceByDuration(t *testing.T) {
 	}
 	if got[0].TrackID == got[1].TrackID {
 		t.Errorf("두 픽이 같은 곡을 가리킨다: %+v", got)
+	}
+}
+
+// 검색 결과 중 이미 가진 곡에는 라이브러리 번호가 붙어 온다.
+// 그 픽은 담을 것이 없으므로 이 단계가 손대지 않는다.
+func TestAttachAddedLeavesOwnedPicksAlone(t *testing.T) {
+	picks := []intent.Pick{{TrackID: 88, Reason: "이미 가진 야생화"}}
+	extras := []intent.Extra{{Track: api.CatalogTrack{AppleMusicId: "c1", Title: "야생화"}, TrackID: 88}}
+
+	got, dropped := attachAdded(picks, extras, nil, nil)
+	if dropped != 0 {
+		t.Fatalf("가진 곡을 버렸다: dropped=%d", dropped)
+	}
+	if len(got) != 1 || got[0].TrackID != 88 {
+		t.Errorf("가진 곡의 번호가 바뀌었다: %+v", got)
+	}
+}
+
+// 검색 결과를 라이브러리 곡에 잇는 것도 길이로 한다.
+//
+// 이름으로 하면 같은 함정에 또 걸린다 — 카탈로그는 "야생화", Music.app 은
+// "Wild Flower" 다.
+func TestMatchLibraryUsesDurationNotName(t *testing.T) {
+	lib := []api.Track{
+		{Id: 11, Title: "Warm On a Cold Night", DurationMs: 200000},
+		{Id: 22, Title: "Wild Flower", DurationMs: 312092},
+	}
+	if got := matchLibrary(lib, map[int64]bool{}, 312092); got != 22 {
+		t.Errorf("이름이 달라서 못 찾았다: %d", got)
+	}
+}
+
+// 길이를 모르면 짐작하지 않는다. 틀린 곡을 트는 것이 못 트는 것보다 나쁘다.
+func TestMatchLibraryRefusesToGuess(t *testing.T) {
+	lib := []api.Track{{Id: 11, Title: "anything", DurationMs: 200000}}
+	if got := matchLibrary(lib, map[int64]bool{}, 0); got != 0 {
+		t.Errorf("길이를 모르는데 %d 번을 골랐다", got)
+	}
+}
+
+// 한 곡을 두 검색 결과가 나눠 가지면 안 된다.
+func TestMatchLibraryNeverReusesATrack(t *testing.T) {
+	lib := []api.Track{
+		{Id: 11, DurationMs: 200000},
+		{Id: 22, DurationMs: 200000},
+	}
+	used := map[int64]bool{}
+	a := matchLibrary(lib, used, 200000)
+	used[a] = true
+	b := matchLibrary(lib, used, 200000)
+	if a == 0 || b == 0 || a == b {
+		t.Errorf("같은 곡을 두 번 썼다: %d, %d", a, b)
 	}
 }

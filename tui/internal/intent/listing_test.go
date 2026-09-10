@@ -49,8 +49,8 @@ func contains(s, sub string) bool {
 // 모델이 돌려준 7 이 어느 세계의 7 인지 알 수 없다.
 func TestCatalogCandidatesContinueTheNumbering(t *testing.T) {
 	lib := []api.Track{track(11, "mine", false), track(22, "also mine", false)}
-	lst := renderLibrary(lib, nil, time.Now()).withCatalog([]api.CatalogTrack{
-		{AppleMusicId: "1791161222", Title: "stranger", ArtistName: "Bon Iver"},
+	lst := renderLibrary(lib, nil, time.Now()).withCatalog([]Extra{
+		{Track: api.CatalogTrack{AppleMusicId: "1791161222", Title: "stranger", ArtistName: "Bon Iver"}},
 	})
 
 	if len(lst.rows) != 3 {
@@ -77,5 +77,32 @@ func TestNoCatalogBlockWhenThereAreNoCandidates(t *testing.T) {
 	}
 	if len(lst.rows) != 1 {
 		t.Errorf("줄 수: got %d, want 1", len(lst.rows))
+	}
+}
+
+// 검색 결과 중 **이미 가진 곡**은 라이브러리 줄을 가리켜야 한다.
+//
+// 버리면 안 된다. Music.app 이 이름을 현지화하므로 라이브러리 표에는
+// "Wild Flower" 라고 적혀 있고, "야생화" 를 찾은 사람은 그것이 자기
+// 곡인 줄 모른다. 표시해서 주면 모델이 담지 않고 바로 튼다.
+func TestOwnedSearchHitsPointAtTheLibrary(t *testing.T) {
+	lib := []api.Track{track(11, "Wild Flower", false)}
+	lst := renderLibrary(lib, nil, time.Now()).withCatalog([]Extra{
+		{Track: api.CatalogTrack{AppleMusicId: "1523257572", Title: "야생화"}, TrackID: 11},
+		{Track: api.CatalogTrack{AppleMusicId: "999", Title: "stranger"}},
+	})
+
+	if got := lst.rows[1]; got.trackID != 11 || got.catalogID != "" {
+		t.Errorf("가진 곡이 라이브러리 줄을 안 가리킨다: %+v", got)
+	}
+	if got := lst.rows[2]; got.catalogID != "999" || got.trackID != 0 {
+		t.Errorf("밖의 곡이 카탈로그를 안 가리킨다: %+v", got)
+	}
+	// 모델이 둘을 구별할 수 있어야 한다. 못 하면 가진 곡을 또 사 온다.
+	if !contains(lst.catalog, "야생화") || !contains(lst.catalog, "| yes") {
+		t.Errorf("가진 곡이라는 표시가 없다:\n%s", lst.catalog)
+	}
+	if !contains(lst.catalog, "| no") {
+		t.Errorf("밖의 곡이라는 표시가 없다:\n%s", lst.catalog)
 	}
 }

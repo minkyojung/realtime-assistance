@@ -156,10 +156,10 @@ const durationSlack = 1000
 //
 // 짝지을 판은 아주 작다 — 방금 담은 몇 곡뿐이다. 한 번 쓴 곡은 빼서
 // 두 픽이 같은 곡을 가리키지 않게 한다.
-func attachAdded(picks []intent.Pick, extras []api.CatalogTrack, added []api.Track, durMs map[string]int) ([]intent.Pick, int) {
+func attachAdded(picks []intent.Pick, extras []intent.Extra, added []api.Track, durMs map[string]int) ([]intent.Pick, int) {
 	title := make(map[string]string, len(extras))
-	for _, ct := range extras {
-		title[ct.AppleMusicId] = normalize(ct.Title)
+	for _, e := range extras {
+		title[e.Track.AppleMusicId] = normalize(e.Track.Title)
 	}
 	used := make(map[int64]bool, len(added))
 

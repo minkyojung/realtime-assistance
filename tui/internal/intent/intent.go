@@ -169,11 +169,14 @@ Rules that matter:
   A few skips on a track with many plays means little. Skips on a track with
   no plays mean they keep turning it down — that is not a track to give another
   chance. Favorites are the one signal they set on purpose; lean on them.
-- Some candidates may not be in their library — the Apple Music block says so.
-  Picking one adds it to their library. That is allowed, and it is often the
-  point: they asked for something they do not already have. But a sitting made
-  entirely of strangers is a different product. The library is what they chose;
-  reach outside it to answer the request, not to replace it.
+- The Apple Music block, when present, holds search results. Its owned column
+  says whether they already have the track. **Prefer owned=yes** — those play
+  at once, and the library listing above may be spelling the same track in a
+  different language, so a track can look missing when it is not.
+  Picking owned=no adds it to their library first. That is allowed, and it is
+  often the point: they asked for something they do not already have. But a
+  sitting made entirely of strangers is a different product. The library is
+  what they chose; reach outside it to answer the request, not to replace it.
 - Write title, note and reasons in the same language the person used.`
 
 // Current 는 이미 화면에 있는 큐다. 있으면 새로 만드는 대신 고칠 수 있다.
@@ -190,7 +193,7 @@ type Current struct {
 // 무엇이 요청인지는 모델이 문장을 보고 판단한다.
 // react 는 우리가 본 반응이다(data.Reactions). 비어 있어도 된다 — 아직
 // 아무것도 안 들었거나 기록이 없으면 그 칸이 안 나올 뿐이다.
-func Build(ctx context.Context, prompt string, library []api.Track, extras []api.CatalogTrack, react map[int64]data.Reaction, cur Current, now time.Time) (Result, error) {
+func Build(ctx context.Context, prompt string, library []api.Track, extras []Extra, react map[int64]data.Reaction, cur Current, now time.Time) (Result, error) {
 	if strings.TrimSpace(prompt) == "" {
 		return Result{}, fmt.Errorf("nothing to ask for")
 	}
@@ -379,25 +382,47 @@ func renderLibrary(tracks []api.Track, react map[int64]data.Reaction, now time.T
 	return listing{text: b.String(), rows: rows}
 }
 
-// withCatalog 는 라이브러리 밖 후보를 목록 뒤에 잇는다.
+// Extra 는 애플 뮤직에서 찾은 후보 하나다.
+//
+// TrackID 가 붙어 있으면 **이미 가진 곡**이다. 그것을 고르면 담을 것도
+// 기다릴 것도 없이 바로 튼다.
+//
+// 찾은 것 중 이미 가진 곡을 버리지 않는 이유는, 라이브러리 표가 그 곡을
+// 다른 이름으로 적고 있을 수 있기 때문이다. Music.app 은 시스템 언어에
+// 맞춰 이름을 현지화한다 — "야생화" 를 찾는 사람에게 라이브러리 표는
+// "Wild Flower" 라고 적혀 있다. 버리면 가진 곡을 못 찾고, 태그 없이 그냥
+// 두면 가진 곡을 밖에서 다시 사 온다. 그래서 **표시해서 준다.**
+type Extra struct {
+	Track api.CatalogTrack
+
+	// TrackID 는 이 곡이 이미 라이브러리에 있을 때 그 곡의 번호다.
+	// 0 이면 밖의 곡이라 고르면 담아야 한다.
+	TrackID int64
+}
+
+// withCatalog 는 애플 뮤직에서 찾은 후보를 목록 뒤에 잇는다.
 //
 // 줄번호는 라이브러리에서 이어진다. 모델이 보는 것은 번호 하나뿐이고,
 // 그 번호가 어느 세계를 가리키는지는 우리가 표로 들고 있다 — 이 층이
 // 19자리 id 를 감추는 것과 같은 이치다.
-func (l listing) withCatalog(extras []api.CatalogTrack) listing {
+func (l listing) withCatalog(extras []Extra) listing {
 	if len(extras) == 0 {
 		return l
 	}
 	var b strings.Builder
-	b.WriteString("Apple Music — these are NOT in their library yet. " +
-		"Columns: n | title | artist | album | genre | year\n")
-	b.WriteString("Picking one of these adds it to their library and then plays it. " +
-		"There are no play counts or signals for these because they have never had them.\n")
+	b.WriteString("Apple Music search results. " +
+		"Columns: n | title | artist | album | genre | year | owned\n")
+	b.WriteString("owned=yes means it is already in their library under a different name — " +
+		"the library listing above may spell it in another language. " +
+		"Picking one of those plays it immediately; prefer them.\n")
+	b.WriteString("owned=no means picking it adds it to their library first, which takes a while. " +
+		"There are no play counts or signals for those because they have never had them.\n")
 	// 길이를 못 적는다. api.CatalogTrack 에 그 칸이 없다(스펙에는 있고
 	// 생성된 타입이 낡았다). 없는 값을 지어내는 대신 모른다고 적는다 —
 	// 모르는 것을 아는 척하면 "한 시간짜리"가 조용히 틀린다.
 	b.WriteString("Their length is unknown, so do not count them toward a running time the person asked for.\n\n")
-	for _, ct := range extras {
+	for _, e := range extras {
+		ct := e.Track
 		album, genre, year := "", "", ""
 		if ct.AlbumName != nil {
 			album = *ct.AlbumName
@@ -408,9 +433,14 @@ func (l listing) withCatalog(extras []api.CatalogTrack) listing {
 		if ct.Year != nil {
 			year = fmt.Sprint(*ct.Year)
 		}
-		l.rows = append(l.rows, candidate{catalogID: ct.AppleMusicId})
-		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s\n",
-			len(l.rows), ct.Title, ct.ArtistName, album, genre, year)
+		owned := "no"
+		c := candidate{catalogID: ct.AppleMusicId}
+		if e.TrackID != 0 {
+			owned, c = "yes", candidate{trackID: e.TrackID}
+		}
+		l.rows = append(l.rows, c)
+		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s | %s\n",
+			len(l.rows), ct.Title, ct.ArtistName, album, genre, year, owned)
 	}
 	l.catalog = b.String()
 	return l
