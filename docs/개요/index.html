@@ -398,7 +398,7 @@
     <tr><td class="n">5</td><td><code>playlist_track</code></td><td>플레이리스트에 담긴 곡과 순서</td><td>목록</td></tr>
     <tr><td class="n">6</td><td><code>queue</code></td><td>재생 큐</td><td>W2</td></tr>
     <tr><td class="n">7</td><td><code>queue_item</code></td><td>큐에 담긴 곡 · <b>선정 근거</b></td><td>W2 · W8</td></tr>
-    <tr><td class="n">8</td><td><code>turn</code></td><td>자연어 요청 한 건 · 토큰 · 비용</td><td>대화 띠 · 상태줄</td></tr>
+    <tr><td class="n">8</td><td><code>turn</code></td><td>자연어 요청 한 건 — 문장 원본 · <b>어떤 자리를 위한 것인가</b> · 토큰 · 비용</td><td>W6~W8 · 상태줄</td></tr>
     <tr><td class="n">9</td><td><code>message</code></td><td>대화 띠의 한 줄</td><td>대화 띠</td></tr>
     <tr><td class="n">10</td><td><code>play</code></td><td>곡이 끝난 사건 — <b>왜</b> 끝났나</td><td>없음</td></tr>
     <tr><td class="n">11</td><td><code>setting</code></td><td>이 기기의 설정 (한 행)</td><td>W1</td></tr>
@@ -415,6 +415,7 @@
     <tr><td><code>turn</code> → <code>queue_item</code></td><td>1 : N</td><td>FK 는 <b>NULL 허용</b> — 사람이 넣은 곡은 비어 있다</td></tr>
     <tr><td><code>turn</code> → <code>message</code></td><td>1 : N</td><td></td></tr>
     <tr><td><code>track</code> → <code>play</code></td><td>1 : N</td><td>같은 곡을 여러 번 듣는다</td></tr>
+    <tr><td><code>play</code> → <code>queue_item</code> → <code>turn</code></td><td>사슬</td><td><b>“이 곡을 언제 넘겼나”가 여기서 풀린다.</b> 사건마다 맥락을 복사하지 않는다</td></tr>
   </table>
 
   <div class="box">
@@ -424,6 +425,18 @@
       <b>두 컬럼이 화면 두 곳을 지탱한다.</b></p>
     <p class="small faint" style="margin:6px 0 0">둘 다 보는 이유 — Music.app 이 재생 횟수와 마지막 재생일을 따로 관리해서,
       한쪽만 채워진 곡이 실제로 존재한다(실측 1곡). 한쪽만 보면 그 곡을 잘못 센다.</p>
+  </div>
+
+  <div class="box">
+    <h4>저장하는 유일한 해석 — <code>turn.context</code></h4>
+    <p style="margin:0 0 6px">요청이 <b>어떤 자리를 위한 것인가</b>를 여덟 중 하나로 받는다 —
+      <code>focus</code> · <code>workout</code> · <code>chores</code> · <code>commute</code> ·
+      <code>social</code> · <code>unwind</code> · <code>sleep</code> · <code>other</code>.
+      <b>축은 하나다</b>(무엇을 하는 중인가). “틀어만 둔다” 같은 주의의 정도는 다른 축이라 넣지 않는다 —
+      섞으면 값이 겹쳐 같은 사건이 두 칸에 갈라진다.</p>
+    <p class="small faint" style="margin:0">판단을 저장하지 않는다는 원칙의 예외로 보이지만,
+      <b>원문(<code>prompt</code>)이 그대로 남으므로 되돌릴 수 있다</b> — 분류가 틀렸다고 판단되면 지난 것을 다시 나누면 된다.
+      <b>되돌릴 수 있는 해석만 저장한다.</b></p>
   </div>
 </section>
 
@@ -584,6 +597,7 @@
     <tr><td class="n">5</td><td>주기적으로 되묻는다</td><td>이벤트를 밀어 주는 통로로 바꾸면 왕복이 준다</td></tr>
     <tr><td class="n">6</td><td>라이브러리를 통째로 다시 읽는다</td><td>수천 곡대에서 느리다. 변경분만 읽어야 한다</td></tr>
     <tr><td class="n">7</td><td>AI 비용이 사용자 부담이다</td><td>그래서 화면이 쓴 돈을 상시로 보여준다. 정책이 바뀌면 이 자리도 바뀐다</td></tr>
+    <tr><td class="n">8</td><td><b>선곡이 곡 단위로만 배운다</b></td><td>“여러 번 일찍 나간 곡은 뺀다”까지가 지금이다. <b>“공부할 때만 이 곡을 뺀다”는 아직 못 한다</b> — 맥락별로 세려면 표본이 필요하고, 지금은 그 재료(<code>turn.context</code>)를 모으는 중이다</td></tr>
   </table>
 
   <h3>6-5. 이름에 대하여</h3>
