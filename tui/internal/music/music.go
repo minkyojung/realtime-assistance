@@ -99,7 +99,14 @@ const statusScript = `tell application "Music"
 	set sh to (shuffle enabled as text)
 	set rp to (song repeat as text)
 	if ps is "stopped" then return "stopped|||||" & "|" & sh & "|" & rp & "|false"
-	set t to current track
+	-- 곡 사이, 큐 끝, 막 켜진 직후에는 상태가 stopped 가 아닌데도 current
+	-- track 이 없다(-1728). 그 순간을 오류로 올리면 화면에 빨간 줄이 뜬다.
+	-- 곡이 없는 것은 곡이 없는 것이다 — stopped 와 같은 모양으로 답한다.
+	try
+		set t to current track
+	on error
+		return "stopped|||||" & "|" & sh & "|" & rp & "|false"
+	end try
 	set pos to 0
 	try
 		set pos to player position
