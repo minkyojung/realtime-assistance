@@ -105,6 +105,12 @@ func waitForArrivals(ctx context.Context, before map[string]bool, want int,
 	got := map[string]bool{}
 	target := len(before) + want
 	for i := 0; i < addPlayTries; i++ {
+		// 그만뒀는지를 **먼저** 본다. select 에 맡기면 타이머와 취소가 함께
+		// 준비됐을 때 Go 가 무작위로 고르므로, 그만둔 뒤에도 한 번 더 물을
+		// 수 있다. 사람이 그만둔 뒤의 질문은 한 번도 없어야 한다.
+		if ctx.Err() != nil {
+			return got
+		}
 		select {
 		case <-ctx.Done():
 			return got
