@@ -72,11 +72,21 @@ const statusScript = `tell application "Music"
 end tell`
 
 // Status 는 현재 재생 상태를 읽는다. 1초 주기 폴링에 쓰인다.
+//
+// 통로가 차 있으면 **기다리지 않고 ErrBusy 로 돌아온다.** 폴링은 버려도
+// 되는 유일한 요청이다 — 1초 뒤에 또 물을 것이고, 쌓아 두면 그 더미가
+// Music.app 을 굳힌다(lane.go). 통로를 먼저 보고 프로세스 목록을 본다.
+// 반대로 하면 버릴 폴링을 위해 pgrep 을 하나 더 띄운다.
 func Status() (PlayerState, error) {
+	release, ok := tryHold()
+	if !ok {
+		return PlayerState{}, ErrBusy
+	}
+	defer release()
 	if !Running() {
 		return PlayerState{}, ErrNotRunning
 	}
-	out, err := run(statusScript)
+	out, err := exec1(cmdTimeout, statusScript)
 	if err != nil {
 		return PlayerState{}, err
 	}
@@ -160,7 +170,22 @@ const queueTimeout = 45 * time.Second
 
 func run(script string) (string, error) { return runFor(cmdTimeout, script) }
 
+// runFor 는 통로를 잡고 스크립트를 돌린다. 명령은 기다린다 — 사람이 시킨
+// 일은 버릴 수 없다(lane.go). 기다림도 timeout 안에 들어간다.
 func runFor(timeout time.Duration, script string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	release, err := hold(ctx)
+	if err != nil {
+		return "", ErrTimeout
+	}
+	defer release()
+	return exec1(timeout, script)
+}
+
+// exec1 은 통로를 **이미 잡은 채로** 스크립트 하나를 돌린다.
+// 통로를 잡는 것은 부르는 쪽의 일이다 — 잡는 법이 둘(기다림·버림)이라서다.
+func exec1(timeout time.Duration, script string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, "osascript", "-e", script).CombinedOutput()

@@ -44,6 +44,11 @@ func Artwork(ctx context.Context) ([]byte, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, artworkTimeout)
 	defer cancel()
+	release, err := hold(ctx) // lane.go
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 
 	cmd := exec.CommandContext(ctx, "osascript", "-", path)
 	cmd.Stdin = strings.NewReader(artworkScript)

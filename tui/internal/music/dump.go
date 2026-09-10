@@ -29,6 +29,13 @@ func DumpLibrary(ctx context.Context) ([]byte, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, dumpTimeout)
 	defer cancel()
+	// 통로를 잡는다(lane.go). 덤프는 무겁다 — 이것이 도는 동안 폴링이
+	// 겹쳐 쌓이면 안 된다.
+	release, err := hold(ctx)
+	if err != nil {
+		return nil, ErrDumpTimeout
+	}
+	defer release()
 
 	// 스크립트를 stdin 으로 넘긴다. -e 로 넘기면 인자 길이 제한에 걸린다.
 	cmd := exec.CommandContext(ctx, "osascript", "-l", "JavaScript", "-")

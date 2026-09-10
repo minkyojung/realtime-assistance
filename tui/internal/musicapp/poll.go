@@ -2,6 +2,7 @@ package musicapp
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"amcli/tui/internal/api"
@@ -222,6 +223,11 @@ func tick() tea.Cmd {
 
 func fetchStatus() tea.Msg {
 	st, err := music.Status()
+	// 통로가 차서 건너뛴 폴링은 메시지를 안 낸다. 화면은 지난 상태와
+	// 위치 보간으로 그대로 흐르고, 1초 뒤에 다시 묻는다(music/lane.go).
+	if errors.Is(err, music.ErrBusy) {
+		return nil
+	}
 	return statusMsg{state: st, err: err}
 }
 
