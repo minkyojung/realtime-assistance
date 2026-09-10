@@ -167,7 +167,7 @@ func (m Model) placeholder() string {
 	if m.mode == modeSearch {
 		// 나가는 길을 여기서 말한다. 들어올 때만 알려주면, 검색을 켜 놓고
 		// 왜 물어봐도 답이 없는지 모르는 자리가 생긴다.
-		return "Filter what you are looking at    ctrl+f  back to Ask"
+		return "Filter what you are looking at    " + modeKey() + "  back to Ask"
 	}
 	// 왼쪽은 **지금 이 줄에서만 참인 것**, 오른쪽은 언제나 참인 길이다.
 	//
@@ -179,7 +179,7 @@ func (m Model) placeholder() string {
 			head = h
 		}
 	}
-	tail := "ctrl+f  search    /  commands"
+	tail := modeKey() + "  search    /  commands"
 
 	// 키가 없다고 모드를 없애지도, 기본값을 바꾸지도 않는다. Search 로
 	// 시작하면 AI 가 있다는 것 자체를 모르고 지나간다.
@@ -191,10 +191,17 @@ func (m Model) placeholder() string {
 		if head == "Ask for anything" {
 			head = "AI is off" // 물어봐도 답이 없다. 그 자리에서 거짓말하지 않는다
 		}
-		tail = "ctrl+f  search    /ai <key>  turn AI on"
+		tail = modeKey() + "  search    /ai <key>  turn AI on"
 	}
 	return head + "    " + tail
 }
+
+// modeKey 는 모드를 왕복하는 키다. **문자열로 적지 않는다.**
+//
+// 여기가 "ctrl+f" 라고 적혀 있었다. 키는 shift+tab 으로 옮겨 갔는데 안내문만
+// 남아서, 화면이 없는 키를 누르라고 말하고 있었다 — keys.go 가 경고하는 바로
+// 그 어긋남이고, 이번에는 안내문 쪽에서 났다.
+func modeKey() string { return keys.Mode.Help().Key }
 
 func (m *Model) applyMode() {
 	styles := m.input.Styles()
