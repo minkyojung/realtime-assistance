@@ -1285,6 +1285,14 @@ components:
       type: string
       enum: [running, done, failed, canceled]
 
+    TurnContext:
+      type: string
+      description: |
+        모델이 요청 문장을 보고 고른 자리. **이 설계에서 유일하게 저장하는 해석이며,
+        원문(`prompt`)이 남아 있으므로 되돌릴 수 있다.**
+        맥락별 집계("공부할 때 무엇을 넘겼나")의 키가 된다.
+      enum: [focus, workout, sleep, commute, social, background, other]
+
     TurnIntent:
       type: string
       enum: [create, append]
@@ -1308,6 +1316,10 @@ components:
         id: { type: integer, format: int64 }
         prompt: { type: string }
         status: { $ref: '#/components/schemas/TurnStatus' }
+        context:
+          type: string
+          allOf: [{ $ref: '#/components/schemas/TurnContext' }]
+          nullable: true
         intent:
           type: string
           allOf: [{ $ref: '#/components/schemas/TurnIntent' }]

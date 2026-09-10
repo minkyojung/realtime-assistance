@@ -143,9 +143,20 @@ Enum turn_status {
   canceled [note: 'esc 로 물렸다']
 }
 
+Enum turn_context {
+  focus      [note: '일하거나 공부하는 중']
+  workout    [note: '운동']
+  sleep      [note: '자려고']
+  commute    [note: '이동 중']
+  social     [note: '사람들과']
+  background [note: '틀어만 두는 것']
+  other      [note: '요청이 자리를 말하지 않았다']
+}
+
 Table turn {
   id                 integer   [pk, increment]
-  prompt             text      [not null, note: '사람이 친 문장']
+  prompt             text      [not null, note: '★ 사람이 친 문장 **원본**. 이것이 남아 있는 한 context 는 언제든 다시 매길 수 있다']
+  context            turn_context [null, note: '★ 모델이 prompt 를 보고 고른 자리. 아래 Note 참조']
   status             turn_status [not null]
   model              varchar(64) [null, note: 'S7 상세 — 어느 모델이 답했나']
   candidate_count    integer   [null, note: 'S7 상세 — 후보 몇 곡에서 골랐나']
@@ -159,6 +170,16 @@ Table turn {
   Note: '''
     자연어 요청 한 건. 오래 걸리는 일이라 행을 먼저 만들고 상태를 갱신한다.
     상태줄의 누적 토큰·비용(S9)과 /cost(S10)는 이 표의 집계다 — 별도 세션 표를 두지 않는다.
+
+    **context 는 이 설계에서 유일하게 저장하는 해석이다.**
+    "무엇을 하는 중인가"를 자유 문장으로 두면 매번 다른 말이 되어 묶을 수 없으므로
+    정해진 일곱 중 하나로 받는다. 판단을 저장하지 않는다는 원칙과 어긋나 보이지만,
+    **원문(prompt)이 그대로 남으므로 되돌릴 수 있다** — 분류가 틀렸다고 판단되면
+    지난 것을 다시 나누면 된다. 되돌릴 수 있는 해석만 저장한다.
+
+    이 값이 있어야 "공부할 때는 어떤 곡을 넘겼나"를 셀 수 있다.
+    재생 사건은 play → queue_item → turn 으로 이어지므로 사건마다 이 값을
+    복사하지 않는다.
   '''
 }
 
