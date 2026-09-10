@@ -36,7 +36,7 @@ func main() {
 
 	fmt.Printf("요청: %s\n라이브러리: %d곡\n\n", prompt, len(l.Tracks))
 	start := time.Now()
-	res, err := intent.Build(context.Background(), prompt, l.Tracks, nil, intent.Current{}, time.Now())
+	res, err := intent.Build(context.Background(), prompt, l.Tracks, nil, nil, intent.Current{}, time.Now())
 	if err != nil {
 		fmt.Println("실패:", err)
 		os.Exit(1)

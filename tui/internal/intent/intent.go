@@ -37,9 +37,13 @@ func Model() string { return model }
 var effort = shared.ReasoningEffortLow
 
 // Pick 은 고른 곡 하나와 그 근거다.
+//
+// 둘 중 하나만 찬다. TrackID 가 차 있으면 이미 가진 곡이고, CatalogID 가
+// 차 있으면 라이브러리 밖의 곡이다 — 그 곡은 담아야 틀 수 있다.
 type Pick struct {
-	TrackID int64  `json:"trackId"`
-	Reason  string `json:"reason"`
+	TrackID   int64  `json:"trackId"`
+	CatalogID string `json:"-"`
+	Reason    string `json:"reason"`
 }
 
 // Result 는 한 번의 요청이 만들어낸 큐다.
@@ -131,6 +135,11 @@ Rules that matter:
   A few skips on a track with many plays means little. Skips on a track with
   no plays mean they keep turning it down — that is not a track to give another
   chance. Favorites are the one signal they set on purpose; lean on them.
+- Some candidates may not be in their library — the Apple Music block says so.
+  Picking one adds it to their library. That is allowed, and it is often the
+  point: they asked for something they do not already have. But a sitting made
+  entirely of strangers is a different product. The library is what they chose;
+  reach outside it to answer the request, not to replace it.
 - Write title, note and reasons in the same language the person used.`
 
 // Current 는 이미 화면에 있는 큐다. 있으면 새로 만드는 대신 고칠 수 있다.
@@ -147,14 +156,14 @@ type Current struct {
 // 무엇이 요청인지는 모델이 문장을 보고 판단한다.
 // react 는 우리가 본 반응이다(data.Reactions). 비어 있어도 된다 — 아직
 // 아무것도 안 들었거나 기록이 없으면 그 칸이 안 나올 뿐이다.
-func Build(ctx context.Context, prompt string, library []api.Track, react map[int64]data.Reaction, cur Current, now time.Time) (Result, error) {
+func Build(ctx context.Context, prompt string, library []api.Track, extras []api.CatalogTrack, react map[int64]data.Reaction, cur Current, now time.Time) (Result, error) {
 	if strings.TrimSpace(prompt) == "" {
 		return Result{}, fmt.Errorf("nothing to ask for")
 	}
 
 	start := time.Now()
 	client := openai.NewClient(option.WithAPIKey(secrets.OpenAIKey()))
-	lst := renderLibrary(library, react, now)
+	lst := renderLibrary(library, react, now).withCatalog(extras)
 
 	resp, err := client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model: model,
@@ -185,11 +194,12 @@ func Build(ctx context.Context, prompt string, library []api.Track, react map[in
 	// applyQueue 가 조용히 버린다.
 	for i := range out.Picks {
 		n := out.Picks[i].TrackID
-		if n < 1 || int(n) > len(lst.ids) {
+		if n < 1 || int(n) > len(lst.rows) {
 			out.Picks[i].TrackID = 0
 			continue
 		}
-		out.Picks[i].TrackID = lst.ids[n-1]
+		c := lst.rows[n-1]
+		out.Picks[i].TrackID, out.Picks[i].CatalogID = c.trackID, c.catalogID
 	}
 	out.Usage = api.Usage{
 		PromptTokens:     int(resp.Usage.PromptTokens),
@@ -197,7 +207,7 @@ func Build(ctx context.Context, prompt string, library []api.Track, react map[in
 		CostUsd:          cost(resp.Usage),
 	}
 	out.Elapsed = time.Since(start)
-	out.Candidates = len(library)
+	out.Candidates = len(lst.rows)
 	return out, nil
 }
 
@@ -208,10 +218,16 @@ func messages(prompt string, lst listing, cur Current) []openai.ChatCompletionMe
 		openai.SystemMessage(systemPrompt),
 		openai.SystemMessage(lst.text),
 	}
+	// 카탈로그 후보는 라이브러리 **뒤**에 온다. 앞에 두면 캐시가 깨진다.
+	if lst.catalog != "" {
+		out = append(out, openai.SystemMessage(lst.catalog))
+	}
 	if len(cur.Items) > 0 {
-		ord := make(map[int64]int, len(lst.ids))
-		for i, id := range lst.ids {
-			ord[id] = i + 1
+		ord := make(map[int64]int, len(lst.rows))
+		for i, c := range lst.rows {
+			if c.trackID != 0 {
+				ord[c.trackID] = i + 1
+			}
 		}
 		out = append(out, openai.SystemMessage(renderCurrent(cur, ord)))
 	}
@@ -264,13 +280,29 @@ func renderCurrent(cur Current, ord map[int64]int) string {
 // 모델이 옮겨 적다 틀리기 쉽고 토큰도 비싸다. 줄번호는 짧고, 되돌리는 표를
 // 우리가 갖고 있으므로 요청 도중에 라이브러리가 갈려도 옳은 곡을 가리킨다.
 type listing struct {
+	// text 는 라이브러리 표다. 요청마다 같으므로 프롬프트 캐시가 걸린다.
 	text string
-	ids  []int64 // 줄번호-1 → 진짜 Track.Id
+
+	// catalog 는 이번 요청에만 붙는 라이브러리 밖 후보다. 없으면 빈 문자열.
+	//
+	// 표를 따로 두는 이유가 둘이다. 하나는 캐시 — 라이브러리 표 안에 섞으면
+	// 후보가 바뀔 때마다 166줄이 통째로 새 입력이 된다. 다른 하나는 뜻 —
+	// "내 것"과 "아직 내 것이 아닌 것"은 칸 하나로 붙일 값이 아니라
+	// 처지가 다른 두 무리다.
+	catalog string
+
+	rows []candidate // 줄번호-1 → 그 줄이 가리키는 곡
+}
+
+// candidate 는 줄번호 하나가 가리키는 곡이다. 둘 중 하나만 찬다.
+type candidate struct {
+	trackID   int64
+	catalogID string
 }
 
 func renderLibrary(tracks []api.Track, react map[int64]data.Reaction, now time.Time) listing {
 	var b strings.Builder
-	ids := make([]int64, 0, len(tracks))
+	rows := make([]candidate, 0, len(tracks))
 	b.WriteString("The person's library. Columns: n | title | artist | album | genre | year | length | plays | signals | last played | added\n")
 	b.WriteString("Use the n column as trackId when you pick a track.\n")
 	b.WriteString("\"added: not in library\" means the track sits in a playlist but was never added to the library, so no add date exists. Never claim a date for those.\n")
@@ -305,12 +337,49 @@ func renderLibrary(tracks []api.Track, react map[int64]data.Reaction, now time.T
 		if t.AddedAt != nil {
 			added = fmt.Sprintf("%dd ago", int(now.Sub(*t.AddedAt).Hours()/24))
 		}
-		ids = append(ids, t.Id)
+		rows = append(rows, candidate{trackID: t.Id})
 		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s | %s | %d plays | %s | %s | %s\n",
-			len(ids), t.Title, t.Artist.Name, album, genre, year,
+			len(rows), t.Title, t.Artist.Name, album, genre, year,
 			mmss(t.DurationMs), t.PlayCount, signals(t, react[t.Id]), last, added)
 	}
-	return listing{text: b.String(), ids: ids}
+	return listing{text: b.String(), rows: rows}
+}
+
+// withCatalog 는 라이브러리 밖 후보를 목록 뒤에 잇는다.
+//
+// 줄번호는 라이브러리에서 이어진다. 모델이 보는 것은 번호 하나뿐이고,
+// 그 번호가 어느 세계를 가리키는지는 우리가 표로 들고 있다 — 이 층이
+// 19자리 id 를 감추는 것과 같은 이치다.
+func (l listing) withCatalog(extras []api.CatalogTrack) listing {
+	if len(extras) == 0 {
+		return l
+	}
+	var b strings.Builder
+	b.WriteString("Apple Music — these are NOT in their library yet. " +
+		"Columns: n | title | artist | album | genre | year\n")
+	b.WriteString("Picking one of these adds it to their library and then plays it. " +
+		"There are no play counts or signals for these because they have never had them.\n")
+	// 길이를 못 적는다. api.CatalogTrack 에 그 칸이 없다(스펙에는 있고
+	// 생성된 타입이 낡았다). 없는 값을 지어내는 대신 모른다고 적는다 —
+	// 모르는 것을 아는 척하면 "한 시간짜리"가 조용히 틀린다.
+	b.WriteString("Their length is unknown, so do not count them toward a running time the person asked for.\n\n")
+	for _, ct := range extras {
+		album, genre, year := "", "", ""
+		if ct.AlbumName != nil {
+			album = *ct.AlbumName
+		}
+		if ct.Genre != nil {
+			genre = *ct.Genre
+		}
+		if ct.Year != nil {
+			year = fmt.Sprint(*ct.Year)
+		}
+		l.rows = append(l.rows, candidate{catalogID: ct.AppleMusicId})
+		fmt.Fprintf(&b, "%d | %s | %s | %s | %s | %s\n",
+			len(l.rows), ct.Title, ct.ArtistName, album, genre, year)
+	}
+	l.catalog = b.String()
+	return l
 }
 
 // signals 는 플레이어가 기록해 둔 것을 한 칸에 적는다.

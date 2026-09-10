@@ -158,7 +158,7 @@ func (m Model) runTool(c intent.Call) (Model, string, tea.Cmd) {
 		}
 		// 선곡은 라이브러리 전체를 읽는다. 여기서만 그 값을 치른다.
 		ctx := m.ask.ctx
-		return m, "", cmdBuildQueue(ctx, m.ask.seq, a.Request, data.Lib().Tracks, m.current())
+		return m, "", cmdBuildQueue(ctx, m.ask.seq, a.Request, data.Lib().Tracks, nil, m.current())
 
 	case "add_tracks":
 		var a struct {
@@ -169,7 +169,7 @@ func (m Model) runTool(c intent.Call) (Model, string, tea.Cmd) {
 			return m, "could not read the request", nil
 		}
 		ctx := m.ask.ctx
-		return m, "", cmdAddTracks(ctx, m.ask.seq, a.Request, data.Lib().Tracks, m.current(), a.Where != "next")
+		return m, "", cmdAddTracks(ctx, m.ask.seq, a.Request, data.Lib().Tracks, nil, m.current(), a.Where != "next")
 
 	case "remove_tracks":
 		var a struct {

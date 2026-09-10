@@ -41,9 +41,9 @@ const askTimeout = 90 * time.Second
 //
 // ctx 를 바깥에서 받는다. 안에서 만들면 취소 손잡이가 이 함수와 함께
 // 사라져서, 도는 동안 끊을 방법이 없다.
-func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Track, cur intent.Current) tea.Cmd {
+func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Track, extras []api.CatalogTrack, cur intent.Current) tea.Cmd {
 	return func() tea.Msg {
-		res, err := intent.Build(ctx, prompt, library, reactions(), cur, time.Now())
+		res, err := intent.Build(ctx, prompt, library, extras, reactions(), cur, time.Now())
 		return queueMsg{seq: seq, res: res, err: err}
 	}
 }
@@ -52,9 +52,9 @@ func cmdBuildQueue(ctx context.Context, seq int, prompt string, library []api.Tr
 //
 // 고르는 일은 한 곳뿐이다. 붙이기 위해 선곡을 따로 만들면 두 벌이 되고,
 // 하나를 고칠 때마다 다른 하나가 뒤처진다.
-func cmdAddTracks(ctx context.Context, seq int, prompt string, library []api.Track, cur intent.Current, atEnd bool) tea.Cmd {
+func cmdAddTracks(ctx context.Context, seq int, prompt string, library []api.Track, extras []api.CatalogTrack, cur intent.Current, atEnd bool) tea.Cmd {
 	return func() tea.Msg {
-		res, err := intent.Build(ctx, prompt, library, reactions(), cur, time.Now())
+		res, err := intent.Build(ctx, prompt, library, extras, reactions(), cur, time.Now())
 		return queueMsg{seq: seq, res: res, err: err, add: true, atEnd: atEnd}
 	}
 }
