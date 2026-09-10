@@ -27,9 +27,12 @@ const catalogTimeout = 8 * time.Second
 // 동기화는 보통 몇 초다. 20초까지 기다린다 —
 // 그 안에 안 나타나면 대개 영원히 안 나타난다 (Sync Library 가 꺼져 있다).
 const (
-	addPlayInterval = 1500 * time.Millisecond
-	addPlayTries    = 13
+	addPlayTries = 13
 )
+
+// 기다리는 간격. 상수가 아닌 이유는 테스트가 줄여 쓰기 때문이다 —
+// 판단 로직을 재는 데 1.5초씩 열세 번을 실제로 잘 이유가 없다.
+var addPlayInterval = 1500 * time.Millisecond
 
 var (
 	errCatalogNotConfigured = errors.New(
@@ -433,6 +436,13 @@ func (m Model) tryPlayAdded(msg catalogTryPlayMsg) (app.App, tea.Cmd, bool) {
 func (m Model) playAdded() error {
 	if m.adding == nil || m.adding.before == nil {
 		return music.PlayByTitleArtist(m.adding.track.Title, m.adding.track.ArtistName)
+	}
+	// 수가 안 늘었으면 열거하지 않는다. 재시도가 열세 번인데 매번 전곡을
+	// 실어 오면, 담은 곡을 받아오느라 바쁜 Music.app 을 더 바쁘게 만든다.
+	if n, err := music.LibraryCount(); err != nil {
+		return err
+	} else if n <= len(m.adding.before) {
+		return errNotShownUp
 	}
 	now, err := music.LibraryIDs()
 	if err != nil {

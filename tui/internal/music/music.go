@@ -295,6 +295,23 @@ func runArgs(script string, args ...string) (string, error) {
 // 아니라 **"무엇이 늘었나"**이고, 그 답에 이름은 필요 없다 — 오히려 해롭다.
 //
 // 이벤트 한 번이다. 곡마다 물으면 곡 수만큼 늘어난다(dump.js 머리말).
+// LibraryCount 는 라이브러리 곡 수만 묻는다.
+//
+// LibraryIDs 가 전곡을 열거해 수천 글자를 실어 오는 것과 달리 숫자 하나다.
+// 담은 곡이 나타나기를 기다리는 동안 1.5초마다 묻는 것이 이것이어야 한다 —
+// Music.app 이 가장 바쁜 순간(방금 담은 곡을 받아오는 중)에 가장 무거운
+// 질문을 반복하고 있었다. 수가 늘었을 때만 한 번 열거하면 된다.
+func LibraryCount() (int, error) {
+	if !Running() {
+		return 0, ErrNotRunning
+	}
+	out, err := run(`tell application "Music" to return count of tracks of library playlist 1`)
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(out))
+}
+
 func LibraryIDs() (map[string]bool, error) {
 	if !Running() {
 		return nil, ErrNotRunning

@@ -67,7 +67,7 @@ func cmdResolvePicks(ctx context.Context, cat *applemusic.Client, msg queueMsg) 
 
 		// 나타나기를 기다린다. 다 오지 않아도 온 만큼은 쓴다 —
 		// 하나가 늦는다고 큐 전체를 버릴 이유가 없다.
-		arrived := waitForArrivals(ctx, before, len(ids))
+		arrived := waitForArrivals(ctx, before, len(ids), music.LibraryCount, music.LibraryIDs)
 
 		b, err := music.DumpLibrary(ctx)
 		if err != nil {
@@ -91,17 +91,34 @@ func cmdResolvePicks(ctx context.Context, cat *applemusic.Client, msg queueMsg) 
 
 // waitForArrivals 는 라이브러리가 want 만큼 늘어나기를 기다린다.
 //
+// 기다리는 동안은 **곡 수만** 묻는다(count). 전곡 열거(ids)는 수가 늘었을
+// 때 한 번이다. 한때 1.5초마다 전곡을 열거했는데, 그 순간이 Music.app 이
+// 방금 담은 곡을 받아오느라 가장 바쁜 때다 — 거기에 가장 무거운 질문을
+// 열세 번 겹쳐 얹고 있었다(music/lane.go 의 실측).
+//
+// count·ids 를 인자로 받는 이유는 이 판단을 Music.app 없이 재기 위해서다.
+//
 // ctx 를 보는 이유는 esc 다. 사용자가 그만뒀는데 20초를 마저 자고 있으면
 // 그 20초 동안 앱이 이미 버린 일을 하고 있는 것이다.
-func waitForArrivals(ctx context.Context, before map[string]bool, want int) map[string]bool {
+func waitForArrivals(ctx context.Context, before map[string]bool, want int,
+	count func() (int, error), ids func() (map[string]bool, error)) map[string]bool {
 	got := map[string]bool{}
+	target := len(before) + want
 	for i := 0; i < addPlayTries; i++ {
 		select {
 		case <-ctx.Done():
 			return got
 		case <-time.After(addPlayInterval):
 		}
-		now, err := music.LibraryIDs()
+		n, err := count()
+		if err != nil || n < target {
+			// 마지막 바퀴는 온 만큼이라도 챙긴다 — 하나가 늦는다고
+			// 나머지까지 버릴 이유가 없다. 그 전에는 수가 찰 때까지 안 묻는다.
+			if i < addPlayTries-1 || n <= len(before) {
+				continue
+			}
+		}
+		now, err := ids()
 		if err != nil {
 			continue
 		}
