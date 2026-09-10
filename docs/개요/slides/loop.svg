@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" font-family="Apple SD Gothic Neo, Pretendard, -apple-system, Helvetica Neue, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#ff5a75"/>
+    </marker>
+    <marker id="af" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,1 L9,5 L0,9 z" fill="#6b6b76"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#17171b"/>
+
+  <!-- 제목 -->
+  <text x="90" y="118" font-size="52" font-weight="700" fill="#e8e8ea" letter-spacing="-1.5">의사결정 데이터는 어디에 남는가</text>
+  <text x="90" y="172" font-size="27" fill="#8a8a92">판단은 저장하지 않는다 — 사실만 적고, 해석은 매번 다시 계산한다</text>
+  <line x1="90" y1="212" x2="1830" y2="212" stroke="#2e2e36" stroke-width="2"/>
+
+  <!-- ─────────── ① 요청 ─────────── -->
+  <rect x="90" y="270" width="400" height="450" rx="10" fill="#1f1f26" stroke="#2e2e36" stroke-width="2"/>
+  <circle cx="134" cy="326" r="23" fill="none" stroke="#ff5a75" stroke-width="2"/>
+  <text x="134" y="336" font-size="25" font-weight="700" fill="#ff5a75" text-anchor="middle">1</text>
+  <text x="176" y="337" font-size="35" font-weight="700" fill="#e8e8ea">요청</text>
+  <text x="122" y="400" font-size="23" fill="#ff5a75">“공부할 때 들을 거”</text>
+  <line x1="122" y1="440" x2="458" y2="440" stroke="#2e2e36" stroke-width="1.5"/>
+  <text x="122" y="482" font-size="19" fill="#6b6b76" letter-spacing="1">저장</text>
+  <text x="178" y="482" font-size="21" font-weight="700" fill="#ff5a75" font-family="SF Mono, Menlo, monospace">turn</text>
+  <text x="122" y="530" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">prompt</text>
+  <text x="122" y="566" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">model · elapsed_ms</text>
+  <text x="122" y="602" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">tokens · cost_usd</text>
+  <text x="122" y="672" font-size="19" fill="#6b6b76">무슨 말을 했나 · 얼마 썼나</text>
+
+  <line x1="500" y1="495" x2="527" y2="495" stroke="#ff5a75" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- ─────────── ② 선곡 ─────────── -->
+  <rect x="537" y="270" width="400" height="450" rx="10" fill="#1f1f26" stroke="#2e2e36" stroke-width="2"/>
+  <circle cx="581" cy="326" r="23" fill="none" stroke="#ff5a75" stroke-width="2"/>
+  <text x="581" y="336" font-size="25" font-weight="700" fill="#ff5a75" text-anchor="middle">2</text>
+  <text x="623" y="337" font-size="35" font-weight="700" fill="#e8e8ea">선곡</text>
+  <text x="569" y="400" font-size="23" fill="#c9c9cf">AI 가 14곡을 고른다 —</text>
+  <text x="569" y="430" font-size="23" fill="#c9c9cf">그중 락이 섞였다</text>
+  <line x1="569" y1="462" x2="905" y2="462" stroke="#2e2e36" stroke-width="1.5"/>
+  <text x="569" y="504" font-size="19" fill="#6b6b76" letter-spacing="1">저장</text>
+  <text x="625" y="504" font-size="21" font-weight="700" fill="#ff5a75" font-family="SF Mono, Menlo, monospace">queue_item</text>
+  <text x="569" y="552" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">position</text>
+  <text x="569" y="588" font-size="20" fill="#e8e8ea" font-family="SF Mono, Menlo, monospace" font-weight="700">reason</text>
+  <text x="569" y="624" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">origin = ai</text>
+  <text x="569" y="672" font-size="19" fill="#ff5a75">AI 가 왜 골랐는지가 남는다</text>
+
+  <line x1="947" y1="495" x2="974" y2="495" stroke="#ff5a75" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- ─────────── ③ 스킵 ─────────── -->
+  <rect x="984" y="270" width="400" height="450" rx="10" fill="#1f1f26" stroke="#ff5a75" stroke-width="2"/>
+  <circle cx="1028" cy="326" r="23" fill="#ff5a75"/>
+  <text x="1028" y="336" font-size="25" font-weight="700" fill="#17171b" text-anchor="middle">3</text>
+  <text x="1070" y="337" font-size="35" font-weight="700" fill="#e8e8ea">스킵</text>
+  <text x="1016" y="400" font-size="23" fill="#c9c9cf">락 노래가 나오자</text>
+  <text x="1016" y="430" font-size="23" fill="#c9c9cf">12초 만에 넘겼다</text>
+  <line x1="1016" y1="462" x2="1352" y2="462" stroke="#2e2e36" stroke-width="1.5"/>
+  <text x="1016" y="504" font-size="19" fill="#6b6b76" letter-spacing="1">저장</text>
+  <text x="1072" y="504" font-size="21" font-weight="700" fill="#ff5a75" font-family="SF Mono, Menlo, monospace">play</text>
+  <text x="1016" y="548" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">played_ms = 12000</text>
+  <text x="1016" y="580" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">dur_ms    = 215000</text>
+  <text x="1016" y="612" font-size="20" fill="#e8e8ea" font-family="SF Mono, Menlo, monospace" font-weight="700">ended_by  = skipped</text>
+  <text x="1016" y="644" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">context   = 공부용</text>
+  <text x="1016" y="694" font-size="19" fill="#6b6b76">✕  “락을 싫어함” 은 적지 않는다</text>
+
+  <line x1="1394" y1="495" x2="1421" y2="495" stroke="#ff5a75" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- ─────────── ④ 다음 선곡 ─────────── -->
+  <rect x="1431" y="270" width="400" height="450" rx="10" fill="#1f1f26" stroke="#2e2e36" stroke-width="2"/>
+  <circle cx="1475" cy="326" r="23" fill="none" stroke="#ff5a75" stroke-width="2"/>
+  <text x="1475" y="336" font-size="25" font-weight="700" fill="#ff5a75" text-anchor="middle">4</text>
+  <text x="1517" y="337" font-size="35" font-weight="700" fill="#e8e8ea">다음 선곡</text>
+  <text x="1463" y="400" font-size="23" fill="#c9c9cf">쌓인 사실을 그 자리에서</text>
+  <text x="1463" y="430" font-size="23" fill="#c9c9cf">집계해 후보에 붙인다</text>
+  <line x1="1463" y1="462" x2="1799" y2="462" stroke="#2e2e36" stroke-width="1.5"/>
+  <text x="1463" y="504" font-size="19" fill="#6b6b76" letter-spacing="1">읽기</text>
+  <text x="1519" y="504" font-size="21" font-weight="700" fill="#ff5a75" font-family="SF Mono, Menlo, monospace">play 집계</text>
+  <text x="1463" y="552" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">2 dropped early</text>
+  <text x="1463" y="588" font-size="20" fill="#c9c9cf" font-family="SF Mono, Menlo, monospace">1 removed</text>
+  <text x="1463" y="636" font-size="19" fill="#ff5a75">판단은 여기서 한다 —</text>
+  <text x="1463" y="664" font-size="19" fill="#ff5a75">저장할 때가 아니라</text>
+
+  <!-- 되돌아오는 화살표 -->
+  <path d="M1631,752 L1631,828 L737,828 L737,752" fill="none" stroke="#6b6b76" stroke-width="2.5" stroke-dasharray="8 7" marker-end="url(#af)"/>
+  <rect x="1010" y="806" width="348" height="44" fill="#17171b"/>
+  <text x="1184" y="838" font-size="22" fill="#8a8a92" text-anchor="middle">다음 요청은 이 사실을 보고 고른다</text>
+
+  <!-- 결론 -->
+  <line x1="90" y1="920" x2="1830" y2="920" stroke="#2e2e36" stroke-width="2"/>
+  <text x="90" y="990" font-size="34" font-weight="700" fill="#e8e8ea" letter-spacing="-0.8">무엇이 일어났는지를 적고, 무엇을 뜻하는지는 매번 다시 계산한다</text>
+  <text x="90" y="1032" font-size="21" fill="#6b6b76">“일찍 나감”의 기준은 지금 절반이다. 그 기준이 바뀌면 지난 기록 전부가 새 기준으로 다시 읽힌다</text>
+</svg>
