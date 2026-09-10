@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"amcli/tui/internal/app"
 	"amcli/tui/internal/data"
 	"amcli/tui/internal/data/fixture"
 	"amcli/tui/internal/host"
@@ -33,17 +34,23 @@ func main() {
 
 	var b strings.Builder
 	for _, c := range []struct {
-		name string
-		keys string
+		name, keys string
+		msgs       []tea.Msg // 키로는 못 만드는 상태. 키 다음에 넣는다
 	}{
-		{"home", ""},
-		{"default", ""},
-		{"search", "\x0Eoasis"}, // shift+tab + oasis
-		{"commands", "/"},
-		{"help", "?"},
-		{"prompt", "something quiet"},
+		{"home", "", nil},
+		{"default", "", nil},
+		{"search", "\x0Eoasis", nil}, // shift+tab + oasis
+		{"commands", "/", nil},
+		{"help", "?", nil},
+		{"prompt", "something quiet", nil},
 		// 묶음 파고들기 — tab 으로 Artists 에 가서 enter.
-		{"drill", "\t\n"},
+		{"drill", "\t\n", nil},
+		// 대화 띠 — 묻고, 앱이 답한 화면. 내 말은 바탕색, 답은 접혀서.
+		{"talk", "something quiet\n", []tea.Msg{app.SayMsg{App: "music",
+			Text: "A quiet hour from what you own — five tracks you have not played in months, " +
+				"starting soft and staying there."}}},
+		// 가려진 입력 — 키를 치는 동안 화면에 점만 보인다.
+		{"secret", "/ai\nsk-golden-0123456789", nil},
 	} {
 		hm := host.New(musicapp.New())
 		if c.name != "home" {
@@ -62,6 +69,9 @@ func main() {
 			default:
 				m, _ = m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 			}
+		}
+		for _, msg := range c.msgs {
+			m, _ = m.Update(msg)
 		}
 		fmt.Fprintf(&b, "=== %s ===\n%s\n", c.name, m.View().Content)
 	}
