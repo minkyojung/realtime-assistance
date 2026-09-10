@@ -19,3 +19,6 @@ helper/build/
 
 # 배포 바이너리 — scripts/build.sh 가 만든다
 dist/
+
+# 제출용으로 복사한 것. 원본은 api/ · db/ 에 있다
+제출/*.pdf
