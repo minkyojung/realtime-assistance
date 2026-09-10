@@ -332,6 +332,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.log = append(m.log, logEntry{who: "host", text: spend})
 		return m, nil
 
+	// 붙여넣기는 언제나 입력창의 것이다. 호스트가 가로챌 이유가 없다 —
+	// 손으로 못 치는 것이 이 길로 온다. API 키가 그렇고, 그것이 AI 를
+	// 켜는 유일한 길이다. 한때 이 case 가 없어서 붙여넣기가 앱으로
+	// 흘러갔고, `/ai ` 까지 치고 키를 붙이면 아무 일도 안 일어났다.
+	case tea.PasteMsg:
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		m.pick = 0
+		if m.mode == modeSearch {
+			m.apps[m.current] = m.app().Filter(m.input.Value())
+		}
+		return m, cmd
+
 	case tea.KeyPressMsg:
 		if handled, mm, cmd := m.handleKey(msg); handled {
 			return mm, cmd
